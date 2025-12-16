@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Neo-Brutalist Theme Variables */
+:root {
+  --neo-shadow: 4px 4px 0px 0px;
+  --neo-shadow-lg: 6px 6px 0px 0px;
+  --neo-shadow-sm: 2px 2px 0px 0px;
+  --neo-border: 3px solid;
+  --neo-border-thin: 2px solid;
+}
+
+/* Custom utility classes */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Neo-Brutalist Shadows - Primary */
+  .brutal-shadow {
+    box-shadow: var(--neo-shadow) #000;
+  }
+  .neo-shadow {
+    box-shadow: var(--neo-shadow) #000;
+  }
+  .neo-shadow-lg {
+    box-shadow: var(--neo-shadow-lg) #000;
+  }
+  .neo-shadow-sm {
+    box-shadow: var(--neo-shadow-sm) #000;
+  }
+  
+  /* Brutal Card Component */
+  .brutal-card {
+    border: 2px solid #374151;
+    box-shadow: var(--neo-shadow) #000;
+    border-radius: 0;
+  }
+  .brutal-card:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0px 0px #000;
+  }
+  
+  .neo-shadow-purple {
+    box-shadow: var(--neo-shadow) #a855f7;
+  }
+  .neo-shadow-green {
+    box-shadow: var(--neo-shadow) #22c55e;
+  }
+  .neo-shadow-yellow {
+    box-shadow: var(--neo-shadow) #eab308;
+  }
+  .neo-shadow-blue {
+    box-shadow: var(--neo-shadow) #3b82f6;
+  }
+  .neo-shadow-pink {
+    box-shadow: var(--neo-shadow) #ec4899;
+  }
+  .neo-shadow-cyan {
+    box-shadow: var(--neo-shadow) #06b6d4;
+  }
+  
+  /* Neo-Brutalist Borders */
+  .neo-border {
+    border: var(--neo-border) currentColor;
+  }
+  .neo-border-thin {
+    border: var(--neo-border-thin) currentColor;
+  }
+  
+  /* Hover effects */
+  .neo-hover:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px 0px #000;
+  }
+  .neo-hover:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0px 0px 0px 0px #000;
+  }
+  
+  /* Glitch text effect for nerdy theme */
+  .glitch-text {
+    text-shadow: 
+      2px 2px 0 #ff00ff,
+      -2px -2px 0 #00ffff;
+  }
+  
+  /* Scanline overlay */
+  .scanlines::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.1) 2px,
+      rgba(0, 0, 0, 0.1) 4px
+    );
+    pointer-events: none;
+  }
+  
+  /* Pixel corners */
+  .pixel-corners {
+    clip-path: polygon(
+      0 8px, 8px 8px, 8px 0,
+      calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px,
+      100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%,
+      8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px)
+    );
+  }
+}
+
+/* Custom font for nerdy theme */
+@layer base {
+  body {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  }
+  
+  /* Dark mode base styles */
+  .dark {
+    --tw-bg-opacity: 1;
+    background-color: rgb(10 10 10 / var(--tw-bg-opacity));
+  }
+}
