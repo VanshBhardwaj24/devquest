@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Code, Trophy, Zap, Target, Flame, CheckCircle, ExternalLink, Filter, Search, RotateCcw, Building2 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
@@ -814,11 +814,7 @@ export function CodingArena() {
     { id: 'babbar-15', title: 'Count Inversions', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/inversion-of-array-1587115620/1', tags: ['Array', 'Merge Sort'], xp: 150, category: 'Array', sheet: 'Love Babbar' },
   ];
 
-  useEffect(() => {
-    loadProblems();
-  }, [authUser]);
-
-  const loadProblems = () => {
+  const loadProblems = useCallback(() => {
     setLoading(true);
     // Simulate loading
     setTimeout(() => {
@@ -829,9 +825,15 @@ export function CodingArena() {
       setProblems(problemsWithSubmissions);
       setLoading(false);
     }, 800);
-  };
+    // problemDatabase is a stable constant, no need to include in deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const filterProblems = () => {
+  useEffect(() => {
+    loadProblems();
+  }, [authUser, loadProblems]);
+
+  const filterProblems = useCallback(() => {
     let filtered = [...problems];
 
     // Platform filter
@@ -889,12 +891,12 @@ export function CodingArena() {
     }
 
     setFilteredProblems(filtered);
-  };
+  }, [problems, selectedPlatform, selectedDifficulty, selectedCategory, selectedSheet, searchTerm, showSolvedOnly, sortBy, activeTab, selectedCompany]);
 
   // Update useEffect to include new filter dependencies
   useEffect(() => {
     filterProblems();
-  }, [problems, selectedPlatform, selectedDifficulty, selectedCategory, selectedSheet, searchTerm, showSolvedOnly, sortBy, activeTab, selectedCompany]);
+  }, [filterProblems]);
 
   // Toggle revision status for a problem
   const toggleRevision = (problemId: string) => {

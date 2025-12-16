@@ -178,6 +178,7 @@ export function getGoogleCalendarAuthUrl(): string {
 }
 
 // Simulate GitHub data fetch (replace with real API calls)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function fetchGitHubStats(_accessToken: string): Promise<GitHubStats> {
   // In production, this would call GitHub's GraphQL API
   // For now, we simulate the response

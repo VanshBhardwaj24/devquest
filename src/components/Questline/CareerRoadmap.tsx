@@ -22,15 +22,7 @@ import {
   Filter,
   Search,
   LayoutGrid,
-  List,
-  Brain,
-  Palette,
-  Database,
-  GitBranch,
-  Users,
-  Award,
-  Briefcase,
-  GraduationCap
+  List
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
