@@ -34,12 +34,13 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const totalTasks = tasks?.length || 0;
   const pendingTasks = totalTasks - completedTasks;
   
-  // XP progress calculation
-  const xpForNextLevel = Math.floor(1000 * Math.pow(1.1, level - 1));
-  const xpForCurrentLevel = level > 1 ? Math.floor(1000 * Math.pow(1.1, level - 2)) : 0;
+  // XP progress calculation - matches AppContext formula
+  const getXPForLevel = (lvl: number) => Math.floor(1000 * Math.pow(1.1, lvl - 1));
+  const xpForCurrentLevel = getXPForLevel(level);
+  const xpForNextLevel = getXPForLevel(level + 1);
   const progressXP = currentXP - xpForCurrentLevel;
   const neededXP = xpForNextLevel - xpForCurrentLevel;
-  const progressPercent = Math.min((progressXP / neededXP) * 100, 100);
+  const progressPercent = Math.min(Math.max((progressXP / neededXP) * 100, 0), 100);
   
   // Streak multiplier
   const xpMultiplier = useMemo(() => {
@@ -109,7 +110,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   );
 
   return (
-    <aside className="h-screen w-[260px] flex flex-col bg-[#0d0d0d] border-r-4 border-lime-500/30">
+    <aside className="fixed left-0 top-0 h-screen w-[260px] flex flex-col bg-[#0d0d0d] border-r-4 border-lime-500/30 z-40">
       {/* Logo */}
       <div className="p-4 border-b-4 border-gray-800">
         <div className="flex items-center gap-3">

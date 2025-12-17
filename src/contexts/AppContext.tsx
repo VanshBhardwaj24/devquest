@@ -148,26 +148,26 @@ type AppAction =
   | { type: 'CHANGE_THEME'; payload: string }
   | { type: 'UNLOCK_THEME'; payload: string };
 
-// Dynamic XP calculation functions
-const calculateXPForLevel = (level: number): number => {
-  return Math.floor(100 * Math.pow(1.2, level - 1));
+// Dynamic XP calculation functions - Unified formula across app
+const getXPForLevel = (level: number): number => {
+  return Math.floor(1000 * Math.pow(1.1, level - 1));
 };
 
-const calculateLevelFromXP = (xp: number): number => {
+const calculateLevelFromXP = (totalXP: number): number => {
   let level = 1;
-  let totalXP = 0;
-  while (totalXP <= xp) {
-    totalXP += calculateXPForLevel(level);
-    if (totalXP > xp) break;
+  let cumulativeXP = 0;
+  
+  while (true) {
+    const xpNeeded = getXPForLevel(level + 1);
+    if (cumulativeXP + xpNeeded > totalXP) break;
+    cumulativeXP += xpNeeded;
     level++;
   }
   return level;
 };
 
 const calculateXPToNextLevel = (currentXP: number, currentLevel: number): number => {
-  const xpForCurrentLevel = calculateXPForLevel(currentLevel);
-  const xpEarnedInCurrentLevel = currentXP % xpForCurrentLevel;
-  return xpForCurrentLevel - xpEarnedInCurrentLevel;
+  return getXPForLevel(currentLevel + 1);
 };
 
 // Generate badges
@@ -281,7 +281,7 @@ const initialState: AppState = {
   xpSystem: {
     currentXP: 0,
     currentLevel: 1,
-    xpToNextLevel: 100,
+    xpToNextLevel: 1000,
     totalXPEarned: 0,
     xpMultiplier: 1,
     bonusXPActive: false,
@@ -424,7 +424,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
       const newTotalXP = Math.max(0, state.xpSystem.currentXP + finalAmount); // Prevent negative XP
       const newLevel = calculateLevelFromXP(newTotalXP);
       const leveledUp = newLevel > state.xpSystem.currentLevel;
-      const newXPToNext = calculateXPToNextLevel(newTotalXP, newLevel);
+      const newXPToNext = getXPForLevel(newLevel + 1);
       
       // Update user XP as well
       const updatedUser = state.user ? { 
@@ -448,7 +448,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
           {
             id: Date.now().toString(),
             type: isSpending ? 'reward' : 'achievement',
-            title: isSpending ? `${finalAmount} XP Spent 🎁` : `+${finalAmount} XP Earned! ⚡`,
+            title: isSpending ? `${Math.abs(finalAmount)} XP Spent 🎁` : `+${finalAmount} XP Earned! ⚡`,
             message: `${isSpending ? 'On' : 'From'}: ${source}`,
             timestamp: new Date(),
             read: false,

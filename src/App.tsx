@@ -267,7 +267,7 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-      <div className="flex relative">
+      <div className="flex">
         {/* Mobile Sidebar Overlay */}
         <AnimatePresence>
           {sidebarOpen && (
@@ -276,14 +276,14 @@ function AppContent() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSidebarOpen(false)}
-              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 lg:hidden"
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-30 lg:hidden"
             />
           )}
         </AnimatePresence>
         
-        {/* Sidebar - Hidden on mobile by default */}
+        {/* Sidebar */}
         <div className={`
-          fixed lg:relative z-50 lg:z-auto
+          fixed lg:block
           transform transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}>
@@ -296,7 +296,8 @@ function AppContent() {
           />
         </div>
         
-        <div className="flex-1 overflow-auto min-h-[calc(100vh-64px)] bg-[#0a0a0a]">
+        {/* Main Content - Add left margin to account for sidebar */}
+        <div className="flex-1 lg:ml-[260px] overflow-auto min-h-screen bg-[#0a0a0a]">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
