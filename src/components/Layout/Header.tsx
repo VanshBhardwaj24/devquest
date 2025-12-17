@@ -39,14 +39,11 @@ export function Header({ onMenuClick }: HeaderProps) {
     // Task completion rate
     const completionRate = totalTasks > 0 ? Math.floor((completedTasks / totalTasks) * 100) : 0;
     
-    // Daily XP earned
-    const dailyXP = completedTasks * 75 + streak * 25;
-    
     return {
       xpProgress,
       multiplier,
       completionRate,
-      dailyXP,
+      totalXP: currentXP,
       levelXP,
       neededXP
     };
@@ -127,9 +124,9 @@ export function Header({ onMenuClick }: HeaderProps) {
               <div className="flex items-center gap-2">
                 <Zap className="text-lime-400" size={14} />
                 <div>
-                  <div className="text-[9px] text-gray-500">XP Today</div>
+                  <div className="text-[9px] text-gray-500">Total XP</div>
                   <div className="text-xs font-black text-lime-400">
-                    +{stats.dailyXP}
+                    {stats.totalXP.toLocaleString()}
                   </div>
                   <div className="w-14 h-1 bg-gray-800 border border-gray-700 overflow-hidden">
                     <motion.div
@@ -224,7 +221,7 @@ export function Header({ onMenuClick }: HeaderProps) {
       <div className="md:hidden border-t-2 border-gray-800 px-3 py-2 flex items-center justify-around gap-2">
         <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-900 border border-lime-500/30 rounded">
           <Zap className="text-lime-400" size={12} />
-          <span className="text-[10px] font-bold text-lime-400">+{stats.dailyXP} XP</span>
+          <span className="text-[10px] font-bold text-lime-400">{stats.totalXP.toLocaleString()} XP</span>
         </div>
         <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-900 border border-orange-500/30 rounded">
           <Flame className="text-orange-400" size={12} />

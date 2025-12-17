@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Code, Trophy, Zap, Target, Flame, CheckCircle, ExternalLink, Filter, Search, RotateCcw, Building2 } from 'lucide-react';
+import { Code, Trophy, Zap, Target, Flame, CheckCircle, ExternalLink, Filter, Search, RotateCcw, Building2, X } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -964,6 +964,37 @@ export function CodingArena() {
     }});
   };
 
+  const unsolveProblem = async (problemId: string) => {
+    if (!authUser) return;
+
+    const problem = problems.find(p => p.id === problemId);
+    if (!problem || !problem.solved) return;
+
+    // Update local state - mark as unsolved
+    setProblems(prev => prev.map(p => 
+      p.id === problemId 
+        ? { ...p, solved: false, solvedAt: undefined, timeSpent: undefined }
+        : p
+    ));
+
+    // Deduct XP (reverse the XP gain)
+    dispatch({ type: 'ADD_XP', payload: { amount: -problem.xp, source: `Unmarked ${problem.title}` } });
+
+    // Update stats (decrease solved count)
+    dispatch({ type: 'UPDATE_CODING_STATS', payload: { totalSolved: Math.max(0, codingStats.totalSolved - 1) } });
+
+    // Add notification
+    dispatch({ type: 'ADD_NOTIFICATION', payload: {
+      id: Date.now().toString(),
+      type: 'info',
+      title: 'Problem Unmarked',
+      message: `"${problem.title}" unmarked as solved. ${problem.xp} XP deducted.`,
+      timestamp: new Date(),
+      read: false,
+      priority: 'low',
+    }});
+  };
+
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'Easy': return 'from-green-400 to-emerald-500';
@@ -1585,7 +1616,17 @@ export function CodingArena() {
                     <RotateCcw size={14} />
                   </motion.button>
                   
-                  {!problem.solved && (
+                  {problem.solved ? (
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(e) => { e.stopPropagation(); unsolveProblem(problem.id); }}
+                      className="p-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors"
+                      title="Undo - Mark as Unsolved"
+                    >
+                      <X size={14} />
+                    </motion.button>
+                  ) : (
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}

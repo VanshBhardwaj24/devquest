@@ -38,7 +38,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const getXPForLevel = (lvl: number) => Math.floor(1000 * Math.pow(1.1, lvl - 1));
   const xpForCurrentLevel = getXPForLevel(level);
   const xpForNextLevel = getXPForLevel(level + 1);
-  const progressXP = currentXP - xpForCurrentLevel;
+  const progressXP = Math.max(0, currentXP - xpForCurrentLevel);
   const neededXP = xpForNextLevel - xpForCurrentLevel;
   const progressPercent = Math.min(Math.max((progressXP / neededXP) * 100, 0), 100);
   

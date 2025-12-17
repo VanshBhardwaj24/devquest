@@ -42,79 +42,78 @@ export function Dashboard() {
   const completedTasks = tasks?.filter(t => t.completed).length || 0;
   const totalTasks = tasks?.length || 0;
 
-  // Dynamic calculations
+  // Dynamic calculations - Using consistent XP formula from AppContext
   const stats = useMemo(() => {
-    // XP progression
-    const xpForNextLevel = Math.floor(1000 * Math.pow(1.1, currentLevel - 1));
-    const xpForPrevLevel = currentLevel > 1 ? Math.floor(1000 * Math.pow(1.1, currentLevel - 2)) : 0;
-    const levelXP = currentXP - xpForPrevLevel;
-    const neededXP = xpForNextLevel - xpForPrevLevel;
-    const levelProgress = Math.min((levelXP / neededXP) * 100, 100);
+    // XP progression - Using exact formula from AppContext: getXPForLevel = 1000 * 1.1^(level-1)
+    const getXPForLevel = (level: number) => Math.floor(1000 * Math.pow(1.1, level - 1));
+    const xpForCurrentLevel = getXPForLevel(currentLevel);
+    const xpForNextLevel = getXPForLevel(currentLevel + 1);
+    const levelXP = Math.max(0, currentXP - xpForCurrentLevel);
+    const neededXP = xpForNextLevel - xpForCurrentLevel;
+    const levelProgress = Math.min(Math.max((levelXP / neededXP) * 100, 0), 100);
+    
+    // Total XP earned
+    const totalXPEarned = xpSystem?.totalXPEarned || currentXP;
     
     // Streak multiplier
     const multiplier = parseFloat((1 + streak * 0.1).toFixed(1));
     
-    // Daily XP calculation
-    const baseXP = completedTasks * 75;
-    const streakBonus = streak * 25;
-    const dailyXP = baseXP + streakBonus;
-    
-    // Daily goal
-    const dailyGoal = 500 + (currentLevel * 50);
-    const goalProgress = Math.min((dailyXP / dailyGoal) * 100, 100);
-    
     // Task completion rate
     const completionRate = totalTasks > 0 ? Math.floor((completedTasks / totalTasks) * 100) : 0;
     
+    // XP to next level
+    const xpRemaining = Math.max(0, xpForNextLevel - currentXP);
+    
     return {
+      totalXP: currentXP,
       xpForNextLevel,
+      xpForCurrentLevel,
       levelProgress,
       multiplier,
-      dailyXP,
-      dailyGoal,
-      goalProgress,
+      totalXPEarned,
       completionRate,
       levelXP,
-      neededXP
+      neededXP,
+      xpRemaining
     };
-  }, [currentXP, currentLevel, streak, completedTasks, totalTasks]);
+  }, [currentXP, currentLevel, streak, completedTasks, totalTasks, xpSystem]);
 
-  // Active power-ups based on user stats
+  // Active power-ups based on user stats - Always show available power-ups with active/inactive state
   const activePowerUps = useMemo<PowerUp[]>(() => {
     const powerUps: PowerUp[] = [];
     
-    if (streak >= 3) {
-      powerUps.push({
-        id: '1',
-        name: `${stats.multiplier}x XP Boost`,
-        description: `${streak}-day streak bonus`,
-        icon: '⚡',
-        active: true,
-        effect: `${stats.multiplier}x`
-      });
-    }
+    // XP Boost - Active when streak >= 3
+    const xpBoostActive = streak >= 3;
+    powerUps.push({
+      id: '1',
+      name: xpBoostActive ? `${stats.multiplier}x XP Boost` : 'XP Boost',
+      description: xpBoostActive ? `${streak}-day streak bonus` : `Need ${3 - streak} more days`,
+      icon: '⚡',
+      active: xpBoostActive,
+      effect: xpBoostActive ? `${stats.multiplier}x` : 'locked'
+    });
     
-    if (streak >= 7) {
-      powerUps.push({
-        id: '2',
-        name: 'Streak Shield',
-        description: 'Protection active',
-        icon: '🛡️',
-        active: true,
-        effect: 'shield'
-      });
-    }
+    // Streak Shield - Active when streak >= 7
+    const shieldActive = streak >= 7;
+    powerUps.push({
+      id: '2',
+      name: 'Streak Shield',
+      description: shieldActive ? 'Protection active' : `Unlock at 7-day streak (${streak}/7)`,
+      icon: '🛡️',
+      active: shieldActive,
+      effect: shieldActive ? 'shield' : 'locked'
+    });
     
-    if (stats.completionRate >= 50) {
-      powerUps.push({
-        id: '3',
-        name: 'Focus Mode',
-        description: `${stats.completionRate}% tasks done`,
-        icon: '🎯',
-        active: true,
-        effect: 'focus'
-      });
-    }
+    // Focus Mode - Active when completion rate >= 50%
+    const focusActive = stats.completionRate >= 50;
+    powerUps.push({
+      id: '3',
+      name: 'Focus Mode',
+      description: focusActive ? `${stats.completionRate}% tasks done` : `Complete 50%+ tasks (${stats.completionRate}%)`,
+      icon: '🎯',
+      active: focusActive,
+      effect: focusActive ? 'focus' : 'locked'
+    });
     
     return powerUps;
   }, [streak, stats.multiplier, stats.completionRate]);
@@ -281,15 +280,15 @@ export function Dashboard() {
               </div>
             </motion.div>
 
-            {/* XP Today */}
+            {/* Total XP */}
             <motion.div
               whileHover={{ scale: 1.05, y: -2 }}
               className={`brutal-card bg-gray-800 border-lime-500/50 px-3 sm:px-4 py-2 flex items-center gap-2 ${pulseXP ? 'ring-2 ring-lime-400' : ''}`}
             >
               <Zap className="text-lime-400" size={20} />
               <div>
-                <div className="text-white font-black text-lg">+{stats.dailyXP}</div>
-                <div className="text-gray-500 text-[10px] uppercase">XP Today</div>
+                <div className="text-white font-black text-lg">{currentXP.toLocaleString()}</div>
+                <div className="text-gray-500 text-[10px] uppercase">Total XP</div>
               </div>
             </motion.div>
 
@@ -458,7 +457,10 @@ export function Dashboard() {
           >
             <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
               <Rocket className="text-fuchsia-400" size={20} />
-              Active Power-Ups
+              Power-Ups
+              <span className="text-xs text-fuchsia-400 ml-auto">
+                {activePowerUps.filter(p => p.active).length}/{activePowerUps.length} Active
+              </span>
             </h2>
 
             {activePowerUps.length > 0 ? (
@@ -467,14 +469,24 @@ export function Dashboard() {
                   <motion.div
                     key={powerUp.id}
                     whileHover={{ x: 4 }}
-                    className="p-3 bg-gray-800 border-2 border-fuchsia-500/30 flex items-center gap-3"
+                    className={`p-3 border-2 flex items-center gap-3 transition-all ${
+                      powerUp.active 
+                        ? 'bg-gray-800 border-fuchsia-500/50' 
+                        : 'bg-gray-900/50 border-gray-700/50 opacity-60'
+                    }`}
                   >
-                    <div className="text-2xl">{powerUp.icon}</div>
+                    <div className={`text-2xl ${!powerUp.active ? 'grayscale' : ''}`}>{powerUp.icon}</div>
                     <div className="flex-1">
-                      <h3 className="text-sm font-bold text-fuchsia-400">{powerUp.name}</h3>
+                      <h3 className={`text-sm font-bold ${powerUp.active ? 'text-fuchsia-400' : 'text-gray-500'}`}>
+                        {powerUp.name}
+                      </h3>
                       <p className="text-xs text-gray-500">{powerUp.description}</p>
                     </div>
-                    <div className="w-2 h-2 bg-fuchsia-400 rounded-full animate-pulse" />
+                    {powerUp.active ? (
+                      <div className="w-2 h-2 bg-fuchsia-400 rounded-full animate-pulse" />
+                    ) : (
+                      <div className="w-2 h-2 bg-gray-600 rounded-full" />
+                    )}
                   </motion.div>
                 ))}
               </div>
@@ -487,7 +499,7 @@ export function Dashboard() {
             )}
           </motion.div>
 
-          {/* Daily Goal */}
+          {/* Level Progress */}
           <motion.div 
             initial={{ x: 20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -496,7 +508,7 @@ export function Dashboard() {
           >
             <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
               <Star className="text-cyan-400" size={20} />
-              Daily Goal
+              Level Progress
             </h2>
 
             <div className="text-center mb-4">
@@ -519,29 +531,29 @@ export function Dashboard() {
                     fill="none"
                     strokeLinecap="round"
                     initial={{ strokeDasharray: "0 251" }}
-                    animate={{ strokeDasharray: `${stats.goalProgress * 2.51} 251` }}
+                    animate={{ strokeDasharray: `${stats.levelProgress * 2.51} 251` }}
                     transition={{ duration: 1 }}
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-xl font-black text-cyan-400">{Math.floor(stats.goalProgress)}%</span>
+                  <span className="text-xl font-black text-cyan-400">{Math.floor(stats.levelProgress)}%</span>
                 </div>
               </div>
             </div>
 
             <div className="text-center">
-              <p className="text-2xl font-black text-white">{stats.dailyXP}</p>
-              <p className="text-sm text-gray-400">of {stats.dailyGoal} XP goal</p>
+              <p className="text-2xl font-black text-white">{stats.levelXP.toLocaleString()}</p>
+              <p className="text-sm text-gray-400">of {stats.neededXP.toLocaleString()} XP to Level {currentLevel + 1}</p>
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-2 text-center">
               <div className="p-2 bg-gray-800 rounded">
-                <p className="text-xs text-gray-500">Tasks Done</p>
-                <p className="text-lg font-bold text-lime-400">{completedTasks}</p>
+                <p className="text-xs text-gray-500">Total XP</p>
+                <p className="text-lg font-bold text-lime-400">{currentXP.toLocaleString()}</p>
               </div>
               <div className="p-2 bg-gray-800 rounded">
-                <p className="text-xs text-gray-500">XP/Task</p>
-                <p className="text-lg font-bold text-cyan-400">~75</p>
+                <p className="text-xs text-gray-500">XP Remaining</p>
+                <p className="text-lg font-bold text-cyan-400">{stats.xpRemaining.toLocaleString()}</p>
               </div>
             </div>
           </motion.div>
