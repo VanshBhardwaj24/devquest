@@ -986,7 +986,7 @@ export function CodingArena() {
     // Add notification
     dispatch({ type: 'ADD_NOTIFICATION', payload: {
       id: Date.now().toString(),
-      type: 'info',
+      type: 'achievement',
       title: 'Problem Unmarked',
       message: `"${problem.title}" unmarked as solved. ${problem.xp} XP deducted.`,
       timestamp: new Date(),

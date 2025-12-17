@@ -20,6 +20,12 @@ import { BonusXPIndicator } from './components/Gamification/BonusXPIndicator';
 import { RewardsShop } from './components/Rewards/RewardsShop';
 import { GamificationHub } from './components/Gamification/GamificationHub';
 import { IntegrationsHub } from './components/Integrations/IntegrationsHub';
+import { Fitness } from './components/Life/Fitness';
+import { Accountability } from './components/Life/Accountability';
+import { Finance } from './components/Life/Finance';
+import { Relationships } from './components/Life/Relationships';
+import { Learning } from './components/Life/Learning';
+import { LifeMap } from './components/Life/LifeMap';
 import { Toaster } from 'react-hot-toast';
 
 // Error Boundary Component
@@ -212,6 +218,18 @@ function AppContent() {
           return <RewardsShop />;
         case 'tasks':
           return <TaskBoard />;
+        case 'fitness':
+          return <Fitness />;
+        case 'accountability':
+          return <Accountability />;
+        case 'finance':
+          return <Finance />;
+        case 'relationships':
+          return <Relationships />;
+        case 'learning':
+          return <Learning />;
+        case 'lifemap':
+          return <LifeMap />;
         case 'achievements':
           return <AchievementWall />;
         case 'questline':

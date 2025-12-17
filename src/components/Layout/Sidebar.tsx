@@ -13,7 +13,13 @@ import {
   Sparkles,
   Gift,
   Gamepad2,
-  Plug
+  Plug,
+  Dumbbell,
+  DollarSign,
+  Heart,
+  BookOpen,
+  Shield,
+  Target
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
@@ -54,9 +60,18 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: 'gamification', label: 'Power-Ups', icon: Gamepad2, color: 'magenta', desc: 'Boosts' },
   ];
 
+  const lifeCategories = [
+    { id: 'fitness', label: 'Fitness', icon: Dumbbell, color: 'lime', desc: 'Gym & Health' },
+    { id: 'finance', label: 'Finance', icon: DollarSign, color: 'cyan', desc: 'Money & Wealth' },
+    { id: 'relationships', label: 'Social', icon: Heart, color: 'magenta', desc: 'Connections' },
+    { id: 'learning', label: 'Learning', icon: BookOpen, color: 'orange', desc: 'Skills & Books' },
+    { id: 'accountability', label: 'Accountability', icon: Shield, color: 'lime', desc: 'Punishments' },
+    { id: 'lifemap', label: 'Life Map', icon: Map, color: 'cyan', desc: 'Progress View' },
+  ];
+
   const progressTabs = [
     { id: 'achievements', label: 'Achievements', icon: Trophy, color: 'lime', desc: 'Badges' },
-    { id: 'questline', label: 'Roadmap', icon: Map, color: 'cyan', desc: 'Career path' },
+    { id: 'questline', label: 'Roadmap', icon: Target, color: 'cyan', desc: 'Career path' },
     { id: 'integrations', label: 'Integrations', icon: Plug, color: 'orange', desc: 'Connect apps' },
     { id: 'leaderboard', label: 'Leaderboard', icon: Users, color: 'magenta', desc: 'Rankings' },
     { id: 'rewards', label: 'Shop', icon: Gift, color: 'lime', desc: 'Rewards' },
@@ -175,6 +190,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-3 scrollbar-hide">
         {renderTabGroup(mainTabs, 'Main')}
+        {renderTabGroup(lifeCategories, 'Life Categories')}
         {renderTabGroup(progressTabs, 'Progress')}
         {renderTabGroup(settingsTabs, 'Settings')}
       </nav>
