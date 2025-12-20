@@ -24,7 +24,7 @@ export function AchievementWall() {
   };
 
   return (
-    <div className={`p-6 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} min-h-screen`}>
+    <div className={`p-3 sm:p-4 lg:p-6 ${darkMode ? 'bg-[#0a0a0a]' : 'bg-gray-50'} min-h-screen pb-20 lg:pb-6`}>
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>

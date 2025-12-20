@@ -199,7 +199,7 @@ export function LifeMap() {
   };
 
   return (
-    <div className="p-3 sm:p-4 lg:p-6 bg-[#0a0a0a] min-h-screen">
+    <div className="p-3 sm:p-4 lg:p-6 bg-[#0a0a0a] min-h-screen pb-20 lg:pb-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -326,17 +326,16 @@ export function LifeMap() {
                       initial={{ width: 0 }}
                       animate={{ width: `${zone.progress}%` }}
                       transition={{ duration: 1, delay: index * 0.1 }}
-                      className={`h-full bg-gradient-to-r from-${zone.color}-600 to-${zone.color}-400`}
-                      style={{
-                        background: zone.color === 'green' ? 'linear-gradient(to right, #16a34a, #22c55e)' :
-                                   zone.color === 'cyan' ? 'linear-gradient(to right, #0891b2, #22d3ee)' :
-                                   zone.color === 'red' ? 'linear-gradient(to right, #dc2626, #ef4444)' :
-                                   zone.color === 'yellow' ? 'linear-gradient(to right, #ca8a04, #facc15)' :
-                                   zone.color === 'pink' ? 'linear-gradient(to right, #db2777, #f472b6)' :
-                                   zone.color === 'purple' ? 'linear-gradient(to right, #9333ea, #a855f7)' :
-                                   zone.color === 'amber' ? 'linear-gradient(to right, #d97706, #fbbf24)' :
-                                   'linear-gradient(to right, #4b5563, #6b7280)'
-                      }}
+                      className={`h-full bg-gradient-to-r ${
+                        zone.color === 'green' ? 'from-green-600 to-green-500' :
+                        zone.color === 'cyan' ? 'from-cyan-600 to-cyan-400' :
+                        zone.color === 'red' ? 'from-red-600 to-red-500' :
+                        zone.color === 'yellow' ? 'from-yellow-600 to-yellow-400' :
+                        zone.color === 'pink' ? 'from-pink-600 to-pink-400' :
+                        zone.color === 'purple' ? 'from-purple-600 to-purple-500' :
+                        zone.color === 'amber' ? 'from-amber-600 to-amber-400' :
+                        'from-gray-600 to-gray-500'
+                      }`}
                     />
                   </div>
                 </div>
@@ -403,16 +402,15 @@ export function LifeMap() {
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.9, opacity: 0, y: 20 }}
                 onClick={e => e.stopPropagation()}
-                className={`brutal-card ${selectedZone.bgColor} p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto`}
-                style={{ 
-                  borderColor: selectedZone.color === 'green' ? '#22c55e' :
-                              selectedZone.color === 'cyan' ? '#22d3ee' :
-                              selectedZone.color === 'red' ? '#ef4444' :
-                              selectedZone.color === 'yellow' ? '#facc15' :
-                              selectedZone.color === 'pink' ? '#f472b6' :
-                              selectedZone.color === 'purple' ? '#a855f7' :
-                              selectedZone.color === 'amber' ? '#fbbf24' : '#6b7280'
-                }}
+                className={`brutal-card ${selectedZone.bgColor} p-4 sm:p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto border-4 ${
+                  selectedZone.color === 'green' ? 'border-green-500' :
+                  selectedZone.color === 'cyan' ? 'border-cyan-400' :
+                  selectedZone.color === 'red' ? 'border-red-500' :
+                  selectedZone.color === 'yellow' ? 'border-yellow-400' :
+                  selectedZone.color === 'pink' ? 'border-pink-400' :
+                  selectedZone.color === 'purple' ? 'border-purple-500' :
+                  selectedZone.color === 'amber' ? 'border-amber-400' : 'border-gray-500'
+                }`}
               >
                 <div className="flex items-center gap-4 mb-6">
                   <span className="text-6xl">{selectedZone.icon}</span>
@@ -433,17 +431,16 @@ export function LifeMap() {
                       initial={{ width: 0 }}
                       animate={{ width: `${selectedZone.progress}%` }}
                       transition={{ duration: 1 }}
-                      className="h-full"
-                      style={{
-                        background: selectedZone.color === 'green' ? 'linear-gradient(to right, #16a34a, #22c55e)' :
-                                   selectedZone.color === 'cyan' ? 'linear-gradient(to right, #0891b2, #22d3ee)' :
-                                   selectedZone.color === 'red' ? 'linear-gradient(to right, #dc2626, #ef4444)' :
-                                   selectedZone.color === 'yellow' ? 'linear-gradient(to right, #ca8a04, #facc15)' :
-                                   selectedZone.color === 'pink' ? 'linear-gradient(to right, #db2777, #f472b6)' :
-                                   selectedZone.color === 'purple' ? 'linear-gradient(to right, #9333ea, #a855f7)' :
-                                   selectedZone.color === 'amber' ? 'linear-gradient(to right, #d97706, #fbbf24)' :
-                                   'linear-gradient(to right, #4b5563, #6b7280)'
-                      }}
+                      className={`h-full bg-gradient-to-r ${
+                        selectedZone.color === 'green' ? 'from-green-600 to-green-500' :
+                        selectedZone.color === 'cyan' ? 'from-cyan-600 to-cyan-400' :
+                        selectedZone.color === 'red' ? 'from-red-600 to-red-500' :
+                        selectedZone.color === 'yellow' ? 'from-yellow-600 to-yellow-400' :
+                        selectedZone.color === 'pink' ? 'from-pink-600 to-pink-400' :
+                        selectedZone.color === 'purple' ? 'from-purple-600 to-purple-500' :
+                        selectedZone.color === 'amber' ? 'from-amber-600 to-amber-400' :
+                        'from-gray-600 to-gray-500'
+                      }`}
                     />
                   </div>
                 </div>

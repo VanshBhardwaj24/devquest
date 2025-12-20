@@ -5,18 +5,21 @@ import { useAuth } from './hooks/useAuth';
 import { AuthForm } from './components/Auth/AuthForm';
 import { Header } from './components/Layout/Header';
 import { Sidebar } from './components/Layout/Sidebar';
+import { MobileBottomNav } from './components/Layout/MobileBottomNav';
 import { ProfileSetup } from './components/Profile/ProfileSetup';
+import { LevelUpModal } from './components/Gamification/LevelUpModal';
+import { ConfettiProvider } from './components/Gamification/ConfettiProvider';
+import { BadgeUnlockModal } from './components/Gamification/BadgeUnlockModal';
+import { BonusXPIndicator } from './components/Gamification/BonusXPIndicator';
+import { Toaster } from 'react-hot-toast';
+
+// Import all components directly (no lazy loading)
 import { Dashboard } from './components/Dashboard/Dashboard';
 import { TaskBoard } from './components/Tasks/TaskBoard';
 import { AchievementWall } from './components/Achievements/AchievementWall';
 import { CareerRoadmap } from './components/Questline/CareerRoadmap';
 import { LeaderBoard } from './components/Social/LeaderBoard';
 import { ProfileCard } from './components/Profile/ProfileCard';
-import { CodingArena } from './components/Coding/CodingArena';
-import { LevelUpModal } from './components/Gamification/LevelUpModal';
-import { ConfettiProvider } from './components/Gamification/ConfettiProvider';
-import { BadgeUnlockModal } from './components/Gamification/BadgeUnlockModal';
-import { BonusXPIndicator } from './components/Gamification/BonusXPIndicator';
 import { RewardsShop } from './components/Rewards/RewardsShop';
 import { GamificationHub } from './components/Gamification/GamificationHub';
 import { IntegrationsHub } from './components/Integrations/IntegrationsHub';
@@ -26,7 +29,7 @@ import { Finance } from './components/Life/Finance';
 import { Relationships } from './components/Life/Relationships';
 import { Learning } from './components/Life/Learning';
 import { LifeMap } from './components/Life/LifeMap';
-import { Toaster } from 'react-hot-toast';
+import { CodingArena } from './components/Coding/CodingArena';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<
@@ -43,7 +46,15 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
+    // Log error safely (stringify to avoid React conversion issues)
+    try {
+      const errorMessage = error?.message || (error ? JSON.stringify(error) : 'Unknown error');
+      const errorStack = errorInfo?.componentStack || '';
+      console.error('Error caught by boundary:', errorMessage, errorStack);
+    } catch (e) {
+      // Fallback if even logging fails
+      console.error('Error in error boundary');
+    }
   }
 
   render() {
@@ -133,6 +144,7 @@ function LoadingScreen() {
   );
 }
 
+
 // Error Display Component
 function ErrorDisplay({ error, onRetry }: { error: string; onRetry: () => void }) {
   return (
@@ -210,14 +222,14 @@ function AppContent() {
       switch (activeTab) {
         case 'dashboard':
           return <Dashboard />;
-        case 'coding':
-          return <CodingArena />;
         case 'gamification':
           return <GamificationHub />;
         case 'rewards':
           return <RewardsShop />;
         case 'tasks':
           return <TaskBoard />;
+        case 'coding':
+          return <CodingArena />;
         case 'fitness':
           return <Fitness />;
         case 'accountability':
@@ -252,8 +264,14 @@ function AppContent() {
         default:
           return <Dashboard />;
       }
-    } catch (error) {
-      console.error('Error rendering content:', error);
+    } catch (error: any) {
+      // Log error safely (stringify to avoid React conversion issues)
+      try {
+        const errorMessage = error?.message || (error ? JSON.stringify(error) : 'Unknown error');
+        console.error('Error rendering content:', errorMessage);
+      } catch (e) {
+        console.error('Error rendering content: Unable to log error');
+      }
       return (
         <div className={`p-6 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} min-h-screen flex items-center justify-center`}>
           <motion.div
@@ -284,7 +302,9 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
-      <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+      <Header onMenuClick={() => {
+        setSidebarOpen(prev => !prev);
+      }} />
       <div className="flex">
         {/* Mobile Sidebar Overlay */}
         <AnimatePresence>
@@ -294,7 +314,7 @@ function AppContent() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSidebarOpen(false)}
-              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-30 lg:hidden"
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[35] lg:hidden"
             />
           )}
         </AnimatePresence>
@@ -302,7 +322,7 @@ function AppContent() {
         {/* Sidebar */}
         <div className={`
           fixed lg:block
-          transform transition-transform duration-300 ease-in-out
+          transform transition-transform duration-300 ease-in-out z-[40] lg:z-30
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}>
           <Sidebar 
@@ -314,8 +334,8 @@ function AppContent() {
           />
         </div>
         
-        {/* Main Content - Add left margin to account for sidebar */}
-        <div className="flex-1 lg:ml-[260px] overflow-auto min-h-screen bg-[#0a0a0a]">
+        {/* Main Content - Add left margin to account for sidebar with gap */}
+        <div className="flex-1 lg:ml-[280px] xl:ml-[300px] 2xl:ml-[320px] overflow-auto min-h-screen bg-[#0a0a0a] pb-20 lg:pb-0">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -329,6 +349,9 @@ function AppContent() {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Gamification Overlays */}
       <LevelUpModal

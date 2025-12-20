@@ -39,8 +39,9 @@ export function QuickActions() {
         timestamp: new Date(),
       }});
 
-    } catch (error) {
-      console.error('Error creating task:', error);
+    } catch (error: any) {
+      // Log error safely (stringify to avoid React conversion issues)
+      console.error('Error creating task:', error?.message || JSON.stringify(error));
     }
   };
 

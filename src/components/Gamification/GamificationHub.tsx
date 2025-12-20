@@ -8,22 +8,17 @@ import {
   Clock, Package
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { DailySpinWheel } from './DailySpinWheel';
+import { LootBoxOpener } from './LootBoxOpener';
+import { EnergySystem } from './EnergySystem';
+import { SlotMachineReward } from './SlotMachineReward';
+import { ALL_POWER_UPS, getUnlockedPowerUps, type PowerUp as PowerUpType } from '../../data/powerUps';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-// Types for power-ups and boosters
-interface PowerUp {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  type: 'xp_boost' | 'streak_shield' | 'double_coins' | 'time_freeze' | 'lucky_drop';
-  duration: number; // in minutes
-  remainingTime: number; // in seconds
-  multiplier?: number;
-  active: boolean;
-  rarity: 'common' | 'rare' | 'epic' | 'legendary';
-  cost: number;
-  owned: number;
-}
+// Using PowerUp type from powerUps.ts
 
 interface DailyReward {
   day: number;
@@ -79,6 +74,16 @@ export function GamificationHub() {
   const { user, codingStats, tasks, xpSystem } = state;
   
   const [activeTab, setActiveTab] = useState<'overview' | 'powerups' | 'rewards' | 'achievements' | 'season'>('overview');
+  const [claimedAchievements, setClaimedAchievements] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    const saved = localStorage.getItem('claimedAchievements');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+  const [claimedSeasonRewards, setClaimedSeasonRewards] = useState<Set<number>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    const saved = localStorage.getItem('claimedSeasonRewards');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
 
   // Core stats from state
   const currentLevel = xpSystem?.currentLevel || user?.level || 1;
@@ -111,95 +116,25 @@ export function GamificationHub() {
     return 1.0;
   }, [streak]);
 
-  // Dynamic power-ups based on user stats
-  const powerUps = useMemo<PowerUp[]>(() => {
-    const basePowerUps: PowerUp[] = [
-      {
-        id: '1',
-        name: 'XP Surge',
-        description: 'Double all XP earned for 30 minutes',
-        icon: '⚡',
-        type: 'xp_boost',
-        duration: 30,
-        remainingTime: streak >= 7 ? 1800 : 0,
-        multiplier: 2.0,
-        active: streak >= 7,
-        rarity: 'rare',
-        cost: 500,
-        owned: Math.floor(streak / 7)
-      },
-      {
-        id: '2',
-        name: 'Streak Shield',
-        description: 'Protect your streak for 24 hours if you miss a day',
-        icon: '🛡️',
-        type: 'streak_shield',
-        duration: 1440,
-        remainingTime: streak >= 14 ? 86400 : 0,
-        active: streak >= 14,
-        rarity: 'epic',
-        cost: 1000,
-        owned: Math.floor(streak / 14)
-      },
-      {
-        id: '3',
-        name: 'Coin Doubler',
-        description: 'Earn 2x coins from all activities',
-        icon: '💰',
-        type: 'double_coins',
-        duration: 60,
-        remainingTime: completedTasks >= 10 ? 3600 : 0,
-        multiplier: 2.0,
-        active: completedTasks >= 10,
-        rarity: 'rare',
-        cost: 750,
-        owned: Math.floor(completedTasks / 10)
-      },
-      {
-        id: '4',
-        name: 'Lucky Charm',
-        description: 'Increases rare drop chances by 50%',
-        icon: '🍀',
-        type: 'lucky_drop',
-        duration: 120,
-        remainingTime: currentLevel >= 10 ? 7200 : 0,
-        multiplier: 1.5,
-        active: currentLevel >= 10,
-        rarity: 'legendary',
-        cost: 2000,
-        owned: Math.floor(currentLevel / 10)
-      },
-      {
-        id: '5',
-        name: 'Focus Mode',
-        description: 'Block distractions and gain 25% more XP',
-        icon: '🎯',
-        type: 'xp_boost',
-        duration: 45,
-        remainingTime: 0,
-        multiplier: 1.25,
-        active: false,
-        rarity: 'common',
-        cost: 250,
-        owned: 3
-      },
-      {
-        id: '6',
-        name: 'Energy Drink',
-        description: 'Instant +100 XP boost',
-        icon: '🥤',
-        type: 'xp_boost',
-        duration: 0,
-        remainingTime: 0,
-        multiplier: 1,
-        active: false,
-        rarity: 'common',
-        cost: 100,
-        owned: 5
-      },
-    ];
-    return basePowerUps;
-  }, [streak, completedTasks, currentLevel]);
+  // Get all unlocked power-ups based on user stats
+  const unlockedPowerUps = useMemo(() => {
+    return getUnlockedPowerUps(currentLevel, streak, completedTasks, currentXP);
+  }, [currentLevel, streak, completedTasks, currentXP]);
+
+  // Enhanced power-ups with ownership and active state
+  const powerUps = useMemo<Array<PowerUpType & { owned: number; active: boolean; remainingTime: number }>>(() => {
+    return unlockedPowerUps.map(pu => ({
+      ...pu,
+      owned: Math.max(0, Math.floor(
+        pu.unlockCondition.type === 'level' ? currentLevel / pu.unlockCondition.value :
+        pu.unlockCondition.type === 'streak' ? streak / pu.unlockCondition.value :
+        pu.unlockCondition.type === 'tasks' ? completedTasks / pu.unlockCondition.value :
+        1
+      )),
+      active: false, // Would be set based on active power-ups state
+      remainingTime: 0 // Would be set based on active power-ups state
+    }));
+  }, [unlockedPowerUps, currentLevel, streak, completedTasks]);
 
   // Daily rewards calendar
   const dailyRewards = useMemo<DailyReward[]>(() => {
@@ -397,18 +332,47 @@ export function GamificationHub() {
   // Active power-ups count
   const activePowerUps = powerUps.filter(p => p.active);
 
-  // Claim daily login
-  const [dailyLoginClaimed, setDailyLoginClaimed] = useState(false);
+  // Claim daily login - persist to localStorage
+  const [dailyLoginClaimed, setDailyLoginClaimed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const today = new Date().toISOString().split('T')[0];
+    const lastClaimed = localStorage.getItem('dailyLoginClaimed');
+    return lastClaimed === today;
+  });
+
   const claimDailyLogin = () => {
     if (dailyLoginClaimed) return;
     const reward = 50 + streak * 10;
     dispatch({ type: 'ADD_XP', payload: { amount: reward, source: 'Daily Login' } });
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem('dailyLoginClaimed', today);
     setDailyLoginClaimed(true);
+    
+    dispatch({
+      type: 'ADD_NOTIFICATION',
+      payload: {
+        id: Date.now().toString(),
+        type: 'achievement',
+        title: '🎁 Daily Login Bonus!',
+        message: `You earned ${reward} XP!`,
+        timestamp: new Date(),
+      },
+    });
   };
 
   // Tab content components
   const renderOverview = () => (
     <div className="space-y-6">
+      {/* Addictive Game Features */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        <DailySpinWheel />
+        <SlotMachineReward />
+      </div>
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        <EnergySystem />
+        <LootBoxOpener />
+      </div>
       {/* Level Card */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -740,7 +704,45 @@ export function GamificationHub() {
                         </div>
                         <div className="flex justify-between mt-1">
                           <span className="text-[10px] text-gray-500">{achievement.progress}/{achievement.target}</span>
-                          {achievement.unlocked && <CheckCircle size={12} className="text-lime-400" />}
+                          {achievement.unlocked && (
+                            claimedAchievements.has(achievement.id) ? (
+                              <CheckCircle size={12} className="text-lime-400" />
+                            ) : (
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => {
+                                  if (!claimedAchievements.has(achievement.id)) {
+                                    dispatch({ 
+                                      type: 'ADD_XP', 
+                                      payload: { 
+                                        amount: achievement.xpReward, 
+                                        source: `Achievement: ${achievement.name}` 
+                                      } 
+                                    });
+                                    const newClaimed = new Set(claimedAchievements);
+                                    newClaimed.add(achievement.id);
+                                    setClaimedAchievements(newClaimed);
+                                    localStorage.setItem('claimedAchievements', JSON.stringify(Array.from(newClaimed)));
+                                    
+                                    dispatch({
+                                      type: 'ADD_NOTIFICATION',
+                                      payload: {
+                                        id: Date.now().toString(),
+                                        type: 'achievement',
+                                        title: '🏆 Achievement Claimed!',
+                                        message: `Earned ${achievement.xpReward} XP from ${achievement.name}!`,
+                                        timestamp: new Date(),
+                                      },
+                                    });
+                                  }
+                                }}
+                                className="px-2 py-1 bg-lime-500 text-black text-[10px] font-bold rounded border border-black"
+                              >
+                                CLAIM
+                              </motion.button>
+                            )
+                          )}
                         </div>
                       </div>
                     </div>
@@ -811,6 +813,44 @@ export function GamificationHub() {
               <div className="p-2 bg-gray-700 rounded mb-2 text-center">
                 <p className="text-[10px] text-gray-400">FREE</p>
                 <p className="text-xs text-white font-bold">{reward.free}</p>
+                {seasonPass.currentTier >= reward.tier && !claimedSeasonRewards.has(reward.tier) && (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      // Extract XP from reward string (e.g., "100 XP" -> 100)
+                      const xpMatch = reward.free.match(/(\d+)\s*XP/i);
+                      if (xpMatch) {
+                        const xpAmount = parseInt(xpMatch[1]);
+                        dispatch({ 
+                          type: 'ADD_XP', 
+                          payload: { 
+                            amount: xpAmount, 
+                            source: `Season Pass Tier ${reward.tier}` 
+                          } 
+                        });
+                        const newClaimed = new Set(claimedSeasonRewards);
+                        newClaimed.add(reward.tier);
+                        setClaimedSeasonRewards(newClaimed);
+                        localStorage.setItem('claimedSeasonRewards', JSON.stringify(Array.from(newClaimed)));
+                        
+                        dispatch({
+                          type: 'ADD_NOTIFICATION',
+                          payload: {
+                            id: Date.now().toString(),
+                            type: 'achievement',
+                            title: '🎁 Season Pass Reward!',
+                            message: `Claimed ${reward.free} from Tier ${reward.tier}!`,
+                            timestamp: new Date(),
+                          },
+                        });
+                      }
+                    }}
+                    className="mt-1 px-2 py-1 bg-lime-500 text-black text-[10px] font-bold rounded border border-black w-full"
+                  >
+                    CLAIM
+                  </motion.button>
+                )}
               </div>
               
               {/* Premium Reward */}
@@ -819,7 +859,7 @@ export function GamificationHub() {
                 <p className="text-xs text-white font-bold">{reward.premium}</p>
               </div>
               
-              {reward.claimed && (
+              {claimedSeasonRewards.has(reward.tier) && (
                 <div className="mt-2 flex justify-center">
                   <CheckCircle size={16} className="text-purple-400" />
                 </div>
@@ -842,7 +882,7 @@ export function GamificationHub() {
   );
 
   return (
-    <div className="p-4 sm:p-6 min-h-screen bg-[#0a0a0a]">
+    <div className="p-4 sm:p-6 min-h-screen bg-[#0a0a0a] pb-20 lg:pb-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <motion.div

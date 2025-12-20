@@ -31,8 +31,9 @@ export function DailyChallenge() {
         });
         setLoading(false);
       }, 500);
-    } catch (error) {
-      console.error('Error loading daily challenge:', error);
+    } catch (error: any) {
+      // Log error safely (stringify to avoid React conversion issues)
+      console.error('Error loading daily challenge:', error?.message || JSON.stringify(error));
       setLoading(false);
     }
   };

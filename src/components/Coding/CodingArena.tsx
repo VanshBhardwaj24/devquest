@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Code, Trophy, Zap, Target, Flame, CheckCircle, ExternalLink, Filter, Search, RotateCcw, Building2, X } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
@@ -23,6 +23,8 @@ interface CodingProblem {
   needsRevision?: boolean;
   revisionCount?: number;
   lastRevised?: Date;
+  day?: number; // Day number for organization
+  dayTitle?: string; // Day title like "Day 1 (Arrays)"
 }
 
 type CategoryFilter = 'all' | CodingProblem['category'];
@@ -51,20 +53,20 @@ export function CodingArena() {
   // Company list for interview prep
   const companies = ['Google', 'Amazon', 'Microsoft', 'Meta', 'Apple', 'Netflix', 'Uber', 'Airbnb', 'LinkedIn', 'Twitter', 'Adobe', 'Oracle', 'Salesforce', 'Goldman Sachs', 'Morgan Stanley', 'Bloomberg', 'Stripe', 'Atlassian', 'Shopify', 'Coinbase'];
 
-  // Massive problem database with 500+ problems
+  // Essential problem database
   const problemDatabase: Omit<CodingProblem, 'solved' | 'timeSpent' | 'solvedAt'>[] = [
-    // STRIVER SDE SHEET - 50 ESSENTIAL PROBLEMS
-    // Day 1: Arrays
-    { id: 'striver-1', title: 'Set Matrix Zeroes', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/set-matrix-zeroes/', tags: ['Array', 'Matrix'], xp: 100, category: 'Array', sheet: 'Striver', companies: ['Microsoft', 'Amazon', 'Facebook'] },
-    { id: 'striver-2', title: 'Pascal\'s Triangle', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/pascals-triangle/', tags: ['Array', 'Dynamic Programming'], xp: 50, category: 'Array', sheet: 'Striver', companies: ['Google', 'Amazon'] },
-    { id: 'striver-3', title: 'Next Permutation', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/next-permutation/', tags: ['Array', 'Two Pointers'], xp: 100, category: 'Array', sheet: 'Striver', companies: ['Google', 'Amazon', 'Microsoft', 'Facebook'] },
-    { id: 'striver-4', title: 'Maximum Subarray (Kadane)', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/maximum-subarray/', tags: ['Array', 'Dynamic Programming'], xp: 100, category: 'Array', sheet: 'Striver', companies: ['Amazon', 'Microsoft', 'Apple', 'Google', 'Facebook'] },
-    { id: 'striver-5', title: 'Sort Colors (Dutch Flag)', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/sort-colors/', tags: ['Array', 'Two Pointers', 'Sorting'], xp: 100, category: 'Array', sheet: 'Striver', companies: ['Microsoft', 'Amazon', 'Facebook'] },
-    { id: 'striver-6', title: 'Best Time to Buy and Sell Stock', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/best-time-to-buy-and-sell-stock/', tags: ['Array', 'Dynamic Programming'], xp: 50, category: 'Array', sheet: 'Striver', companies: ['Amazon', 'Microsoft', 'Facebook', 'Goldman Sachs', 'Bloomberg'] },
+    // Basic Array Problems
+    { id: 'day1-1', title: 'Sort an array of 0\'s 1\'s 2\'s without using extra space or sorting algo', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/sort-an-array-of-0s-1s-and-2s4231/1', tags: ['Array', 'Two Pointers', 'Sorting'], xp: 100, category: 'Array', sheet: 'Striver', day: 1, dayTitle: 'Day 1 (Arrays)' },
+    { id: 'day1-2', title: 'Repeat and Missing Number', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/find-missing-and-repeating2512/1', tags: ['Array', 'Math', 'Hash Table'], xp: 125, category: 'Array', sheet: 'Striver', day: 1, dayTitle: 'Day 1 (Arrays)' },
+    { id: 'day1-3', title: 'Kadane\'s Algorithm', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/kadanes-algorithm-1587115620/1', tags: ['Array', 'Dynamic Programming'], xp: 100, category: 'Array', sheet: 'Striver', day: 1, dayTitle: 'Day 1 (Arrays)' },
+    { id: 'day1-4', title: 'Merge Overlapping Subintervals', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/merge-intervals/', tags: ['Array', 'Sorting', 'Intervals'], xp: 125, category: 'Intervals', sheet: 'Striver', day: 1, dayTitle: 'Day 1 (Arrays)' },
     
-    // Day 2: Arrays Part-II
-    { id: 'striver-7', title: 'Rotate Image', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/rotate-image/', tags: ['Array', 'Matrix'], xp: 100, category: 'Array', sheet: 'Striver', companies: ['Amazon', 'Microsoft', 'Apple'] },
-    { id: 'striver-8', title: 'Merge Overlapping Intervals', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/merge-intervals/', tags: ['Array', 'Sorting'], xp: 125, category: 'Array', sheet: 'Striver', companies: ['Google', 'Amazon', 'Microsoft', 'Facebook', 'Bloomberg'] },
+    // Day 2: Arrays
+    { id: 'day2-1', title: 'Set Matrix Zeroes', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/set-matrix-zeroes/', tags: ['Array', 'Matrix'], xp: 100, category: 'Array', sheet: 'Striver', companies: ['Microsoft', 'Amazon', 'Facebook'], day: 2, dayTitle: 'Day 2 (Arrays)' },
+    { id: 'day2-2', title: 'Best Time to Buy and Sell Stock', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/best-time-to-buy-and-sell-stock/', tags: ['Array', 'Dynamic Programming'], xp: 50, category: 'Array', sheet: 'Striver', companies: ['Amazon', 'Microsoft', 'Facebook', 'Goldman Sachs', 'Bloomberg'], day: 2, dayTitle: 'Day 2 (Arrays)' },
+    
+    // Day 23: Graph
+    { id: 'day23-1', title: 'Number of Islands', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/number-of-islands/', tags: ['Graph', 'DFS'], xp: 125, category: 'Graph', sheet: 'Striver', day: 23, dayTitle: 'Day 23 (Graph)' },
     { id: 'striver-9', title: 'Merge Sorted Arrays', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/merge-sorted-array/', tags: ['Array', 'Two Pointers'], xp: 75, category: 'Array', sheet: 'Striver', companies: ['Facebook', 'Microsoft'] },
     { id: 'striver-10', title: 'Find Duplicate Number', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/find-the-duplicate-number/', tags: ['Array', 'Floyd Cycle'], xp: 125, category: 'Array', sheet: 'Striver', companies: ['Amazon', 'Google', 'Microsoft'] },
     { id: 'striver-11', title: 'Repeat and Missing Number', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/set-mismatch/', tags: ['Array', 'Math'], xp: 100, category: 'Array', sheet: 'Striver' },
@@ -812,6 +814,175 @@ export function CodingArena() {
     { id: 'babbar-13', title: 'Merge Overlapping Intervals', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/overlapping-intervals--170633/1', tags: ['Array', 'Intervals'], xp: 125, category: 'Intervals', sheet: 'Love Babbar' },
     { id: 'babbar-14', title: 'Next Permutation', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/next-permutation/', tags: ['Array'], xp: 125, category: 'Array', sheet: 'Love Babbar' },
     { id: 'babbar-15', title: 'Count Inversions', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/inversion-of-array-1587115620/1', tags: ['Array', 'Merge Sort'], xp: 150, category: 'Array', sheet: 'Love Babbar' },
+    
+    // Additional problems organized by days (from user's list)
+    // Day 3: Array/Maths
+    { id: 'day3-1', title: 'Search a 2D Matrix', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/search-a-2d-matrix/', tags: ['Array', 'Binary Search'], xp: 100, category: 'Array', sheet: 'Striver', day: 3, dayTitle: 'Day 3 (Array/Maths)' },
+    { id: 'day3-2', title: 'Pow(x, n)', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/powx-n/', tags: ['Math', 'Recursion'], xp: 100, category: 'Math', sheet: 'Striver', day: 3, dayTitle: 'Day 3 (Array/Maths)' },
+    { id: 'day3-3', title: 'Majority Element', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/majority-element/', tags: ['Array', 'Boyer-Moore'], xp: 75, category: 'Array', sheet: 'Striver', day: 3, dayTitle: 'Day 3 (Array/Maths)' },
+    { id: 'day3-4', title: 'Majority Element II', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/majority-element-ii/', tags: ['Array', 'Boyer-Moore'], xp: 125, category: 'Array', sheet: 'Striver', day: 3, dayTitle: 'Day 3 (Array/Maths)' },
+    { id: 'day3-5', title: 'Unique Paths', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/unique-paths/', tags: ['Dynamic Programming', 'Math'], xp: 100, category: 'DP', sheet: 'Striver', day: 3, dayTitle: 'Day 3 (Array/Maths)' },
+    { id: 'day3-6', title: 'Reverse Pairs', difficulty: 'Hard', platform: 'LeetCode', url: 'https://leetcode.com/problems/reverse-pairs/', tags: ['Array', 'Merge Sort'], xp: 200, category: 'Array', sheet: 'Striver', day: 3, dayTitle: 'Day 3 (Array/Maths)' },
+    
+    // Day 4: Hashing
+    { id: 'day4-1', title: 'Two Sum', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/two-sum/', tags: ['Array', 'Hash Table'], xp: 50, category: 'Array', sheet: 'Striver', day: 4, dayTitle: 'Day 4 (Hashing)' },
+    { id: 'day4-2', title: '4Sum', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/4sum/', tags: ['Array', 'Two Pointers'], xp: 150, category: 'Array', sheet: 'Striver', day: 4, dayTitle: 'Day 4 (Hashing)' },
+    { id: 'day4-3', title: 'Longest Consecutive Sequence', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/longest-consecutive-sequence/', tags: ['Array', 'Hash Table'], xp: 125, category: 'Array', sheet: 'Striver', day: 4, dayTitle: 'Day 4 (Hashing)' },
+    { id: 'day4-4', title: 'Largest subarray with 0 sum', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/largest-subarray-with-0-sum/1', tags: ['Array', 'Hash Table'], xp: 125, category: 'Array', sheet: 'Striver', day: 4, dayTitle: 'Day 4 (Hashing)' },
+    { id: 'day4-5', title: 'Count the number of subarrays having a given XOR', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/count-subarray-with-given-xor/1', tags: ['Array', 'Bit Manipulation', 'Hash Table'], xp: 150, category: 'Array', sheet: 'Striver', day: 4, dayTitle: 'Day 4 (Hashing)' },
+    { id: 'day4-6', title: 'Longest Substring Without Repeating Characters', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/longest-substring-without-repeating-characters/', tags: ['String', 'Sliding Window', 'Hash Table'], xp: 125, category: 'String', sheet: 'Striver', day: 4, dayTitle: 'Day 4 (Hashing)' },
+    
+    // Day 5: LinkedList
+    { id: 'day5-1', title: 'Reverse Linked List', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/reverse-linked-list/', tags: ['Linked List'], xp: 50, category: 'LinkedList', sheet: 'Striver', day: 5, dayTitle: 'Day 5 (LinkedList)' },
+    { id: 'day5-2', title: 'Middle of the Linked List', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/middle-of-the-linked-list/', tags: ['Linked List', 'Two Pointers'], xp: 50, category: 'LinkedList', sheet: 'Striver', day: 5, dayTitle: 'Day 5 (LinkedList)' },
+    { id: 'day5-3', title: 'Merge Two Sorted Lists', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/merge-two-sorted-lists/', tags: ['Linked List'], xp: 50, category: 'LinkedList', sheet: 'Striver', day: 5, dayTitle: 'Day 5 (LinkedList)' },
+    { id: 'day5-4', title: 'Remove Nth Node From End of List', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/remove-nth-node-from-end-of-list/', tags: ['Linked List', 'Two Pointers'], xp: 100, category: 'LinkedList', sheet: 'Striver', day: 5, dayTitle: 'Day 5 (LinkedList)' },
+    { id: 'day5-5', title: 'Delete Node in a Linked List', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/delete-node-in-a-linked-list/', tags: ['Linked List'], xp: 75, category: 'LinkedList', sheet: 'Striver', day: 5, dayTitle: 'Day 5 (LinkedList)' },
+    { id: 'day5-6', title: 'Add Two Numbers', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/add-two-numbers/', tags: ['Linked List', 'Math'], xp: 100, category: 'LinkedList', sheet: 'Striver', day: 5, dayTitle: 'Day 5 (LinkedList)' },
+    
+    // Day 6: LinkedList 2
+    { id: 'day6-1', title: 'Intersection of Two Linked Lists', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/intersection-of-two-linked-lists/', tags: ['Linked List', 'Two Pointers'], xp: 75, category: 'LinkedList', sheet: 'Striver', day: 6, dayTitle: 'Day 6 (LinkedList 2)' },
+    { id: 'day6-2', title: 'Linked List Cycle', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/linked-list-cycle/', tags: ['Linked List', 'Floyd Cycle'], xp: 75, category: 'LinkedList', sheet: 'Striver', day: 6, dayTitle: 'Day 6 (LinkedList 2)' },
+    { id: 'day6-3', title: 'Reverse Nodes in k-Group', difficulty: 'Hard', platform: 'LeetCode', url: 'https://leetcode.com/problems/reverse-nodes-in-k-group/', tags: ['Linked List'], xp: 200, category: 'LinkedList', sheet: 'Striver', day: 6, dayTitle: 'Day 6 (LinkedList 2)' },
+    { id: 'day6-4', title: 'Palindrome Linked List', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/palindrome-linked-list/', tags: ['Linked List', 'Two Pointers'], xp: 75, category: 'LinkedList', sheet: 'Striver', day: 6, dayTitle: 'Day 6 (LinkedList 2)' },
+    { id: 'day6-5', title: 'Linked List Cycle II', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/linked-list-cycle-ii/', tags: ['Linked List', 'Floyd Cycle'], xp: 125, category: 'LinkedList', sheet: 'Striver', day: 6, dayTitle: 'Day 6 (LinkedList 2)' },
+    { id: 'day6-6', title: 'Flattening a Linked List', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/flattening-a-linked-list/1', tags: ['Linked List', 'DFS'], xp: 150, category: 'LinkedList', sheet: 'Striver', day: 6, dayTitle: 'Day 6 (LinkedList 2)' },
+    { id: 'day6-7', title: 'Rotate List', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/rotate-list/', tags: ['Linked List'], xp: 125, category: 'LinkedList', sheet: 'Striver', day: 6, dayTitle: 'Day 6 (LinkedList 2)' },
+    
+    // Day 7: 2 Pointers
+    { id: 'day7-1', title: 'Copy List with Random Pointer', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/copy-list-with-random-pointer/', tags: ['Linked List', 'Hash Table'], xp: 150, category: 'LinkedList', sheet: 'Striver', day: 7, dayTitle: 'Day 7 (2 Pointers)' },
+    { id: 'day7-2', title: '3Sum', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/3sum/', tags: ['Array', 'Two Pointers'], xp: 125, category: 'Array', sheet: 'Striver', day: 7, dayTitle: 'Day 7 (2 Pointers)' },
+    { id: 'day7-3', title: 'Trapping Rain Water', difficulty: 'Hard', platform: 'LeetCode', url: 'https://leetcode.com/problems/trapping-rain-water/', tags: ['Array', 'Two Pointers', 'Stack'], xp: 200, category: 'Array', sheet: 'Striver', day: 7, dayTitle: 'Day 7 (2 Pointers)' },
+    { id: 'day7-4', title: 'Remove Duplicates from Sorted Array', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/remove-duplicates-from-sorted-array/', tags: ['Array', 'Two Pointers'], xp: 50, category: 'Array', sheet: 'Striver', day: 7, dayTitle: 'Day 7 (2 Pointers)' },
+    { id: 'day7-5', title: 'Max Consecutive Ones', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/max-consecutive-ones/', tags: ['Array'], xp: 50, category: 'Array', sheet: 'Striver', day: 7, dayTitle: 'Day 7 (2 Pointers)' },
+    
+    // Day 8: Greedy
+    { id: 'day8-1', title: 'N meetings in one room', difficulty: 'Easy', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/n-meetings-in-one-room-1587115620/1', tags: ['Greedy', 'Sorting'], xp: 75, category: 'Array', sheet: 'Striver', day: 8, dayTitle: 'Day 8 (Greedy)' },
+    { id: 'day8-2', title: 'Minimum Platforms', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/minimum-platforms-1587115620/1', tags: ['Greedy', 'Sorting'], xp: 125, category: 'Array', sheet: 'Striver', day: 8, dayTitle: 'Day 8 (Greedy)' },
+    { id: 'day8-3', title: 'Job Sequencing Problem', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/job-sequencing-problem-1587115620/1', tags: ['Greedy', 'Sorting'], xp: 125, category: 'Array', sheet: 'Striver', day: 8, dayTitle: 'Day 8 (Greedy)' },
+    { id: 'day8-4', title: 'Fractional Knapsack', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/fractional-knapsack-1587115620/1', tags: ['Greedy'], xp: 100, category: 'Array', sheet: 'Striver', day: 8, dayTitle: 'Day 8 (Greedy)' },
+    { id: 'day8-5', title: 'Greedy Algorithm to find Minimum number of Coins', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/-minimum-number-of-coins4424/1', tags: ['Greedy'], xp: 100, category: 'Array', sheet: 'Striver', day: 8, dayTitle: 'Day 8 (Greedy)' },
+    
+    // Day 9: Recursion
+    { id: 'day9-1', title: 'Subset Sums', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/subset-sums2234/1', tags: ['Recursion', 'Backtracking'], xp: 100, category: 'Array', sheet: 'Striver', day: 9, dayTitle: 'Day 9 (Recursion)' },
+    { id: 'day9-2', title: 'Subsets II', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/subsets-ii/', tags: ['Recursion', 'Backtracking'], xp: 125, category: 'Array', sheet: 'Striver', day: 9, dayTitle: 'Day 9 (Recursion)' },
+    { id: 'day9-3', title: 'Combination Sum', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/combination-sum/', tags: ['Recursion', 'Backtracking'], xp: 125, category: 'Array', sheet: 'Striver', day: 9, dayTitle: 'Day 9 (Recursion)' },
+    { id: 'day9-4', title: 'Combination Sum II', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/combination-sum-ii/', tags: ['Recursion', 'Backtracking'], xp: 125, category: 'Array', sheet: 'Striver', day: 9, dayTitle: 'Day 9 (Recursion)' },
+    { id: 'day9-5', title: 'Palindrome Partitioning', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/palindrome-partitioning/', tags: ['Recursion', 'Backtracking', 'String'], xp: 150, category: 'String', sheet: 'Striver', day: 9, dayTitle: 'Day 9 (Recursion)' },
+    { id: 'day9-6', title: 'Permutation Sequence', difficulty: 'Hard', platform: 'LeetCode', url: 'https://leetcode.com/problems/permutation-sequence/', tags: ['Math', 'Recursion'], xp: 200, category: 'Math', sheet: 'Striver', day: 9, dayTitle: 'Day 9 (Recursion)' },
+    
+    // Day 10: Recursion, Backtrack
+    { id: 'day10-1', title: 'Permutations', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/permutations/', tags: ['Recursion', 'Backtracking'], xp: 125, category: 'Array', sheet: 'Striver', day: 10, dayTitle: 'Day 10 (Recursion, Backtrack)' },
+    { id: 'day10-2', title: 'N-Queens', difficulty: 'Hard', platform: 'LeetCode', url: 'https://leetcode.com/problems/n-queens/', tags: ['Recursion', 'Backtracking'], xp: 200, category: 'Array', sheet: 'Striver', day: 10, dayTitle: 'Day 10 (Recursion, Backtrack)' },
+    { id: 'day10-3', title: 'Sudoku Solver', difficulty: 'Hard', platform: 'LeetCode', url: 'https://leetcode.com/problems/sudoku-solver/', tags: ['Recursion', 'Backtracking'], xp: 200, category: 'Array', sheet: 'Striver', day: 10, dayTitle: 'Day 10 (Recursion, Backtrack)' },
+    { id: 'day10-4', title: 'm Coloring Problem', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/m-coloring-problem-1587115620/1', tags: ['Recursion', 'Backtracking'], xp: 150, category: 'Graph', sheet: 'Striver', day: 10, dayTitle: 'Day 10 (Recursion, Backtrack)' },
+    { id: 'day10-5', title: 'Rat in a Maze', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/rat-in-a-maze-problem/1', tags: ['Recursion', 'Backtracking'], xp: 125, category: 'Array', sheet: 'Striver', day: 10, dayTitle: 'Day 10 (Recursion, Backtrack)' },
+    { id: 'day10-6', title: 'Word Break', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/word-break/', tags: ['Recursion', 'Backtracking', 'Dynamic Programming'], xp: 150, category: 'String', sheet: 'Striver', day: 10, dayTitle: 'Day 10 (Recursion, Backtrack)' },
+    
+    // Day 11: Divide n Conquer
+    { id: 'day11-1', title: 'Calculating n-th real root using binary search', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/find-nth-root-of-m5843/1', tags: ['Binary Search', 'Math'], xp: 100, category: 'Math', sheet: 'Striver', day: 11, dayTitle: 'Day 11 (Divide n Conquer)' },
+    { id: 'day11-2', title: 'Median in a row-wise sorted Matrix', difficulty: 'Hard', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/median-in-a-row-wise-sorted-matrix1527/1', tags: ['Binary Search', 'Matrix'], xp: 200, category: 'Array', sheet: 'Striver', day: 11, dayTitle: 'Day 11 (Divide n Conquer)' },
+    { id: 'day11-3', title: 'Single Element in a Sorted Array', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/single-element-in-a-sorted-array/', tags: ['Binary Search'], xp: 100, category: 'Array', sheet: 'Striver', day: 11, dayTitle: 'Day 11 (Divide n Conquer)' },
+    { id: 'day11-4', title: 'Search in Rotated Sorted Array', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/search-in-rotated-sorted-array/', tags: ['Binary Search'], xp: 125, category: 'Array', sheet: 'Striver', day: 11, dayTitle: 'Day 11 (Divide n Conquer)' },
+    { id: 'day11-5', title: 'Median of Two Sorted Arrays', difficulty: 'Hard', platform: 'LeetCode', url: 'https://leetcode.com/problems/median-of-two-sorted-arrays/', tags: ['Binary Search'], xp: 200, category: 'Array', sheet: 'Striver', day: 11, dayTitle: 'Day 11 (Divide n Conquer)' },
+    { id: 'day11-6', title: 'K-th Element of Two Sorted Arrays', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/k-th-element-of-two-sorted-array1317/1', tags: ['Binary Search'], xp: 150, category: 'Array', sheet: 'Striver', day: 11, dayTitle: 'Day 11 (Divide n Conquer)' },
+    
+    // Day 12: Bits
+    { id: 'day12-1', title: 'Power of Two', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/power-of-two/', tags: ['Bit Manipulation', 'Math'], xp: 50, category: 'Math', sheet: 'Striver', day: 12, dayTitle: 'Day 12 (Bits)' },
+    { id: 'day12-2', title: 'Counting Bits', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/counting-bits/', tags: ['Bit Manipulation', 'Dynamic Programming'], xp: 75, category: 'DP', sheet: 'Striver', day: 12, dayTitle: 'Day 12 (Bits)' },
+    { id: 'day12-3', title: 'Divide two integers without using multiplication, division and mod operator', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/divide-two-integers/', tags: ['Bit Manipulation', 'Math'], xp: 150, category: 'Math', sheet: 'Striver', day: 12, dayTitle: 'Day 12 (Bits)' },
+    { id: 'day12-4', title: 'Subsets', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/subsets/', tags: ['Bit Manipulation', 'Backtracking'], xp: 100, category: 'Array', sheet: 'Striver', day: 12, dayTitle: 'Day 12 (Bits)' },
+    { id: 'day12-5', title: 'Find MSB In O(1)', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/find-msb-in-o1/1', tags: ['Bit Manipulation'], xp: 100, category: 'Math', sheet: 'Striver', day: 12, dayTitle: 'Day 12 (Bits)' },
+    { id: 'day12-6', title: 'Calculate square of a number without using *, / and pow()', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/square-of-a-number/1', tags: ['Bit Manipulation', 'Math'], xp: 100, category: 'Math', sheet: 'Striver', day: 12, dayTitle: 'Day 12 (Bits)' },
+    
+    // Day 13: Stack/Queues
+    { id: 'day13-1', title: 'Implement stack using array', difficulty: 'Easy', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/implement-stack-using-array/1', tags: ['Stack'], xp: 50, category: 'Stack', sheet: 'Striver', day: 13, dayTitle: 'Day 13 (Stack/Queues)' },
+    { id: 'day13-2', title: 'Implement Queue using array', difficulty: 'Easy', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/implement-queue-using-array/1', tags: ['Queue'], xp: 50, category: 'Stack', sheet: 'Striver', day: 13, dayTitle: 'Day 13 (Stack/Queues)' },
+    { id: 'day13-3', title: 'Implement Stack using Linked List', difficulty: 'Easy', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/implement-stack-using-linked-list/1', tags: ['Stack', 'Linked List'], xp: 75, category: 'Stack', sheet: 'Striver', day: 13, dayTitle: 'Day 13 (Stack/Queues)' },
+    { id: 'day13-4', title: 'Implement Queue using Linked List', difficulty: 'Easy', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/implement-queue-using-linked-list/1', tags: ['Queue', 'Linked List'], xp: 75, category: 'Stack', sheet: 'Striver', day: 13, dayTitle: 'Day 13 (Stack/Queues)' },
+    { id: 'day13-5', title: 'BFS of graph', difficulty: 'Easy', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/bfs-traversal-of-graph/1', tags: ['Graph', 'BFS'], xp: 50, category: 'Graph', sheet: 'Striver', day: 13, dayTitle: 'Day 13 (Stack/Queues)' },
+    { id: 'day13-6', title: 'Implement Stack using Queues', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/implement-stack-using-queues/', tags: ['Stack', 'Queue'], xp: 75, category: 'Stack', sheet: 'Striver', day: 13, dayTitle: 'Day 13 (Stack/Queues)' },
+    { id: 'day13-7', title: 'Implement Queue using Stacks', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/implement-queue-using-stacks/', tags: ['Stack', 'Queue'], xp: 75, category: 'Stack', sheet: 'Striver', day: 13, dayTitle: 'Day 13 (Stack/Queues)' },
+    { id: 'day13-8', title: 'Valid Parentheses', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/valid-parentheses/', tags: ['Stack', 'String'], xp: 50, category: 'String', sheet: 'Striver', day: 13, dayTitle: 'Day 13 (Stack/Queues)' },
+    { id: 'day13-9', title: 'Next Greater Element', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/next-greater-element-i/', tags: ['Stack'], xp: 100, category: 'Array', sheet: 'Striver', day: 13, dayTitle: 'Day 13 (Stack/Queues)' },
+    
+    // Day 14: Miscellaneous
+    { id: 'day14-1', title: 'Nearest Smaller Element', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/smallest-number-on-left3403/1', tags: ['Stack'], xp: 100, category: 'Array', sheet: 'Striver', day: 14, dayTitle: 'Day 14 (Miscellaneous)' },
+    { id: 'day14-2', title: 'LRU Cache', difficulty: 'Hard', platform: 'LeetCode', url: 'https://leetcode.com/problems/lru-cache/', tags: ['Design', 'Hash Table'], xp: 200, category: 'Design', sheet: 'Striver', day: 14, dayTitle: 'Day 14 (Miscellaneous)' },
+    { id: 'day14-3', title: 'Largest Rectangle in Histogram', difficulty: 'Hard', platform: 'LeetCode', url: 'https://leetcode.com/problems/largest-rectangle-in-histogram/', tags: ['Stack'], xp: 200, category: 'Array', sheet: 'Striver', day: 14, dayTitle: 'Day 14 (Miscellaneous)' },
+    { id: 'day14-4', title: 'Sliding Window Maximum', difficulty: 'Hard', platform: 'LeetCode', url: 'https://leetcode.com/problems/sliding-window-maximum/', tags: ['Queue', 'Sliding Window'], xp: 200, category: 'Array', sheet: 'Striver', day: 14, dayTitle: 'Day 14 (Miscellaneous)' },
+    { id: 'day14-5', title: 'Min Stack', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/min-stack/', tags: ['Stack', 'Design'], xp: 100, category: 'Stack', sheet: 'Striver', day: 14, dayTitle: 'Day 14 (Miscellaneous)' },
+    { id: 'day14-6', title: 'Rotting Oranges', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/rotting-oranges/', tags: ['BFS', 'Queue'], xp: 125, category: 'Graph', sheet: 'Striver', day: 14, dayTitle: 'Day 14 (Miscellaneous)' },
+    
+    // Day 15: Strings
+    { id: 'day15-1', title: 'Reverse Words in a String', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/reverse-words-in-a-string/', tags: ['String'], xp: 75, category: 'String', sheet: 'Striver', day: 15, dayTitle: 'Day 15 (Strings)' },
+    { id: 'day15-2', title: 'Longest Palindromic Substring', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/longest-palindromic-substring/', tags: ['String', 'DP'], xp: 125, category: 'String', sheet: 'Striver', day: 15, dayTitle: 'Day 15 (Strings)' },
+    { id: 'day15-3', title: 'Roman to Integer', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/roman-to-integer/', tags: ['String', 'Math'], xp: 50, category: 'String', sheet: 'Striver', day: 15, dayTitle: 'Day 15 (Strings)' },
+    { id: 'day15-4', title: 'Integer to Roman', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/integer-to-roman/', tags: ['String', 'Math'], xp: 100, category: 'String', sheet: 'Striver', day: 15, dayTitle: 'Day 15 (Strings)' },
+    { id: 'day15-5', title: 'Implement strStr', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/implement-strstr/', tags: ['String'], xp: 50, category: 'String', sheet: 'Striver', day: 15, dayTitle: 'Day 15 (Strings)' },
+    { id: 'day15-6', title: 'String to Integer', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/string-to-integer-atoi/', tags: ['String'], xp: 100, category: 'String', sheet: 'Striver', day: 15, dayTitle: 'Day 15 (Strings)' },
+    { id: 'day15-7', title: 'Longest Common Prefix', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/longest-common-prefix/', tags: ['String'], xp: 50, category: 'String', sheet: 'Striver', day: 15, dayTitle: 'Day 15 (Strings)' },
+    { id: 'day15-8', title: 'Rabin-Karp Algorithm for Pattern Searching', difficulty: 'Hard', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/rabin-karp-pattern-searching/1', tags: ['String', 'Rolling Hash'], xp: 200, category: 'String', sheet: 'Striver', day: 15, dayTitle: 'Day 15 (Strings)' },
+    
+    // Day 16: Strings
+    { id: 'day16-1', title: 'Z algorithm (Linear time pattern searching Algorithm)', difficulty: 'Hard', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/8a644e94faaa94968d8665ba09cc0f17512bfc13/1', tags: ['String'], xp: 200, category: 'String', sheet: 'Striver', day: 16, dayTitle: 'Day 16 (Strings)' },
+    { id: 'day16-2', title: 'KMP Algorithm for Pattern Searching', difficulty: 'Hard', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/search-pattern0205/1', tags: ['String'], xp: 200, category: 'String', sheet: 'Striver', day: 16, dayTitle: 'Day 16 (Strings)' },
+    { id: 'day16-3', title: 'Minimum characters to be added at front to make string palindrome', difficulty: 'Hard', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/minimum-characters-to-be-added-at-front-to-make-string-palindrome/1', tags: ['String'], xp: 200, category: 'String', sheet: 'Striver', day: 16, dayTitle: 'Day 16 (Strings)' },
+    { id: 'day16-4', title: 'Valid Anagram', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/valid-anagram/', tags: ['String', 'Hash Table'], xp: 50, category: 'String', sheet: 'Striver', day: 16, dayTitle: 'Day 16 (Strings)' },
+    { id: 'day16-5', title: 'Count and Say', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/count-and-say/', tags: ['String'], xp: 100, category: 'String', sheet: 'Striver', day: 16, dayTitle: 'Day 16 (Strings)' },
+    { id: 'day16-6', title: 'Compare Version Numbers', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/compare-version-numbers/', tags: ['String'], xp: 100, category: 'String', sheet: 'Striver', day: 16, dayTitle: 'Day 16 (Strings)' },
+    
+    // Day 17: Binary Tree
+    { id: 'day17-1', title: 'Binary Tree Inorder Traversal', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/binary-tree-inorder-traversal/', tags: ['Tree', 'DFS'], xp: 50, category: 'Tree', sheet: 'Striver', day: 17, dayTitle: 'Day 17 (Binary Tree)' },
+    { id: 'day17-2', title: 'Binary Tree Preorder Traversal', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/binary-tree-preorder-traversal/', tags: ['Tree', 'DFS'], xp: 50, category: 'Tree', sheet: 'Striver', day: 17, dayTitle: 'Day 17 (Binary Tree)' },
+    { id: 'day17-3', title: 'Binary Tree Postorder Traversal', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/binary-tree-postorder-traversal/', tags: ['Tree', 'DFS'], xp: 50, category: 'Tree', sheet: 'Striver', day: 17, dayTitle: 'Day 17 (Binary Tree)' },
+    { id: 'day17-4', title: 'Binary Tree Right Side View', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/binary-tree-right-side-view/', tags: ['Tree', 'BFS', 'DFS'], xp: 100, category: 'Tree', sheet: 'Striver', day: 17, dayTitle: 'Day 17 (Binary Tree)' },
+    { id: 'day17-5', title: 'Bottom View of Binary Tree', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/bottom-view-of-binary-tree/1', tags: ['Tree'], xp: 100, category: 'Tree', sheet: 'Striver', day: 17, dayTitle: 'Day 17 (Binary Tree)' },
+    { id: 'day17-6', title: 'Top View of Binary Tree', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/top-view-of-binary-tree/1', tags: ['Tree'], xp: 100, category: 'Tree', sheet: 'Striver', day: 17, dayTitle: 'Day 17 (Binary Tree)' },
+    
+    // Day 18: Binary Tree
+    { id: 'day18-1', title: 'Binary Tree Level Order Traversal', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/binary-tree-level-order-traversal/', tags: ['Tree', 'BFS'], xp: 100, category: 'Tree', sheet: 'Striver', day: 18, dayTitle: 'Day 18 (Binary Tree)' },
+    { id: 'day18-2', title: 'Binary Tree Zigzag Level Order Traversal', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/binary-tree-zigzag-level-order-traversal/', tags: ['Tree', 'BFS'], xp: 125, category: 'Tree', sheet: 'Striver', day: 18, dayTitle: 'Day 18 (Binary Tree)' },
+    { id: 'day18-3', title: 'Maximum Depth of Binary Tree', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/maximum-depth-of-binary-tree/', tags: ['Tree', 'DFS'], xp: 50, category: 'Tree', sheet: 'Striver', day: 18, dayTitle: 'Day 18 (Binary Tree)' },
+    { id: 'day18-4', title: 'Diameter of Binary Tree', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/diameter-of-binary-tree/', tags: ['Tree', 'DFS'], xp: 75, category: 'Tree', sheet: 'Striver', day: 18, dayTitle: 'Day 18 (Binary Tree)' },
+    { id: 'day18-5', title: 'Balanced Binary Tree', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/balanced-binary-tree/', tags: ['Tree', 'DFS'], xp: 75, category: 'Tree', sheet: 'Striver', day: 18, dayTitle: 'Day 18 (Binary Tree)' },
+    { id: 'day18-6', title: 'Lowest Common Ancestor of a Binary Tree', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-tree/', tags: ['Tree', 'DFS'], xp: 125, category: 'Tree', sheet: 'Striver', day: 18, dayTitle: 'Day 18 (Binary Tree)' },
+    { id: 'day18-7', title: 'Same Tree', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/same-tree/', tags: ['Tree', 'DFS'], xp: 50, category: 'Tree', sheet: 'Striver', day: 18, dayTitle: 'Day 18 (Binary Tree)' },
+    
+    // Day 19: Binary Tree
+    { id: 'day19-1', title: 'Binary Tree Maximum Path Sum', difficulty: 'Hard', platform: 'LeetCode', url: 'https://leetcode.com/problems/binary-tree-maximum-path-sum/', tags: ['Tree', 'DFS'], xp: 200, category: 'Tree', sheet: 'Striver', day: 19, dayTitle: 'Day 19 (Binary Tree)' },
+    { id: 'day19-2', title: 'Construct Binary Tree from Preorder and Inorder Traversal', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/construct-binary-tree-from-preorder-and-inorder-traversal/', tags: ['Tree', 'Array'], xp: 150, category: 'Tree', sheet: 'Striver', day: 19, dayTitle: 'Day 19 (Binary Tree)' },
+    { id: 'day19-3', title: 'Construct Binary Tree from Inorder and Postorder Traversal', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/construct-binary-tree-from-inorder-and-postorder-traversal/', tags: ['Tree', 'Array'], xp: 150, category: 'Tree', sheet: 'Striver', day: 19, dayTitle: 'Day 19 (Binary Tree)' },
+    { id: 'day19-4', title: 'Symmetric Tree', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/symmetric-tree/', tags: ['Tree', 'DFS'], xp: 75, category: 'Tree', sheet: 'Striver', day: 19, dayTitle: 'Day 19 (Binary Tree)' },
+    { id: 'day19-5', title: 'Flatten Binary Tree to Linked List', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/flatten-binary-tree-to-linked-list/', tags: ['Tree'], xp: 125, category: 'Tree', sheet: 'Striver', day: 19, dayTitle: 'Day 19 (Binary Tree)' },
+    
+    // Day 20: Binary Search Tree
+    { id: 'day20-1', title: 'Populating Next Right Pointers in Each Node', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/populating-next-right-pointers-in-each-node/', tags: ['Tree', 'BFS'], xp: 125, category: 'Tree', sheet: 'Striver', day: 20, dayTitle: 'Day 20 (Binary Search Tree)' },
+    { id: 'day20-2', title: 'Search in a Binary Search Tree', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/search-in-a-binary-search-tree/', tags: ['Tree', 'BST'], xp: 50, category: 'Tree', sheet: 'Striver', day: 20, dayTitle: 'Day 20 (Binary Search Tree)' },
+    { id: 'day20-3', title: 'Convert Sorted Array to Binary Search Tree', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/convert-sorted-array-to-binary-search-tree/', tags: ['Tree', 'BST'], xp: 75, category: 'Tree', sheet: 'Striver', day: 20, dayTitle: 'Day 20 (Binary Search Tree)' },
+    { id: 'day20-4', title: 'Validate Binary Search Tree', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/validate-binary-search-tree/', tags: ['Tree', 'BST'], xp: 125, category: 'Tree', sheet: 'Striver', day: 20, dayTitle: 'Day 20 (Binary Search Tree)' },
+    { id: 'day20-5', title: 'Lowest Common Ancestor of a BST', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-search-tree/', tags: ['Tree', 'BST'], xp: 75, category: 'Tree', sheet: 'Striver', day: 20, dayTitle: 'Day 20 (Binary Search Tree)' },
+    { id: 'day20-6', title: 'Predecessor and Successor', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/predecessor-and-successor/1', tags: ['Tree', 'BST'], xp: 125, category: 'Tree', sheet: 'Striver', day: 20, dayTitle: 'Day 20 (Binary Search Tree)' },
+    
+    // Day 21: Binary Search Tree
+    { id: 'day21-1', title: 'Floor and Ceil from a BST', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/floor-in-bst/1', tags: ['Tree', 'BST'], xp: 100, category: 'Tree', sheet: 'Striver', day: 21, dayTitle: 'Day 21 (Binary Search Tree)' },
+    { id: 'day21-2', title: 'Kth Smallest Element in a BST', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/kth-smallest-element-in-a-bst/', tags: ['Tree', 'BST'], xp: 125, category: 'Tree', sheet: 'Striver', day: 21, dayTitle: 'Day 21 (Binary Search Tree)' },
+    { id: 'day21-3', title: 'Kth largest element in BST', difficulty: 'Easy', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/kth-largest-element-in-bst/1', tags: ['Tree', 'BST'], xp: 75, category: 'Tree', sheet: 'Striver', day: 21, dayTitle: 'Day 21 (Binary Search Tree)' },
+    { id: 'day21-4', title: 'Two Sum IV - Input is a BST', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/two-sum-iv-input-is-a-bst/', tags: ['Tree', 'BST'], xp: 100, category: 'Tree', sheet: 'Striver', day: 21, dayTitle: 'Day 21 (Binary Search Tree)' },
+    { id: 'day21-5', title: 'Binary Search Tree Iterator', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/binary-search-tree-iterator/', tags: ['Tree', 'BST', 'Design'], xp: 125, category: 'Tree', sheet: 'Striver', day: 21, dayTitle: 'Day 21 (Binary Search Tree)' },
+    { id: 'day21-6', title: 'Largest BST', difficulty: 'Hard', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/largest-bst/1', tags: ['Tree', 'BST'], xp: 200, category: 'Tree', sheet: 'Striver', day: 21, dayTitle: 'Day 21 (Binary Search Tree)' },
+    { id: 'day21-7', title: 'Serialize and Deserialize Binary Tree', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/serialize-and-deserialize-binary-tree/', tags: ['Tree', 'BST'], xp: 150, category: 'Tree', sheet: 'Striver', day: 21, dayTitle: 'Day 21 (Binary Search Tree)' },
+    
+    // Day 22: Mixed Questions
+    { id: 'day22-1', title: 'Binary Tree to DLL', difficulty: 'Hard', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/binary-tree-to-dll/1', tags: ['Tree'], xp: 200, category: 'Tree', sheet: 'Striver', day: 22, dayTitle: 'Day 22 (Mixed Questions)' },
+    { id: 'day22-2', title: 'Find Median from Data Stream', difficulty: 'Hard', platform: 'LeetCode', url: 'https://leetcode.com/problems/find-median-from-data-stream/', tags: ['Heap', 'Design'], xp: 200, category: 'Array', sheet: 'Striver', day: 22, dayTitle: 'Day 22 (Mixed Questions)' },
+    { id: 'day22-3', title: 'Kth Largest Element in a Stream', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/kth-largest-element-in-a-stream/', tags: ['Heap'], xp: 100, category: 'Array', sheet: 'Striver', day: 22, dayTitle: 'Day 22 (Mixed Questions)' },
+    { id: 'day22-4', title: 'Distinct Numbers in Window', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/count-distinct-elements-in-every-window/1', tags: ['Sliding Window'], xp: 125, category: 'Array', sheet: 'Striver', day: 22, dayTitle: 'Day 22 (Mixed Questions)' },
+    { id: 'day22-5', title: 'Kth Largest Element in an Array', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/kth-largest-element-in-an-array/', tags: ['Heap'], xp: 125, category: 'Array', sheet: 'Striver', day: 22, dayTitle: 'Day 22 (Mixed Questions)' },
+    { id: 'day22-6', title: 'Flood Fill', difficulty: 'Easy', platform: 'LeetCode', url: 'https://leetcode.com/problems/flood-fill/', tags: ['DFS', 'BFS'], xp: 75, category: 'Graph', sheet: 'Striver', day: 22, dayTitle: 'Day 22 (Mixed Questions)' },
+    
+    // Day 23: Graph
+    { id: 'day23-1', title: 'Number of Islands', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/number-of-islands/', tags: ['Graph', 'DFS'], xp: 125, category: 'Graph', sheet: 'Striver', day: 23, dayTitle: 'Day 23 (Graph)' },
   ];
 
   const loadProblems = useCallback(() => {
@@ -833,7 +1004,8 @@ export function CodingArena() {
     loadProblems();
   }, [authUser, loadProblems]);
 
-  const filterProblems = useCallback(() => {
+  // Memoize filtered problems for performance
+  const filteredProblemsMemo = useMemo(() => {
     let filtered = [...problems];
 
     // Platform filter
@@ -890,13 +1062,23 @@ export function CodingArena() {
       filtered.sort((a, b) => diffOrder[a.difficulty] - diffOrder[b.difficulty]);
     }
 
-    setFilteredProblems(filtered);
+    return filtered;
   }, [problems, selectedPlatform, selectedDifficulty, selectedCategory, selectedSheet, searchTerm, showSolvedOnly, sortBy, activeTab, selectedCompany]);
 
-  // Update useEffect to include new filter dependencies
+  // Update filtered problems when memoized result changes
   useEffect(() => {
-    filterProblems();
-  }, [filterProblems]);
+    setFilteredProblems(filteredProblemsMemo);
+  }, [filteredProblemsMemo]);
+
+  // Update celebration data when streak changes
+  useEffect(() => {
+    if (showCelebration && codingStats) {
+      setCelebrationData(prev => ({
+        ...prev,
+        streak: codingStats.currentStreak || 0,
+      }));
+    }
+  }, [codingStats?.currentStreak, showCelebration]);
 
   // Toggle revision status for a problem
   const toggleRevision = (problemId: string) => {
@@ -932,23 +1114,25 @@ export function CodingArena() {
     const problem = problems.find(p => p.id === problemId);
     if (!problem || problem.solved) return;
 
+    const solveTime = new Date();
+
     // Update local state
     setProblems(prev => prev.map(p => 
       p.id === problemId 
-        ? { ...p, solved: true, solvedAt: new Date(), timeSpent: Math.floor(Math.random() * 60) + 15 }
+        ? { ...p, solved: true, solvedAt: solveTime, timeSpent: Math.floor(Math.random() * 60) + 15 }
         : p
     ));
 
-    // Add XP and update stats
+    // Add XP and update stats - SOLVE_PROBLEM now handles time-based streak automatically
     dispatch({ type: 'ADD_XP', payload: { amount: problem.xp, source: `Solved ${problem.title}` } });
     dispatch({ type: 'SOLVE_PROBLEM', payload: { xp: problem.xp, difficulty: problem.difficulty, platform: problem.platform, topic: problem.tags[0] || 'General' } });
 
-    // Update coding streak
-    const newStreak = codingStats.currentStreak + 1;
-    dispatch({ type: 'UPDATE_CODING_STATS', payload: { currentStreak: newStreak, totalSolved: codingStats.totalSolved + 1 } });
+    // Also update time-based streak for coding activity
+    dispatch({ type: 'UPDATE_TIME_BASED_STREAK', payload: { activityType: 'coding', timestamp: solveTime } });
 
-    // Show celebration
-    setCelebrationData({ xp: problem.xp, streak: newStreak });
+    // Get current streak for celebration (will be updated by reducer)
+    const currentStreak = codingStats?.currentStreak || 0;
+    setCelebrationData({ xp: problem.xp, streak: currentStreak + 1 }); // +1 because it will be incremented
     setShowCelebration(true);
     setTimeout(() => setShowCelebration(false), 3000);
 
@@ -958,7 +1142,7 @@ export function CodingArena() {
       type: 'achievement',
       title: 'Problem Solved! 🎉',
       message: `You solved "${problem.title}" and earned ${problem.xp} XP!`,
-      timestamp: new Date(),
+      timestamp: solveTime,
       read: false,
       priority: 'medium',
     }});
@@ -1051,7 +1235,7 @@ export function CodingArena() {
   }
 
   return (
-    <div className="p-3 sm:p-4 lg:p-6 bg-[#0a0a0a] min-h-screen">
+    <div className="p-3 sm:p-4 lg:p-6 bg-[#0a0a0a] min-h-screen pb-20 lg:pb-6">
       <div className="max-w-7xl mx-auto">
         {/* Header - Neo Brutalist */}
         <div className="mb-4 sm:mb-6 lg:mb-8">
@@ -1095,10 +1279,10 @@ export function CodingArena() {
               <Flame className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-orange-400" />
               <div>
                 <div className="text-lg sm:text-xl lg:text-2xl font-black text-white font-mono">
-                  {codingStats.currentStreak}
+                  {codingStats?.currentStreak || 0}
                 </div>
                 <div className="text-[10px] sm:text-xs text-gray-500 font-mono uppercase">
-                  STREAK
+                  TIME STREAK
                 </div>
               </div>
             </div>
@@ -1484,21 +1668,21 @@ export function CodingArena() {
           </div>
         </div>
 
-        {/* Compact Stacked List View */}
+        {/* Problems Table */}
         <div className={`rounded-xl sm:rounded-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-xl overflow-hidden`}>
-          {/* Table Header */}
-          <div className={`grid grid-cols-12 gap-2 px-4 py-3 ${darkMode ? 'bg-gray-700/50' : 'bg-gray-50'} text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            <div className="col-span-1 text-center">#</div>
-            <div className="col-span-4">Problem</div>
-            <div className="col-span-2 text-center">Difficulty</div>
-            <div className="col-span-2 text-center">Platform</div>
-            <div className="col-span-1 text-center">XP</div>
-            <div className="col-span-2 text-center">Actions</div>
-          </div>
+            {/* Table Header */}
+            <div className={`grid grid-cols-12 gap-2 px-4 py-3 ${darkMode ? 'bg-gray-700/50' : 'bg-gray-50'} text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              <div className="col-span-1 text-center">#</div>
+              <div className="col-span-4">Problem</div>
+              <div className="col-span-2 text-center">Difficulty</div>
+              <div className="col-span-2 text-center">Platform</div>
+              <div className="col-span-1 text-center">XP</div>
+              <div className="col-span-2 text-center">Actions</div>
+            </div>
 
-          {/* Problem Rows */}
-          <div className="divide-y divide-gray-100 dark:divide-gray-700">
-            {filteredProblems.map((problem, index) => (
+            {/* Problem Rows */}
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
+              {filteredProblems.map((problem, index) => (
               <motion.div
                 key={problem.id}
                 initial={{ opacity: 0, x: -10 }}

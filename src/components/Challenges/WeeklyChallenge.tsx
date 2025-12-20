@@ -39,8 +39,9 @@ export function WeeklyChallenge() {
         profileViews: state.socialStats.profileViews + Math.floor(Math.random() * 3) + 1 
       }});
 
-    } catch (error) {
-      console.error('Error starting challenge:', error);
+    } catch (error: any) {
+      // Log error safely (stringify to avoid React conversion issues)
+      console.error('Error starting challenge:', error?.message || JSON.stringify(error));
     }
   };
 

@@ -92,24 +92,45 @@ export const profileService = {
   },
 
   async updateProfile(userId: string, updates: Partial<User>) {
+    // Return mock update if Supabase is not configured
+    if (!isSupabaseConfigured()) {
+      console.log('Demo mode: Simulating profile update');
+      return {
+        id: `demo-profile-${userId}`,
+        user_id: userId,
+        ...updates,
+        last_activity: new Date().toISOString(),
+      };
+    }
+
     try {
+      // Build update object with only provided fields
+      const updateData: any = {
+        last_activity: new Date().toISOString(),
+      };
+
+      if (updates.name !== undefined) updateData.name = updates.name;
+      if (updates.email !== undefined) updateData.email = updates.email;
+      if (updates.degree !== undefined) updateData.degree = updates.degree;
+      if (updates.branch !== undefined) updateData.branch = updates.branch;
+      if (updates.year !== undefined) updateData.year = updates.year;
+      if (updates.interests !== undefined) updateData.interests = updates.interests;
+      if (updates.careerGoal !== undefined) updateData.career_goal = updates.careerGoal;
+      if (updates.avatar !== undefined) updateData.avatar = updates.avatar;
+      if (updates.level !== undefined) updateData.level = updates.level;
+      if (updates.xp !== undefined) {
+        updateData.xp = updates.xp;
+        // Auto-calculate tier if not provided
+        if (updates.tier === undefined) {
+          updateData.tier = calculateTier(updates.xp);
+        }
+      }
+      if (updates.tier !== undefined) updateData.tier = updates.tier;
+      if (updates.streak !== undefined) updateData.streak = updates.streak;
+
       const { data, error } = await supabase
         .from('profiles')
-        .update({
-          name: updates.name,
-          email: updates.email,
-          degree: updates.degree,
-          branch: updates.branch,
-          year: updates.year,
-          interests: updates.interests,
-          career_goal: updates.careerGoal,
-          avatar: updates.avatar,
-          level: updates.level,
-          xp: updates.xp,
-          tier: updates.tier,
-          streak: updates.streak,
-          last_activity: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('user_id', userId)
         .select()
         .single();

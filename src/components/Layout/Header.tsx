@@ -53,7 +53,7 @@ export function Header({ onMenuClick }: HeaderProps) {
     <motion.header
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="sticky top-0 z-50 bg-[#0d0d0d] border-b-4 border-lime-500/30"
+      className="sticky top-0 z-[55] bg-[#0d0d0d] border-b-4 border-lime-500/30"
     >
       <div className="px-3 sm:px-4 lg:px-6">
         <div className="flex items-center justify-between h-14 sm:h-16">
@@ -64,7 +64,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onMenuClick}
-              className="lg:hidden p-2 bg-gray-800 border-2 border-lime-500/50 text-lime-400 hover:bg-lime-500 hover:text-black transition-colors"
+              className="lg:hidden p-2 bg-gray-800 border-2 border-lime-500/50 text-lime-400 hover:bg-lime-500 hover:text-black transition-colors relative z-[60]"
             >
               <Menu size={20} />
             </motion.button>

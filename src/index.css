@@ -127,4 +127,30 @@
     --tw-bg-opacity: 1;
     background-color: rgb(10 10 10 / var(--tw-bg-opacity));
   }
+  
+  /* Mobile touch improvements */
+  @media (max-width: 768px) {
+    button, a {
+      -webkit-tap-highlight-color: rgba(132, 204, 22, 0.3);
+      touch-action: manipulation;
+    }
+    
+    /* Better scrolling on mobile */
+    * {
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+  
+  /* Responsive text sizes */
+  @media (max-width: 640px) {
+    html {
+      font-size: 14px;
+    }
+  }
+  
+  /* Prevent text selection on buttons for better mobile UX */
+  button {
+    user-select: none;
+    -webkit-user-select: none;
+  }
 }

@@ -101,7 +101,7 @@ export function Fitness() {
   const currentStreak = 3; // TODO: Calculate actual streak
 
   return (
-    <div className="p-3 sm:p-4 lg:p-6 bg-[#0a0a0a] min-h-screen">
+    <div className="p-3 sm:p-4 lg:p-6 bg-[#0a0a0a] min-h-screen pb-20 lg:pb-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">

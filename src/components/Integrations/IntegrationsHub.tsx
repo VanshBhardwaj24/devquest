@@ -281,8 +281,9 @@ export function IntegrationsHub() {
           },
         });
       }
-    } catch (error) {
-      console.error('Failed to connect:', error);
+    } catch (error: any) {
+      // Log error safely (stringify to avoid React conversion issues)
+      console.error('Failed to connect:', error?.message || JSON.stringify(error));
       dispatch({
         type: 'ADD_NOTIFICATION',
         payload: {
@@ -647,7 +648,6 @@ export function IntegrationsHub() {
                     <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
                       <div
                         className={`h-full ${i === 0 ? 'bg-blue-500' : i === 1 ? 'bg-yellow-500' : 'bg-green-500'}`}
-                        style={{ width: `${lang.percentage}%` }}
                       />
                     </div>
                     <span className="text-xs text-gray-500">{lang.percentage}%</span>
@@ -750,7 +750,7 @@ export function IntegrationsHub() {
   );
 
   return (
-    <div className="p-4 sm:p-6 min-h-screen bg-[#0a0a0a]">
+    <div className="p-3 sm:p-4 lg:p-6 min-h-screen bg-[#0a0a0a] pb-20 lg:pb-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <motion.div

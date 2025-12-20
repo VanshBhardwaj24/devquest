@@ -38,13 +38,15 @@ export function useAuth() {
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Error getting session:', error);
+          // Log error safely (stringify to avoid React conversion issues)
+          console.error('Error getting session:', error?.message || JSON.stringify(error));
           setError(`Authentication error: ${error.message}`);
         } else if (mounted) {
           setUser(session?.user ?? null);
         }
-      } catch (error) {
-        console.error('Error in getSession:', error);
+      } catch (error: any) {
+        // Log error safely (stringify to avoid React conversion issues)
+        console.error('Error in getSession:', error?.message || JSON.stringify(error));
         if (mounted) {
           setError('Failed to connect to authentication service');
         }
@@ -73,8 +75,9 @@ export function useAuth() {
             setLoading(false);
           }
         }
-      } catch (error) {
-        console.error('Error in auth state change:', error);
+      } catch (error: any) {
+        // Log error safely (stringify to avoid React conversion issues)
+        console.error('Error in auth state change:', error?.message || JSON.stringify(error));
         if (mounted) {
           setError('Authentication state error');
         }
@@ -125,7 +128,8 @@ export function useAuth() {
       console.log('Sign up successful:', data.user?.email);
       return { data, error: null };
     } catch (error: any) {
-      console.error('Sign up exception:', error);
+      // Log error safely (stringify to avoid React conversion issues)
+      console.error('Sign up exception:', error?.message || JSON.stringify(error));
       const errorMessage = error.message || 'An unexpected error occurred during sign up';
       setError(errorMessage);
       return { data: null, error: { message: errorMessage } };
@@ -169,7 +173,8 @@ export function useAuth() {
       console.log('Sign in successful:', data.user?.email);
       return { data, error: null };
     } catch (error: any) {
-      console.error('Sign in exception:', error);
+      // Log error safely (stringify to avoid React conversion issues)
+      console.error('Sign in exception:', error?.message || JSON.stringify(error));
       const errorMessage = error.message || 'An unexpected error occurred during sign in';
       setError(errorMessage);
       return { data: null, error: { message: errorMessage } };
@@ -201,7 +206,8 @@ export function useAuth() {
       setUser(null);
       return { error: null };
     } catch (error: any) {
-      console.error('Sign out exception:', error);
+      // Log error safely (stringify to avoid React conversion issues)
+      console.error('Sign out exception:', error?.message || JSON.stringify(error));
       const errorMessage = error.message || 'An unexpected error occurred during sign out';
       setError(errorMessage);
       return { error: { message: errorMessage } };

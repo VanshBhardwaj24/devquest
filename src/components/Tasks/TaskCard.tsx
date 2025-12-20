@@ -81,8 +81,9 @@ export function TaskCard({ task, index }: TaskCardProps) {
           dispatch({ type: 'UNLOCK_ACHIEVEMENT', payload: 'task-master' });
         }
       }
-    } catch (error) {
-      console.error('Error updating task:', error);
+    } catch (error: any) {
+      // Log error safely (stringify to avoid React conversion issues)
+      console.error('Error updating task:', error?.message || JSON.stringify(error));
     }
   };
 
@@ -100,8 +101,9 @@ export function TaskCard({ task, index }: TaskCardProps) {
         message: `"${task.title}" has been removed from your board.`,
         timestamp: new Date(),
       }});
-    } catch (error) {
-      console.error('Error deleting task:', error);
+    } catch (error: any) {
+      // Log error safely (stringify to avoid React conversion issues)
+      console.error('Error deleting task:', error?.message || JSON.stringify(error));
     }
   };
 

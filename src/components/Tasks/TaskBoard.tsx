@@ -111,12 +111,16 @@ export function TaskBoard() {
   const toggleComplete = async (task: Task) => {
     if (!authUser) return;
     const updated = { ...task, completed: !task.completed };
+    const completionTime = new Date();
     
     try {
       await taskService.updateTask(authUser.id, task.id, updated);
       dispatch({ type: 'UPDATE_TASK', payload: updated });
       
       if (!task.completed) {
+        // Update time-based streak for task completion
+        dispatch({ type: 'UPDATE_TIME_BASED_STREAK', payload: { activityType: 'task', timestamp: completionTime } });
+        
         const crit = calculateCriticalHit();
         const finalXP = Math.round(task.xp * crit.multiplier);
         
@@ -140,7 +144,7 @@ export function TaskBoard() {
           type: 'task-completed',
           title: crit.type !== 'normal' ? crit.message! : 'Quest Completed! 🎉',
           message: `+${finalXP} XP earned!`,
-          timestamp: new Date(),
+          timestamp: completionTime,
         }});
 
         if (crit.type === 'jackpot') {
@@ -149,7 +153,7 @@ export function TaskBoard() {
             type: 'reward',
             title: '🎁 LOOT BOX!',
             message: 'Legendary drop! Check Rewards!',
-            timestamp: new Date(),
+            timestamp: completionTime,
           }});
         }
 
@@ -159,8 +163,9 @@ export function TaskBoard() {
           dispatch({ type: 'UNLOCK_ACHIEVEMENT', payload: 'first-task' });
         }
       }
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (error: any) {
+      // Log error safely (stringify to avoid React conversion issues)
+      console.error('Error:', error?.message || JSON.stringify(error));
     }
   };
 
@@ -169,8 +174,9 @@ export function TaskBoard() {
     try {
       await taskService.deleteTask(authUser.id, task.id);
       dispatch({ type: 'DELETE_TASK', payload: task.id });
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (error: any) {
+      // Log error safely (stringify to avoid React conversion issues)
+      console.error('Error:', error?.message || JSON.stringify(error));
     }
   };
 
@@ -189,8 +195,9 @@ export function TaskBoard() {
       dispatch({ type: 'ADD_TASK', payload: { ...taskData, id: Date.now().toString() } });
       setNewTask({ title: '', description: '', priority: 'Core', category: '', xp: 100 });
       setShowAddTask(false);
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (error: any) {
+      // Log error safely (stringify to avoid React conversion issues)
+      console.error('Error:', error?.message || JSON.stringify(error));
     }
   };
 
@@ -203,7 +210,7 @@ export function TaskBoard() {
   };
 
   return (
-    <div className="p-4 sm:p-6 bg-[#0a0a0a] min-h-screen">
+    <div className="p-3 sm:p-4 lg:p-6 bg-[#0a0a0a] min-h-screen pb-20 lg:pb-6">
       <div className="max-w-6xl mx-auto">
         
         {/* Critical Hit Overlay */}
@@ -218,12 +225,11 @@ export function TaskBoard() {
               <motion.div
                 animate={{ scale: [1, 1.2, 1], rotate: [0, -5, 5, 0] }}
                 transition={{ repeat: 2, duration: 0.3 }}
-                className={`text-4xl md:text-6xl font-black font-mono ${
+                className={`text-4xl md:text-6xl font-black font-mono drop-shadow-[0_0_40px_currentColor] ${
                   criticalHit.type === 'jackpot' ? 'text-lime-400' :
                   criticalHit.type === 'epic' ? 'text-fuchsia-400' :
                   criticalHit.type === 'critical' ? 'text-orange-400' : 'text-cyan-400'
                 }`}
-                style={{ textShadow: '0 0 40px currentColor' }}
               >
                 {criticalHit.message}
               </motion.div>
@@ -252,20 +258,20 @@ export function TaskBoard() {
         </AnimatePresence>
 
         {/* Header with HP/Gold - Neo Brutalist */}
-        <div className="mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-white font-mono">
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white font-mono truncate">
                 QUEST_BOARD <span className="text-lime-400">⚔️</span>
               </h1>
-              <p className="text-sm text-gray-500 font-mono">// Complete quests to survive. HP drains at night!</p>
+              <p className="text-xs sm:text-sm text-gray-500 font-mono">// Complete quests to survive. HP drains at night!</p>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {/* HP Bar */}
-              <div className={`flex items-center gap-2 px-3 py-2 brutal-card bg-gray-900 ${dailyHP < 30 ? 'border-red-500 animate-pulse' : 'border-gray-700'}`}>
-                <Heart className={`w-4 h-4 ${dailyHP < 30 ? 'text-red-500' : 'text-pink-500'}`} />
-                <div className="w-16 h-2 bg-gray-800 border border-gray-700 overflow-hidden">
+              <div className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 brutal-card bg-gray-900 ${dailyHP < 30 ? 'border-red-500 animate-pulse' : 'border-gray-700'}`}>
+                <Heart className={`w-3 h-3 sm:w-4 sm:h-4 ${dailyHP < 30 ? 'text-red-500' : 'text-pink-500'}`} />
+                <div className="w-12 sm:w-16 h-2 bg-gray-800 border border-gray-700 overflow-hidden">
                   <motion.div 
                     className={`h-full ${dailyHP < 30 ? 'bg-red-500' : dailyHP < 60 ? 'bg-yellow-500' : 'bg-lime-500'}`}
                     animate={{ width: `${dailyHP}%` }}
@@ -291,7 +297,7 @@ export function TaskBoard() {
 
         {/* Goal Gradient Progress Bar - Neo Brutalist */}
         <motion.div 
-          className={`mb-6 p-4 brutal-card bg-gray-900 ${isNearComplete ? 'border-lime-500' : 'border-gray-700'}`}
+          className={`mb-4 sm:mb-6 p-3 sm:p-4 brutal-card bg-gray-900 ${isNearComplete ? 'border-lime-500' : 'border-gray-700'}`}
           animate={isNearComplete ? { boxShadow: ['0 0 0 0 rgba(132, 204, 22, 0)', '0 0 20px 5px rgba(132, 204, 22, 0.3)', '0 0 0 0 rgba(132, 204, 22, 0)'] } : {}}
           transition={{ repeat: Infinity, duration: 2 }}
         >
@@ -320,19 +326,19 @@ export function TaskBoard() {
         </motion.div>
 
         {/* Stats - Neo Brutalist */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
           {[
             { icon: Target, color: 'cyan', value: pendingTasks.length, label: 'ACTIVE' },
             { icon: Trophy, color: 'lime', value: completedTasks.length, label: 'DONE' },
             { icon: Calendar, color: 'orange', value: completedTasks.filter(t => t.createdAt.toDateString() === new Date().toDateString()).length, label: 'TODAY' },
             { icon: Flame, color: 'fuchsia', value: user?.streak || 0, label: 'STREAK' },
           ].map((s, i) => (
-            <motion.div key={i} whileHover={{ scale: 1.02, y: -2 }} className={`p-3 brutal-card bg-gray-900 border-${s.color}-500/30`}>
-              <div className="flex items-center gap-2">
-                <s.icon className={`w-5 h-5 text-${s.color}-400`} />
-                <div>
-                  <div className="text-lg font-black text-white font-mono">{s.value}</div>
-                  <div className="text-[10px] text-gray-500 font-mono">{s.label}</div>
+            <motion.div key={i} whileHover={{ scale: 1.02, y: -2 }} className={`p-2 sm:p-3 brutal-card bg-gray-900 border-${s.color}-500/30`}>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <s.icon className={`w-4 h-4 sm:w-5 sm:h-5 text-${s.color}-400 flex-shrink-0`} />
+                <div className="min-w-0 flex-1">
+                  <div className="text-base sm:text-lg font-black text-white font-mono truncate">{s.value}</div>
+                  <div className="text-[9px] sm:text-[10px] text-gray-500 font-mono truncate">{s.label}</div>
                 </div>
               </div>
             </motion.div>
@@ -340,22 +346,22 @@ export function TaskBoard() {
         </div>
 
         {/* Controls - Neo Brutalist */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+            <Search className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
             <input
               type="text"
               placeholder="search_quests..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-900 border-2 border-gray-700 focus:border-lime-500 text-white font-mono text-sm placeholder-gray-500 outline-none transition-colors"
+              className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 bg-gray-900 border-2 border-gray-700 focus:border-lime-500 text-white font-mono text-xs sm:text-sm placeholder-gray-500 outline-none transition-colors"
             />
           </div>
           <div className="flex gap-2">
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value as 'all' | 'Elite' | 'Core' | 'Bonus' | 'in-progress')}
-              className={`px-3 py-2 rounded-lg border text-sm ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+              className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border text-xs sm:text-sm bg-gray-800 border-gray-700 text-white`}
             >
               <option value="all">All Quests</option>
               <option value="in-progress">In Progress</option>
@@ -367,10 +373,11 @@ export function TaskBoard() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowAddTask(true)}
-              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg text-sm font-medium flex items-center gap-2"
+              className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2"
             >
-              <Plus size={16} />
-              <span>New Quest</span>
+              <Plus size={14} className="sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">New Quest</span>
+              <span className="sm:hidden">New</span>
             </motion.button>
           </div>
         </div>
@@ -390,37 +397,39 @@ export function TaskBoard() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20, height: 0 }}
                   transition={{ delay: index * 0.02 }}
-                  whileHover={{ scale: 1.01, x: 4 }}
-                  className={`p-3 rounded-lg border-l-4 ${cfg.border} ${darkMode ? 'bg-gray-800/80 border-gray-700' : 'bg-white border-gray-200'} ${task.completed ? 'opacity-60' : ''} ${isOverdue ? 'border-red-500/50' : ''} hover:shadow-lg transition-all group`}
+                  whileHover={{ scale: 1.01, x: 2 }}
+                  className={`p-2 sm:p-3 rounded-lg border-l-4 ${cfg.border} bg-gray-800/80 border-gray-700 ${task.completed ? 'opacity-60' : ''} ${isOverdue ? 'border-red-500/50' : ''} hover:shadow-lg transition-all group`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-start sm:items-center gap-2 sm:gap-3">
                     <motion.button
                       whileHover={{ scale: 1.2 }}
                       whileTap={{ scale: 0.8 }}
                       onClick={() => toggleComplete(task)}
-                      className={task.completed ? 'text-green-500' : darkMode ? 'text-gray-500 hover:text-green-400' : 'text-gray-400 hover:text-green-500'}
+                      className={`flex-shrink-0 ${task.completed ? 'text-green-500' : 'text-gray-500 hover:text-green-400'}`}
                     >
-                      {task.completed ? <CheckCircle size={20} /> : <Circle size={20} />}
+                      {task.completed ? <CheckCircle size={18} className="sm:w-5 sm:h-5" /> : <Circle size={18} className="sm:w-5 sm:h-5" />}
                     </motion.button>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">{cfg.icon}</span>
-                        <span className={`font-medium text-sm ${task.completed ? 'line-through' : ''} ${darkMode ? 'text-white' : 'text-gray-900'}`}>{task.title}</span>
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${cfg.bg} ${cfg.text}`}>{task.priority}</span>
-                        {task.category && <span className={`px-2 py-0.5 rounded text-xs ${darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600'}`}>{task.category}</span>}
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <span className="text-xs sm:text-sm">{cfg.icon}</span>
+                        <span className={`font-medium text-xs sm:text-sm ${task.completed ? 'line-through' : ''} text-white truncate`}>{task.title}</span>
+                        <span className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium ${cfg.bg} ${cfg.text} flex-shrink-0`}>{task.priority}</span>
+                        {task.category && <span className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs bg-gray-700 text-gray-400 flex-shrink-0`}>{task.category}</span>}
                       </div>
-                      {task.description && <p className={`text-xs mt-0.5 truncate ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>{task.description}</p>}
+                      {task.description && <p className={`text-[10px] sm:text-xs mt-0.5 truncate text-gray-500`}>{task.description}</p>}
                     </div>
 
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      {isOverdue && <span className="flex items-center gap-1 text-red-400 text-xs"><AlertTriangle size={12} />Overdue</span>}
-                      {isDueToday && !isOverdue && <span className="flex items-center gap-1 text-yellow-400 text-xs"><Clock size={12} />Today</span>}
-                      <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>{formatDate(task.dueDate)}</span>
+                    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-3 flex-shrink-0">
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                        {isOverdue && <span className="flex items-center gap-1 text-red-400 text-[10px] sm:text-xs"><AlertTriangle size={10} className="sm:w-3 sm:h-3" />Overdue</span>}
+                        {isDueToday && !isOverdue && <span className="flex items-center gap-1 text-yellow-400 text-[10px] sm:text-xs"><Clock size={10} className="sm:w-3 sm:h-3" />Today</span>}
+                        <span className="text-[10px] sm:text-xs text-gray-500">{formatDate(task.dueDate)}</span>
+                      </div>
                       
-                      <div className={`flex items-center gap-1 px-2 py-1 rounded ${isNearComplete && !task.completed ? 'bg-yellow-500/20 border border-yellow-500/50' : darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                        <Zap size={12} className={isNearComplete && !task.completed ? 'text-yellow-400' : 'text-purple-400'} />
-                        <span className={`text-xs font-bold ${isNearComplete && !task.completed ? 'text-yellow-400' : darkMode ? 'text-white' : 'text-gray-900'}`}>
+                      <div className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded ${isNearComplete && !task.completed ? 'bg-yellow-500/20 border border-yellow-500/50' : 'bg-gray-700'}`}>
+                        <Zap size={10} className={`sm:w-3 sm:h-3 ${isNearComplete && !task.completed ? 'text-yellow-400' : 'text-purple-400'}`} />
+                        <span className={`text-[10px] sm:text-xs font-bold ${isNearComplete && !task.completed ? 'text-yellow-400' : 'text-white'}`}>
                           {isNearComplete && !task.completed ? `${task.xp}+${Math.round(task.xp * 0.25)}` : task.xp}
                         </span>
                       </div>
@@ -429,9 +438,9 @@ export function TaskBoard() {
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => deleteTask(task)}
-                        className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300"
+                        className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 p-1"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={12} className="sm:w-3.5 sm:h-3.5" />
                       </motion.button>
                     </div>
                   </div>
@@ -442,9 +451,9 @@ export function TaskBoard() {
         </div>
 
         {sortedTasks.length === 0 && (
-          <div className={`text-center py-12 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            <Target className="w-16 h-16 mx-auto mb-4 opacity-50" />
-            <p className="text-lg font-medium">No quests found</p>
+          <div className="text-center py-8 sm:py-12 text-gray-400">
+            <Target className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 opacity-50" />
+            <p className="text-sm sm:text-lg font-medium">No quests found</p>
           </div>
         )}
 
@@ -462,22 +471,22 @@ export function TaskBoard() {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className={`max-w-md w-full p-6 rounded-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-2xl`}
+                className="max-w-md w-full p-4 sm:p-6 rounded-2xl bg-gray-800 shadow-2xl max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
               >
-                <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>⚔️ Create Quest</h3>
+                <h3 className="text-lg sm:text-xl font-bold mb-4 text-white">⚔️ Create Quest</h3>
                 <div className="space-y-4">
                   <input
                     type="text"
                     value={newTask.title}
                     onChange={(e) => setNewTask(prev => ({ ...prev, title: e.target.value }))}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    className="w-full px-3 py-2 rounded-lg border text-sm bg-gray-700 border-gray-600 text-white placeholder-gray-500"
                     placeholder="Quest title..."
                   />
                   <textarea
                     value={newTask.description}
                     onChange={(e) => setNewTask(prev => ({ ...prev, description: e.target.value }))}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    className="w-full px-3 py-2 rounded-lg border text-sm bg-gray-700 border-gray-600 text-white placeholder-gray-500 resize-none"
                     placeholder="Description..."
                     rows={2}
                   />
@@ -485,7 +494,7 @@ export function TaskBoard() {
                     <select
                       value={newTask.priority}
                       onChange={(e) => setNewTask(prev => ({ ...prev, priority: e.target.value as 'Elite' | 'Core' | 'Bonus' }))}
-                      className={`px-3 py-2 rounded-lg border text-sm ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      className="px-3 py-2 rounded-lg border text-sm bg-gray-700 border-gray-600 text-white"
                     >
                       <option value="Elite">🔥 Elite</option>
                       <option value="Core">⚡ Core</option>
@@ -495,7 +504,7 @@ export function TaskBoard() {
                       type="number"
                       value={newTask.xp}
                       onChange={(e) => setNewTask(prev => ({ ...prev, xp: parseInt(e.target.value) || 100 }))}
-                      className={`px-3 py-2 rounded-lg border text-sm ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      className="px-3 py-2 rounded-lg border text-sm bg-gray-700 border-gray-600 text-white"
                       min="25" max="500" step="25"
                     />
                   </div>
@@ -503,13 +512,13 @@ export function TaskBoard() {
                     type="text"
                     value={newTask.category}
                     onChange={(e) => setNewTask(prev => ({ ...prev, category: e.target.value }))}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    className="w-full px-3 py-2 rounded-lg border text-sm bg-gray-700 border-gray-600 text-white placeholder-gray-500"
                     placeholder="Category (DSA, Learning...)"
                   />
                 </div>
                 <div className="flex gap-3 mt-6">
-                  <button onClick={() => setShowAddTask(false)} className={`flex-1 py-2 rounded-lg border text-sm ${darkMode ? 'border-gray-600 text-gray-300' : 'border-gray-300 text-gray-700'}`}>Cancel</button>
-                  <button onClick={addCustomTask} disabled={!newTask.title.trim()} className="flex-1 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg text-sm font-medium disabled:opacity-50">Create</button>
+                  <button onClick={() => setShowAddTask(false)} className="flex-1 py-2 rounded-lg border text-sm border-gray-600 text-gray-300 hover:bg-gray-700 transition-colors">Cancel</button>
+                  <button onClick={addCustomTask} disabled={!newTask.title.trim()} className="flex-1 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-purple-600 hover:to-blue-600 transition-colors">Create</button>
                 </div>
               </motion.div>
             </motion.div>

@@ -138,11 +138,13 @@ export function ProfileSetup() {
       try {
         await achievementService.unlockAchievement(authUser.id, 'profile-complete');
         dispatch({ type: 'UNLOCK_ACHIEVEMENT', payload: 'profile-complete' });
-      } catch (error) {
-        console.error('Error unlocking achievement:', error);
+      } catch (error: any) {
+        // Log error safely (stringify to avoid React conversion issues)
+        console.error('Error unlocking achievement:', error?.message || JSON.stringify(error));
       }
-    } catch (error) {
-      console.error('Error creating profile:', error);
+    } catch (error: any) {
+      // Log error safely (stringify to avoid React conversion issues)
+      console.error('Error creating profile:', error?.message || JSON.stringify(error));
     } finally {
       setLoading(false);
     }

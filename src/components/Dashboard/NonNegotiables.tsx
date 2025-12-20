@@ -336,15 +336,11 @@ export function NonNegotiables() {
     >
       {/* Danger pattern background */}
       <div className="absolute inset-0 opacity-5">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `repeating-linear-gradient(
-            45deg,
-            transparent,
-            transparent 10px,
-            ${darkMode ? '#ef4444' : '#dc2626'} 10px,
-            ${darkMode ? '#ef4444' : '#dc2626'} 20px
-          )`
-        }} />
+        <div className={`absolute inset-0 ${
+          darkMode 
+            ? 'bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#ef4444_10px,#ef4444_20px)]' 
+            : 'bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#dc2626_10px,#dc2626_20px)]'
+        }`} />
       </div>
 
       {/* Header */}

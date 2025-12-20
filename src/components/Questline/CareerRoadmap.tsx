@@ -387,7 +387,7 @@ export function CareerRoadmap() {
   const selectedPhaseData = careerPhases.find(p => p.id === selectedPhase);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] p-4 lg:p-6">
+    <div className="min-h-screen bg-[#0a0a0a] p-3 sm:p-4 lg:p-6 pb-20 lg:pb-6">
       {/* Header */}
       <div className="mb-6">
         <motion.div
@@ -827,7 +827,6 @@ export function CareerRoadmap() {
                               milestone.status === 'in-progress' ? 'bg-cyan-500' :
                               'bg-gray-700'
                             }`}
-                            style={{ width: `${milestone.progress}%` }}
                           />
                         </div>
                       </div>

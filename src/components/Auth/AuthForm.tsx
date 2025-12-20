@@ -85,8 +85,9 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
         }, 1000);
       }
     } catch (err: any) {
-      console.error('Auth error:', err);
-      setLocalError(err.message || 'An unexpected error occurred');
+      // Log error safely (stringify to avoid React conversion issues)
+      console.error('Auth error:', err?.message || JSON.stringify(err));
+      setLocalError(err?.message || 'An unexpected error occurred');
     } finally {
       setLocalLoading(false);
     }

@@ -214,7 +214,7 @@ export function Finance() {
   };
 
   return (
-    <div className="p-3 sm:p-4 lg:p-6 bg-[#0a0a0a] min-h-screen">
+    <div className="p-3 sm:p-4 lg:p-6 bg-[#0a0a0a] min-h-screen pb-20 lg:pb-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -579,16 +579,13 @@ export function Finance() {
                           expenseCategories[0]
                         );
                       }}
-                      className={`p-2 font-bold border-2 text-sm transition-colors flex flex-col items-center gap-1 ${
+                      className={`p-2 font-bold border-2 text-xs sm:text-sm transition-colors flex flex-col items-center gap-1 ${
                         transactionType === t.type
-                          ? `bg-${t.color}-500 text-black border-${t.color}-400`
+                          ? t.color === 'green' ? 'bg-green-500 text-black border-green-400' :
+                            t.color === 'red' ? 'bg-red-500 text-black border-red-400' :
+                            'bg-cyan-500 text-black border-cyan-400'
                           : 'bg-gray-800 text-gray-400 border-gray-700'
                       }`}
-                      style={{
-                        backgroundColor: transactionType === t.type 
-                          ? t.color === 'green' ? '#22c55e' : t.color === 'red' ? '#ef4444' : '#06b6d4'
-                          : undefined
-                      }}
                     >
                       <t.icon size={20} />
                       {t.label}
