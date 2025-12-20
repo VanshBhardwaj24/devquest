@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, Target, Calendar, Zap } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { Card } from '../ui/card';
 
 export function StatsOverview() {
   const { state } = useApp();
@@ -12,38 +13,41 @@ export function StatsOverview() {
       title: 'Total XP',
       value: user?.xp.toLocaleString() || '0',
       icon: Zap,
-      color: 'from-purple-500 to-blue-500',
+      bg: 'bg-purple-500',
+      text: 'text-white',
       change: '+150 this week',
     },
     {
       title: 'Current Level',
       value: user?.level || 1,
       icon: TrendingUp,
-      color: 'from-green-500 to-emerald-500',
-      change: `${user?.tier} tier`,
+      bg: 'bg-green-500',
+      text: 'text-black',
+      change: `${user?.tier || 'Novice'} tier`,
     },
     {
       title: 'Active Tasks',
       value: tasks.filter(t => !t.completed).length,
       icon: Target,
-      color: 'from-orange-500 to-red-500',
+      bg: 'bg-orange-500',
+      text: 'text-black',
       change: '+3 this week',
     },
     {
       title: 'Streak Days',
       value: user?.streak || 0,
       icon: Calendar,
-      color: 'from-blue-500 to-cyan-500',
+      bg: 'bg-blue-500',
+      text: 'text-white',
       change: 'Keep it up!',
     },
   ];
 
   return (
-    <div className={`rounded-2xl p-6 ${
-      darkMode ? 'bg-gray-800' : 'bg-white'
-    } shadow-lg`}>
-      <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-        Your Progress Overview
+    <Card variant="brutal" className={`p-6 ${darkMode ? 'bg-zinc-900 border-white text-white' : 'bg-white border-black text-black'}`}>
+      <h2 className="text-2xl font-black mb-6 uppercase tracking-tight flex items-center gap-2">
+        <TrendingUp className={darkMode ? "text-white" : "text-black"} />
+        Your Progress
       </h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -55,31 +59,33 @@ export function StatsOverview() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              whileHover={{ scale: 1.05 }}
-              className={`p-4 rounded-xl ${
-                darkMode ? 'bg-gray-700' : 'bg-gray-50'
-              } border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}
+              whileHover={{ scale: 1.02, rotate: -1 }}
+              className={`p-4 border-2 border-black transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${
+                darkMode ? 'bg-zinc-800 border-zinc-500' : 'bg-white'
+              }`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className={`p-2 rounded-lg bg-gradient-to-r ${stat.color}`}>
-                  <Icon className="h-5 w-5 text-white" />
+              <div className="flex items-center justify-between mb-4">
+                <div className={`p-3 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${stat.bg}`}>
+                  <Icon className={`h-5 w-5 ${stat.text}`} />
                 </div>
                 <div className="text-right">
-                  <div className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  <div className={`text-3xl font-black ${darkMode ? 'text-white' : 'text-black'}`}>
                     {stat.value}
-                  </div>
-                  <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {stat.title}
                   </div>
                 </div>
               </div>
-              <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                {stat.change}
+              <div className="flex justify-between items-end">
+                <div className={`text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {stat.title}
+                </div>
+                <div className={`text-xs font-mono bg-black text-white px-1 py-0.5 ${darkMode ? 'bg-white text-black' : ''}`}>
+                  {stat.change}
+                </div>
               </div>
             </motion.div>
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }

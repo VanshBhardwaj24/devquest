@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gift, Sparkles, Zap, Coins, Trophy, Crown } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { Card } from '@/components/ui/card';
 import confetti from 'canvas-confetti';
 
 interface SpinReward {
@@ -100,29 +101,29 @@ export function DailySpinWheel() {
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
-      case 'legendary': return 'border-yellow-400 bg-yellow-900/20';
-      case 'epic': return 'border-purple-400 bg-purple-900/20';
-      case 'rare': return 'border-blue-400 bg-blue-900/20';
-      default: return 'border-gray-400 bg-gray-800/20';
+      case 'legendary': return 'border-yellow-500 bg-yellow-900/50';
+      case 'epic': return 'border-purple-500 bg-purple-900/50';
+      case 'rare': return 'border-blue-500 bg-blue-900/50';
+      default: return 'border-zinc-500 bg-zinc-800';
     }
   };
 
   return (
-    <div className="brutal-card bg-gray-900 border-lime-500/30 p-3 sm:p-4 lg:p-6">
+    <Card variant="brutal" className="bg-zinc-900 border-lime-500/30 p-3 sm:p-4 lg:p-6">
       <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
-        <h3 className="text-base sm:text-lg lg:text-xl font-black text-white flex items-center gap-1.5 sm:gap-2 min-w-0">
+        <h3 className="text-base sm:text-lg lg:text-xl font-black text-white flex items-center gap-1.5 sm:gap-2 min-w-0 font-mono uppercase">
           <Sparkles className="text-yellow-400 w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
           <span className="truncate">Daily Spin</span>
         </h3>
         {hasSpunToday && (
-          <span className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap flex-shrink-0">Spun ✓</span>
+          <span className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap flex-shrink-0 font-mono uppercase">Spun ✓</span>
         )}
       </div>
 
       <div className="relative flex flex-col items-center">
         {/* Wheel Container */}
         <div className="relative w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 mb-4 sm:mb-6">
-          <div className="absolute inset-0 rounded-full border-8 border-gray-800 bg-gray-900" />
+          <div className="absolute inset-0 rounded-full border-8 border-zinc-800 bg-zinc-900" />
           
           {/* Spinning Wheel */}
           <motion.div
@@ -131,7 +132,7 @@ export function DailySpinWheel() {
               duration: 4, 
               ease: [0.17, 0.67, 0.83, 0.67] // Ease out cubic
             }}
-            className="absolute inset-2 rounded-full overflow-hidden"
+            className="absolute inset-2 rounded-full overflow-hidden border-4 border-black"
             style={{ transformOrigin: 'center' }}
           >
             {SPIN_REWARDS.map((reward, index) => {
@@ -160,12 +161,12 @@ export function DailySpinWheel() {
 
           {/* Pointer */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-10">
-            <div className="w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[30px] border-t-lime-500" />
+            <div className="w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[30px] border-t-lime-500 drop-shadow-[4px_4px_0px_rgba(0,0,0,1)]" />
           </div>
 
           {/* Center Circle */}
           <div className="absolute inset-0 flex items-center justify-center z-20">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-gray-900 border-4 border-lime-500 rounded-full flex items-center justify-center brutal-shadow">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-zinc-900 border-4 border-lime-500 rounded-full flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
               {isSpinning ? (
                 <motion.div
                   animate={{ rotate: 360 }}
@@ -186,12 +187,12 @@ export function DailySpinWheel() {
           whileTap={!hasSpunToday && !isSpinning ? { scale: 0.95 } : {}}
           onClick={handleSpin}
           disabled={isSpinning || hasSpunToday}
-          className={`w-full px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 font-black text-sm sm:text-base md:text-lg rounded-lg border-4 border-black brutal-shadow transition-all ${
+          className={`w-full px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 font-black text-sm sm:text-base md:text-lg border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all font-mono uppercase ${
             hasSpunToday
-              ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+              ? 'bg-zinc-700 text-gray-500 cursor-not-allowed shadow-none translate-y-[4px] translate-x-[4px]'
               : isSpinning
               ? 'bg-yellow-500 text-black animate-pulse'
-              : 'bg-gradient-to-r from-yellow-400 via-orange-500 to-pink-500 text-black hover:from-yellow-300 hover:via-orange-400 hover:to-pink-400'
+              : 'bg-lime-500 text-black hover:bg-lime-400'
           }`}
         >
           {isSpinning ? (
@@ -229,7 +230,7 @@ export function DailySpinWheel() {
               <motion.div
                 initial={{ y: 50 }}
                 animate={{ y: 0 }}
-                className={`brutal-card p-8 max-w-sm w-full text-center border-4 ${getRarityColor(wonReward.rarity)}`}
+                className={`p-8 max-w-sm w-full text-center border-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] ${getRarityColor(wonReward.rarity)}`}
                 onClick={(e) => e.stopPropagation()}
               >
                 <motion.div
@@ -240,18 +241,18 @@ export function DailySpinWheel() {
                 >
                   {wonReward.icon}
                 </motion.div>
-                <h3 className="text-2xl font-black text-white mb-2">
+                <h3 className="text-2xl font-black text-white mb-2 font-mono uppercase">
                   {wonReward.rarity === 'legendary' && '🎉 LEGENDARY! 🎉'}
                   {wonReward.rarity === 'epic' && '✨ EPIC! ✨'}
                   {wonReward.rarity === 'rare' && '⭐ RARE! ⭐'}
                   {wonReward.rarity === 'common' && '🎁 NICE!'}
                 </h3>
-                <p className="text-xl font-bold text-lime-400 mb-4">{wonReward.label}</p>
+                <p className="text-xl font-bold text-white mb-4 font-mono">{wonReward.label}</p>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setShowResult(false)}
-                  className="px-6 py-3 bg-lime-500 text-black font-black border-2 border-black brutal-shadow"
+                  className="px-6 py-3 bg-lime-500 text-black font-black border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono uppercase hover:bg-lime-400"
                 >
                   CLAIM REWARD
                 </motion.button>
@@ -266,15 +267,15 @@ export function DailySpinWheel() {
         {SPIN_REWARDS.map((reward) => (
           <div
             key={reward.id}
-            className={`p-1.5 sm:p-2 rounded border-2 text-center ${getRarityColor(reward.rarity)}`}
+            className={`p-1.5 sm:p-2 border-2 text-center ${getRarityColor(reward.rarity)}`}
             title={reward.label}
           >
             <div className="text-base sm:text-xl mb-0.5 sm:mb-1">{reward.icon}</div>
-            <div className="text-[7px] sm:text-[8px] text-gray-400 truncate">{reward.rarity}</div>
+            <div className="text-[7px] sm:text-[8px] text-gray-400 truncate font-mono uppercase">{reward.rarity}</div>
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 

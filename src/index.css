@@ -2,155 +2,184 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Neo-Brutalist Theme Variables */
-:root {
-  --neo-shadow: 4px 4px 0px 0px;
-  --neo-shadow-lg: 6px 6px 0px 0px;
-  --neo-shadow-sm: 2px 2px 0px 0px;
-  --neo-border: 3px solid;
-  --neo-border-thin: 2px solid;
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+
+    /* Custom Cyberpunk Vars - Default to darker for contrast on white? Or keep neon? 
+       Neon colors on white might be hard to read. 
+       Let's adjust them slightly or keep them as accent colors. 
+    */
+    --neon-blue: #00f3ff;
+    --neon-purple: #bc13fe;
+    --neon-pink: #ff00ff;
+    --neon-green: #0aff0a;
+    --neon-yellow: #fcee0a;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
 }
 
-/* Custom utility classes */
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-image: 
+      radial-gradient(circle at 50% 50%, rgba(188, 19, 254, 0.05) 0%, transparent 50%),
+      linear-gradient(rgba(0, 243, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 243, 255, 0.02) 1px, transparent 1px);
+    background-size: 100% 100%, 30px 30px, 30px 30px;
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+  }
+}
+
+/* Custom Utilities */
 @layer utilities {
+  .glass-panel {
+    @apply bg-black/40 backdrop-blur-md border border-white/10 shadow-xl;
+  }
+  
+  .neon-border-blue {
+    box-shadow: 0 0 5px var(--neon-blue), inset 0 0 5px var(--neon-blue);
+    border: 1px solid var(--neon-blue);
+  }
+  
+  .neon-text-blue {
+    text-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue);
+    color: var(--neon-blue);
+  }
+  
+  .neon-text-purple {
+    text-shadow: 0 0 5px var(--neon-purple), 0 0 10px var(--neon-purple);
+    color: var(--neon-purple);
+  }
+  
+  .holographic-card {
+    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+  
+  .cyber-button {
+    @apply relative px-6 py-2 font-bold uppercase transition-all duration-300;
+    background: linear-gradient(45deg, transparent 5%, var(--neon-blue) 5%);
+    color: black;
+    box-shadow: 6px 0px 0px 0px var(--neon-purple);
+  }
+  
+  .cyber-button:hover {
+    background: linear-gradient(45deg, transparent 5%, var(--neon-purple) 5%);
+    box-shadow: 6px 0px 0px 0px var(--neon-blue);
+    color: white;
+  }
+  
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+  
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
   
-  /* Neo-Brutalist Shadows - Primary */
-  .brutal-shadow {
-    box-shadow: var(--neo-shadow) #000;
+  /* Hexagon Mask for Avatars */
+  .mask-hexagon {
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   }
-  .neo-shadow {
-    box-shadow: var(--neo-shadow) #000;
-  }
-  .neo-shadow-lg {
-    box-shadow: var(--neo-shadow-lg) #000;
-  }
-  .neo-shadow-sm {
-    box-shadow: var(--neo-shadow-sm) #000;
-  }
-  
-  /* Brutal Card Component */
-  .brutal-card {
-    border: 2px solid #374151;
-    box-shadow: var(--neo-shadow) #000;
-    border-radius: 0;
-  }
-  .brutal-card:hover {
-    transform: translate(-1px, -1px);
-    box-shadow: 5px 5px 0px 0px #000;
-  }
-  
-  .neo-shadow-purple {
-    box-shadow: var(--neo-shadow) #a855f7;
-  }
-  .neo-shadow-green {
-    box-shadow: var(--neo-shadow) #22c55e;
-  }
-  .neo-shadow-yellow {
-    box-shadow: var(--neo-shadow) #eab308;
-  }
-  .neo-shadow-blue {
-    box-shadow: var(--neo-shadow) #3b82f6;
-  }
-  .neo-shadow-pink {
-    box-shadow: var(--neo-shadow) #ec4899;
-  }
-  .neo-shadow-cyan {
-    box-shadow: var(--neo-shadow) #06b6d4;
-  }
-  
-  /* Neo-Brutalist Borders */
-  .neo-border {
-    border: var(--neo-border) currentColor;
-  }
-  .neo-border-thin {
-    border: var(--neo-border-thin) currentColor;
-  }
-  
-  /* Hover effects */
-  .neo-hover:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 6px 6px 0px 0px #000;
-  }
-  .neo-hover:active {
-    transform: translate(2px, 2px);
-    box-shadow: 0px 0px 0px 0px #000;
-  }
-  
-  /* Glitch text effect for nerdy theme */
-  .glitch-text {
-    text-shadow: 
-      2px 2px 0 #ff00ff,
-      -2px -2px 0 #00ffff;
-  }
-  
-  /* Scanline overlay */
-  .scanlines::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0, 0, 0, 0.1) 2px,
-      rgba(0, 0, 0, 0.1) 4px
-    );
-    pointer-events: none;
-  }
-  
-  /* Pixel corners */
-  .pixel-corners {
-    clip-path: polygon(
-      0 8px, 8px 8px, 8px 0,
-      calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px,
-      100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%,
-      8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px)
-    );
-  }
-}
 
-/* Custom font for nerdy theme */
-@layer base {
-  body {
-    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  /* Neo Brutalist */
+  .brutal-shadow {
+    box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+  }
+
+  .brutal-shadow-lg {
+    box-shadow: 8px 8px 0px 0px rgba(0,0,0,1);
+  }
+
+  .brutal-shadow-sm {
+    box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
   }
   
-  /* Dark mode base styles */
-  .dark {
-    --tw-bg-opacity: 1;
-    background-color: rgb(10 10 10 / var(--tw-bg-opacity));
+  .brutal-card {
+    @apply bg-white dark:bg-zinc-900 border-2 border-black dark:border-white rounded-none;
+    box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+    transition: all 0.2s ease;
   }
   
-  /* Mobile touch improvements */
-  @media (max-width: 768px) {
-    button, a {
-      -webkit-tap-highlight-color: rgba(132, 204, 22, 0.3);
-      touch-action: manipulation;
-    }
-    
-    /* Better scrolling on mobile */
-    * {
-      -webkit-overflow-scrolling: touch;
-    }
+  .brutal-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px 0px rgba(0,0,0,1);
   }
-  
-  /* Responsive text sizes */
-  @media (max-width: 640px) {
-    html {
-      font-size: 14px;
-    }
+
+  .dark .brutal-card {
+    box-shadow: 4px 4px 0px 0px #ffffff;
   }
-  
-  /* Prevent text selection on buttons for better mobile UX */
-  button {
-    user-select: none;
-    -webkit-user-select: none;
+
+  .dark .brutal-card:hover {
+    box-shadow: 6px 6px 0px 0px #ffffff;
+  }
+
+  .brutal-btn {
+    @apply font-mono font-bold uppercase border-2 border-black dark:border-white transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none rounded-none;
+    box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+  }
+
+  .dark .brutal-btn {
+    box-shadow: 4px 4px 0px 0px #ffffff;
+  }
+
+  .brutal-input {
+    @apply font-mono border-2 border-black dark:border-white bg-transparent px-3 py-2 outline-none focus:translate-x-[-2px] focus:translate-y-[-2px] transition-all rounded-none;
+    box-shadow: none;
+  }
+
+  .brutal-input:focus {
+    box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+  }
+
+  .dark .brutal-input:focus {
+    box-shadow: 4px 4px 0px 0px #ffffff;
   }
 }

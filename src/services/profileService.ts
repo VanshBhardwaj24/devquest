@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { User } from '../types';
+import { calculateTier } from '../lib/utils';
 
 export const profileService = {
   async getProfile(userId: string) {

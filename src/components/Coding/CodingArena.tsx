@@ -1235,14 +1235,14 @@ export function CodingArena() {
   }
 
   return (
-    <div className="p-3 sm:p-4 lg:p-6 bg-[#0a0a0a] min-h-screen pb-20 lg:pb-6">
+    <div className={`p-3 sm:p-4 lg:p-6 min-h-screen pb-20 lg:pb-6 ${darkMode ? 'bg-[#0a0a0a]' : 'bg-gray-50'}`}>
       <div className="max-w-7xl mx-auto">
         {/* Header - Neo Brutalist */}
         <div className="mb-4 sm:mb-6 lg:mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white mb-1 sm:mb-2 font-mono">
+          <h1 className={`text-2xl sm:text-3xl lg:text-4xl font-black mb-1 sm:mb-2 font-mono ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             CODE_ARENA <span className="text-lime-400">🚀</span>
           </h1>
-          <p className="text-sm sm:text-base lg:text-lg text-gray-500 font-mono">
+          <p className={`text-sm sm:text-base lg:text-lg font-mono ${darkMode ? 'text-gray-500' : 'text-gray-600'}`}>
             // Master {problems.length}+ problems from top platforms
           </p>
         </div>
@@ -1793,7 +1793,9 @@ export function CodingArena() {
                     className={`p-2 rounded-lg transition-colors ${
                       problem.needsRevision
                         ? 'bg-orange-500 hover:bg-orange-600 text-white'
-                        : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                        : darkMode 
+                          ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                          : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
                     }`}
                     title={problem.needsRevision ? "Remove from Revision" : "Add to Revision"}
                   >

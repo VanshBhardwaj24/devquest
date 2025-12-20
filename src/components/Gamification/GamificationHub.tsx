@@ -123,18 +123,18 @@ export function GamificationHub() {
 
   // Enhanced power-ups with ownership and active state
   const powerUps = useMemo<Array<PowerUpType & { owned: number; active: boolean; remainingTime: number }>>(() => {
-    return unlockedPowerUps.map(pu => ({
-      ...pu,
-      owned: Math.max(0, Math.floor(
-        pu.unlockCondition.type === 'level' ? currentLevel / pu.unlockCondition.value :
-        pu.unlockCondition.type === 'streak' ? streak / pu.unlockCondition.value :
-        pu.unlockCondition.type === 'tasks' ? completedTasks / pu.unlockCondition.value :
-        1
-      )),
-      active: false, // Would be set based on active power-ups state
-      remainingTime: 0 // Would be set based on active power-ups state
-    }));
-  }, [unlockedPowerUps, currentLevel, streak, completedTasks]);
+    return unlockedPowerUps.map(pu => {
+      const ownedCount = state.ownedPowerUps?.[pu.id] || 0;
+      const activeState = state.activePowerUps?.find(p => p.id === pu.id);
+      
+      return {
+        ...pu,
+        owned: ownedCount,
+        active: !!activeState,
+        remainingTime: activeState ? Math.max(0, Math.ceil((activeState.expiresAt - Date.now()) / 60000)) : 0
+      };
+    });
+  }, [unlockedPowerUps, state.ownedPowerUps, state.activePowerUps]);
 
   // Daily rewards calendar
   const dailyRewards = useMemo<DailyReward[]>(() => {
@@ -377,75 +377,82 @@ export function GamificationHub() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`p-6 bg-gradient-to-br ${xpStats.titleInfo.color} rounded-2xl text-white relative overflow-hidden`}
       >
-        <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-        
-        <div className="relative z-10">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-white/70 text-sm">Current Rank</p>
-              <h2 className="text-2xl font-bold">{xpStats.titleInfo.title}</h2>
+        <Card variant="brutal" className="bg-zinc-900 border-white text-white relative overflow-hidden">
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-gray-400 text-sm font-mono uppercase">Current Rank</p>
+                <h2 className="text-2xl font-black font-mono uppercase text-brutal-cyan">{xpStats.titleInfo.title}</h2>
+              </div>
+              <div className="text-right">
+                <div className="text-4xl font-black font-mono">{currentLevel}</div>
+                <p className="text-gray-400 text-sm font-mono uppercase">Level</p>
+              </div>
             </div>
-            <div className="text-right">
-              <div className="text-4xl font-black">{currentLevel}</div>
-              <p className="text-white/70 text-sm">Level</p>
-            </div>
-          </div>
 
-          <div className="mb-2">
-            <div className="flex justify-between text-sm mb-1">
-              <span>{xpStats.levelXP.toLocaleString()} / {xpStats.neededXP.toLocaleString()} XP</span>
-              <span>{xpStats.progress.toFixed(0)}%</span>
+            <div className="mb-2">
+              <div className="flex justify-between text-sm mb-1 font-mono">
+                <span>{xpStats.levelXP.toLocaleString()} / {xpStats.neededXP.toLocaleString()} XP</span>
+                <span>{xpStats.progress.toFixed(0)}%</span>
+              </div>
+              <div className="h-4 bg-black border-2 border-white/20">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${xpStats.progress}%` }}
+                  className="h-full bg-brutal-green border-r-2 border-black"
+                />
+              </div>
             </div>
-            <div className="h-3 bg-black/20 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${xpStats.progress}%` }}
-                className="h-full bg-white/90 rounded-full"
-              />
-            </div>
-          </div>
 
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-1">
-              <Coins size={14} /> {currentXP.toLocaleString()} Total XP
-            </span>
-            <span className="flex items-center gap-1">
-              <Gem size={14} /> {coins.toLocaleString()} Coins
-            </span>
+            <div className="flex items-center justify-between text-sm font-mono mt-4">
+              <span className="flex items-center gap-1 text-brutal-yellow">
+                <Coins size={14} /> {currentXP.toLocaleString()} Total XP
+              </span>
+              <span className="flex items-center gap-1 text-brutal-pink">
+                <Gem size={14} /> {coins.toLocaleString()} Coins
+              </span>
+            </div>
           </div>
-        </div>
+        </Card>
       </motion.div>
 
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <motion.div whileHover={{ y: -2 }} className="brutal-card bg-gray-900 border-orange-500/50 p-4 text-center">
-          <Flame className="text-orange-400 mx-auto mb-2" size={24} />
-          <p className="text-2xl font-black text-white">{streak}</p>
-          <p className="text-xs text-gray-500">Day Streak</p>
-          <p className="text-xs text-orange-400 mt-1">{streakMultiplier}x Bonus</p>
+        <motion.div whileHover={{ y: -2 }}>
+          <Card variant="brutal" className="bg-zinc-900 border-orange-500 p-4 text-center h-full flex flex-col justify-center items-center">
+            <Flame className="text-orange-400 mb-2" size={24} />
+            <p className="text-2xl font-black text-white font-mono">{streak}</p>
+            <p className="text-xs text-gray-500 font-mono uppercase">Day Streak</p>
+            <p className="text-xs text-orange-400 mt-1 font-mono">{streakMultiplier}x Bonus</p>
+          </Card>
         </motion.div>
 
-        <motion.div whileHover={{ y: -2 }} className="brutal-card bg-gray-900 border-lime-500/50 p-4 text-center">
-          <Zap className="text-lime-400 mx-auto mb-2" size={24} />
-          <p className="text-2xl font-black text-white">{activePowerUps.length}</p>
-          <p className="text-xs text-gray-500">Active Boosts</p>
-          <p className="text-xs text-lime-400 mt-1">{powerUps.reduce((a, p) => a + p.owned, 0)} Total</p>
+        <motion.div whileHover={{ y: -2 }}>
+          <Card variant="brutal" className="bg-zinc-900 border-lime-500 p-4 text-center h-full flex flex-col justify-center items-center">
+            <Zap className="text-lime-400 mb-2" size={24} />
+            <p className="text-2xl font-black text-white font-mono">{activePowerUps.length}</p>
+            <p className="text-xs text-gray-500 font-mono uppercase">Active Boosts</p>
+            <p className="text-xs text-lime-400 mt-1 font-mono">{powerUps.reduce((a, p) => a + p.owned, 0)} Total</p>
+          </Card>
         </motion.div>
 
-        <motion.div whileHover={{ y: -2 }} className="brutal-card bg-gray-900 border-cyan-500/50 p-4 text-center">
-          <Trophy className="text-cyan-400 mx-auto mb-2" size={24} />
-          <p className="text-2xl font-black text-white">{achievements.filter(a => a.unlocked).length}</p>
-          <p className="text-xs text-gray-500">Achievements</p>
-          <p className="text-xs text-cyan-400 mt-1">of {achievements.length}</p>
+        <motion.div whileHover={{ y: -2 }}>
+          <Card variant="brutal" className="bg-zinc-900 border-cyan-500 p-4 text-center h-full flex flex-col justify-center items-center">
+            <Trophy className="text-cyan-400 mb-2" size={24} />
+            <p className="text-2xl font-black text-white font-mono">{achievements.filter(a => a.unlocked).length}</p>
+            <p className="text-xs text-gray-500 font-mono uppercase">Achievements</p>
+            <p className="text-xs text-cyan-400 mt-1 font-mono">of {achievements.length}</p>
+          </Card>
         </motion.div>
 
-        <motion.div whileHover={{ y: -2 }} className="brutal-card bg-gray-900 border-fuchsia-500/50 p-4 text-center">
-          <Package className="text-fuchsia-400 mx-auto mb-2" size={24} />
-          <p className="text-2xl font-black text-white">{lootBoxes.reduce((a, b) => a + b.owned, 0)}</p>
-          <p className="text-xs text-gray-500">Chests</p>
-          <p className="text-xs text-fuchsia-400 mt-1">Ready to Open</p>
+        <motion.div whileHover={{ y: -2 }}>
+          <Card variant="brutal" className="bg-zinc-900 border-fuchsia-500 p-4 text-center h-full flex flex-col justify-center items-center">
+            <Package className="text-fuchsia-400 mb-2" size={24} />
+            <p className="text-2xl font-black text-white font-mono">{lootBoxes.reduce((a, b) => a + b.owned, 0)}</p>
+            <p className="text-xs text-gray-500 font-mono uppercase">Chests</p>
+            <p className="text-xs text-fuchsia-400 mt-1 font-mono">Ready to Open</p>
+          </Card>
         </motion.div>
       </div>
 
@@ -453,35 +460,38 @@ export function GamificationHub() {
       <motion.div
         whileHover={{ scale: dailyLoginClaimed ? 1 : 1.01 }}
         onClick={claimDailyLogin}
-        className={`p-4 rounded-xl cursor-pointer border-2 ${
-          dailyLoginClaimed 
-            ? 'bg-gray-800 border-gray-700' 
-            : 'bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400'
-        }`}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Gift className={dailyLoginClaimed ? 'text-gray-500' : 'text-yellow-300'} size={28} />
-            <div>
-              <h3 className={`font-bold ${dailyLoginClaimed ? 'text-gray-400' : 'text-white'}`}>
-                {dailyLoginClaimed ? 'Claimed!' : 'Daily Login Bonus'}
-              </h3>
-              <p className={`text-sm ${dailyLoginClaimed ? 'text-gray-500' : 'text-purple-200'}`}>
-                {dailyLoginClaimed ? 'Come back tomorrow!' : `+${50 + streak * 10} XP`}
-              </p>
+        <Card variant="brutal" className={`cursor-pointer ${
+          dailyLoginClaimed 
+            ? 'bg-zinc-800 border-zinc-600' 
+            : 'bg-zinc-900 border-brutal-purple'
+        }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 border-2 border-black ${dailyLoginClaimed ? 'bg-gray-700' : 'bg-brutal-yellow'}`}>
+                <Gift className="text-black" size={24} />
+              </div>
+              <div>
+                <h3 className={`font-black font-mono uppercase ${dailyLoginClaimed ? 'text-gray-400' : 'text-white'}`}>
+                  {dailyLoginClaimed ? 'Claimed!' : 'Daily Login Bonus'}
+                </h3>
+                <p className={`text-sm font-mono ${dailyLoginClaimed ? 'text-gray-500' : 'text-brutal-purple'}`}>
+                  {dailyLoginClaimed ? 'Come back tomorrow!' : `+${50 + streak * 10} XP`}
+                </p>
+              </div>
             </div>
+            {!dailyLoginClaimed && <Sparkles className="text-brutal-yellow animate-pulse" size={24} />}
           </div>
-          {!dailyLoginClaimed && <Sparkles className="text-yellow-300 animate-pulse" size={24} />}
-        </div>
+        </Card>
       </motion.div>
 
       {/* Daily Rewards Calendar */}
-      <div className="brutal-card bg-gray-900 border-lime-500/30 p-4">
+      <Card variant="brutal" className="bg-zinc-900 border-lime-500/30">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-white flex items-center gap-2">
+          <h3 className="font-bold text-white flex items-center gap-2 font-mono uppercase">
             <Calendar size={18} className="text-lime-400" /> Weekly Rewards
           </h3>
-          <span className="text-xs text-gray-500 flex items-center gap-1">
+          <span className="text-xs text-gray-500 flex items-center gap-1 font-mono">
             <Clock size={12} /> Resets in {timeUntilReset}
           </span>
         </div>
@@ -491,22 +501,22 @@ export function GamificationHub() {
             <motion.div
               key={day.day}
               whileHover={{ y: -2 }}
-              className={`p-2 rounded-lg text-center border-2 ${
+              className={`p-2 text-center border-2 ${
                 day.claimed 
-                  ? 'bg-lime-500/20 border-lime-500/50' 
+                  ? 'bg-lime-500/20 border-lime-500' 
                   : day.current 
-                    ? 'bg-cyan-500/20 border-cyan-500 ring-2 ring-cyan-400'
-                    : 'bg-gray-800 border-gray-700'
+                    ? 'bg-cyan-500/20 border-cyan-500 shadow-[2px_2px_0px_0px_rgba(34,211,238,1)]'
+                    : 'bg-zinc-800 border-zinc-700'
               }`}
             >
-              <p className={`text-xs ${day.claimed ? 'text-lime-400' : 'text-gray-500'}`}>Day {day.day}</p>
+              <p className={`text-xs font-mono font-bold ${day.claimed ? 'text-lime-400' : 'text-gray-500'}`}>Day {day.day}</p>
               <div className="text-lg my-1">
                 {day.reward.type === 'xp' && '⚡'}
                 {day.reward.type === 'coins' && '💰'}
                 {day.reward.type === 'powerup' && '🎁'}
                 {day.reward.type === 'chest' && '📦'}
               </div>
-              <p className="text-[10px] text-gray-400">
+              <p className="text-[10px] text-gray-400 font-mono">
                 {day.reward.type === 'xp' && `+${day.reward.amount}`}
                 {day.reward.type === 'coins' && `${day.reward.amount}`}
                 {day.reward.type === 'powerup' && 'Power-Up'}
@@ -516,32 +526,32 @@ export function GamificationHub() {
             </motion.div>
           ))}
         </div>
-      </div>
+      </Card>
 
       {/* Active Power-Ups */}
       {activePowerUps.length > 0 && (
-        <div className="brutal-card bg-gray-900 border-fuchsia-500/30 p-4">
-          <h3 className="font-bold text-white flex items-center gap-2 mb-3">
+        <Card variant="brutal" className="bg-zinc-900 border-fuchsia-500/30">
+          <h3 className="font-bold text-white flex items-center gap-2 mb-3 font-mono uppercase">
             <Zap size={18} className="text-fuchsia-400" /> Active Power-Ups
           </h3>
           <div className="space-y-2">
             {activePowerUps.map((powerUp) => (
-              <div key={powerUp.id} className="flex items-center justify-between p-2 bg-gray-800 rounded-lg">
+              <div key={powerUp.id} className="flex items-center justify-between p-2 bg-zinc-800 border-2 border-zinc-700">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">{powerUp.icon}</span>
                   <div>
-                    <p className="text-sm font-bold text-white">{powerUp.name}</p>
-                    <p className="text-xs text-gray-500">{powerUp.multiplier}x multiplier</p>
+                    <p className="text-sm font-bold text-white font-mono">{powerUp.name}</p>
+                    <p className="text-xs text-gray-500 font-mono">{powerUp.multiplier}x multiplier</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-fuchsia-400 rounded-full animate-pulse" />
-                  <span className="text-xs text-fuchsia-400">Active</span>
+                  <div className="w-2 h-2 bg-fuchsia-400 animate-pulse" />
+                  <span className="text-xs text-fuchsia-400 font-mono uppercase">Active</span>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );
@@ -549,8 +559,8 @@ export function GamificationHub() {
   const renderPowerUps = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white">Power-Ups & Boosters</h2>
-        <span className="text-sm text-gray-400 flex items-center gap-1">
+        <h2 className="text-xl font-black text-white font-mono uppercase">Power-Ups & Boosters</h2>
+        <span className="text-sm text-gray-400 flex items-center gap-1 font-mono">
           <Gem size={14} className="text-yellow-400" /> {coins.toLocaleString()} Coins
         </span>
       </div>
@@ -558,13 +568,13 @@ export function GamificationHub() {
       {/* Rarity Legend */}
       <div className="flex flex-wrap gap-2">
         {['common', 'rare', 'epic', 'legendary'].map((rarity) => (
-          <span key={rarity} className={`px-2 py-1 rounded text-xs font-medium ${
-            rarity === 'common' ? 'bg-gray-700 text-gray-300' :
+          <span key={rarity} className={`px-2 py-1 border-2 border-black text-xs font-bold font-mono uppercase ${
+            rarity === 'common' ? 'bg-zinc-700 text-gray-300' :
             rarity === 'rare' ? 'bg-blue-900 text-blue-300' :
             rarity === 'epic' ? 'bg-purple-900 text-purple-300' :
             'bg-yellow-900 text-yellow-300'
           }`}>
-            {rarity.charAt(0).toUpperCase() + rarity.slice(1)}
+            {rarity}
           </span>
         ))}
       </div>
@@ -575,42 +585,71 @@ export function GamificationHub() {
           <motion.div
             key={powerUp.id}
             whileHover={{ y: -4 }}
-            className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+            className={`p-4 border-2 cursor-pointer transition-all ${
               powerUp.active 
                 ? 'bg-fuchsia-500/20 border-fuchsia-500' 
                 : powerUp.rarity === 'legendary' ? 'bg-yellow-900/20 border-yellow-500/50' :
                   powerUp.rarity === 'epic' ? 'bg-purple-900/20 border-purple-500/50' :
                   powerUp.rarity === 'rare' ? 'bg-blue-900/20 border-blue-500/50' :
-                  'bg-gray-800 border-gray-700'
+                  'bg-zinc-800 border-zinc-700'
             }`}
           >
             <div className="flex items-start justify-between mb-3">
               <div className="text-3xl">{powerUp.icon}</div>
               <div className="flex items-center gap-1">
-                {powerUp.active && <div className="w-2 h-2 bg-fuchsia-400 rounded-full animate-pulse" />}
-                <span className={`text-xs px-2 py-0.5 rounded ${
+                {powerUp.active && <div className="w-2 h-2 bg-fuchsia-400 animate-pulse" />}
+                <span className={`text-xs px-2 py-0.5 border border-black font-mono uppercase font-bold ${
                   powerUp.rarity === 'legendary' ? 'bg-yellow-500/20 text-yellow-300' :
                   powerUp.rarity === 'epic' ? 'bg-purple-500/20 text-purple-300' :
                   powerUp.rarity === 'rare' ? 'bg-blue-500/20 text-blue-300' :
-                  'bg-gray-600 text-gray-300'
+                  'bg-zinc-600 text-gray-300'
                 }`}>
                   {powerUp.rarity}
                 </span>
               </div>
             </div>
             
-            <h3 className="font-bold text-white mb-1">{powerUp.name}</h3>
-            <p className="text-xs text-gray-400 mb-3">{powerUp.description}</p>
+            <h3 className="font-bold text-white mb-1 font-mono uppercase">{powerUp.name}</h3>
+            <p className="text-xs text-gray-400 mb-3 font-mono">{powerUp.description}</p>
             
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between font-mono">
               <span className="text-sm text-gray-500">Owned: {powerUp.owned}</span>
-              <span className="text-sm font-bold text-yellow-400 flex items-center gap-1">
-                <Coins size={12} /> {powerUp.cost}
-              </span>
+              {powerUp.active ? (
+                <span className="text-sm font-bold text-fuchsia-400">Active ({powerUp.remainingTime}m)</span>
+              ) : (
+                <div className="flex gap-2">
+                  {powerUp.owned > 0 ? (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        dispatch({ type: 'ACTIVATE_POWERUP', payload: { powerUpId: powerUp.id, duration: powerUp.duration } });
+                      }}
+                      className="px-2 py-1 bg-lime-500 text-black text-xs font-bold border border-black hover:bg-lime-400 font-mono uppercase"
+                    >
+                      ACTIVATE
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (coins >= powerUp.cost) {
+                          dispatch({ type: 'BUY_POWERUP', payload: { powerUpId: powerUp.id, cost: powerUp.cost } });
+                        }
+                      }}
+                      disabled={coins < powerUp.cost}
+                      className={`px-2 py-1 text-black text-xs font-bold border border-black flex items-center gap-1 font-mono uppercase ${
+                        coins >= powerUp.cost ? 'bg-yellow-400 hover:bg-yellow-300' : 'bg-gray-600 cursor-not-allowed opacity-50'
+                      }`}
+                    >
+                      BUY <Coins size={10} /> {powerUp.cost}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {powerUp.duration > 0 && (
-              <div className="mt-2 text-xs text-gray-500 flex items-center gap-1">
+              <div className="mt-2 text-xs text-gray-500 flex items-center gap-1 font-mono">
                 <Timer size={10} /> Duration: {powerUp.duration} min
               </div>
             )}
@@ -620,7 +659,7 @@ export function GamificationHub() {
 
       {/* Loot Boxes */}
       <div>
-        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2 font-mono uppercase">
           <Package size={20} className="text-fuchsia-400" /> Treasure Chests
         </h3>
         
@@ -629,19 +668,19 @@ export function GamificationHub() {
             <motion.div
               key={box.id}
               whileHover={{ y: -4, rotate: [-1, 1, -1, 0] }}
-              className={`p-4 rounded-xl border-2 text-center cursor-pointer ${
+              className={`p-4 border-2 text-center cursor-pointer ${
                 box.rarity === 'legendary' ? 'bg-gradient-to-b from-yellow-900/30 to-orange-900/30 border-yellow-500' :
                 box.rarity === 'epic' ? 'bg-gradient-to-b from-purple-900/30 to-pink-900/30 border-purple-500' :
                 box.rarity === 'rare' ? 'bg-gradient-to-b from-blue-900/30 to-cyan-900/30 border-blue-500' :
-                'bg-gray-800 border-gray-600'
+                'bg-zinc-800 border-zinc-600'
               }`}
             >
               <div className="text-4xl mb-2">
                 {box.rarity === 'legendary' ? '👑' : box.rarity === 'epic' ? '💎' : box.rarity === 'rare' ? '✨' : '📦'}
               </div>
-              <h4 className="font-bold text-white text-sm">{box.name}</h4>
-              <p className="text-xs text-gray-400 mt-1">Owned: {box.owned}</p>
-              <div className="mt-2 text-xs text-yellow-400 flex items-center justify-center gap-1">
+              <h4 className="font-bold text-white text-sm font-mono uppercase">{box.name}</h4>
+              <p className="text-xs text-gray-400 mt-1 font-mono">Owned: {box.owned}</p>
+              <div className="mt-2 text-xs text-yellow-400 flex items-center justify-center gap-1 font-mono">
                 <Coins size={10} /> {box.cost}
               </div>
             </motion.div>
@@ -658,24 +697,24 @@ export function GamificationHub() {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-white">Achievements</h2>
-          <span className="text-sm text-gray-400">
+          <h2 className="text-xl font-black text-white font-mono uppercase">Achievements</h2>
+          <span className="text-sm text-gray-400 font-mono">
             {achievements.filter(a => a.unlocked).length}/{achievements.length} Unlocked
           </span>
         </div>
 
         {categories.map((category) => (
           <div key={category}>
-            <h3 className="text-lg font-bold text-white mb-3">{categoryNames[category]}</h3>
+            <h3 className="text-lg font-bold text-white mb-3 font-mono uppercase">{categoryNames[category]}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {achievements.filter(a => a.category === category).map((achievement) => (
                 <motion.div
                   key={achievement.id}
                   whileHover={{ x: 4 }}
-                  className={`p-4 rounded-xl border-2 ${
+                  className={`p-4 border-2 ${
                     achievement.unlocked 
-                      ? 'bg-lime-500/20 border-lime-500/50' 
-                      : 'bg-gray-800 border-gray-700'
+                      ? 'bg-lime-500/20 border-lime-500' 
+                      : 'bg-zinc-800 border-zinc-700'
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -684,25 +723,25 @@ export function GamificationHub() {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <h4 className={`font-bold ${achievement.unlocked ? 'text-lime-400' : 'text-white'}`}>
+                        <h4 className={`font-bold font-mono uppercase ${achievement.unlocked ? 'text-lime-400' : 'text-white'}`}>
                           {achievement.name}
                         </h4>
-                        <span className="text-xs text-yellow-400 flex items-center gap-1">
+                        <span className="text-xs text-yellow-400 flex items-center gap-1 font-mono">
                           <Coins size={10} /> +{achievement.xpReward}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">{achievement.description}</p>
+                      <p className="text-xs text-gray-400 mt-1 font-mono">{achievement.description}</p>
                       
                       {/* Progress Bar */}
                       <div className="mt-2">
-                        <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                        <div className="h-2 bg-black border border-white/20">
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${(achievement.progress / achievement.target) * 100}%` }}
                             className={`h-full ${achievement.unlocked ? 'bg-lime-500' : 'bg-cyan-500'}`}
                           />
                         </div>
-                        <div className="flex justify-between mt-1">
+                        <div className="flex justify-between mt-1 font-mono">
                           <span className="text-[10px] text-gray-500">{achievement.progress}/{achievement.target}</span>
                           {achievement.unlocked && (
                             claimedAchievements.has(achievement.id) ? (
@@ -737,7 +776,7 @@ export function GamificationHub() {
                                     });
                                   }
                                 }}
-                                className="px-2 py-1 bg-lime-500 text-black text-[10px] font-bold rounded border border-black"
+                                className="px-2 py-1 bg-lime-500 text-black text-[10px] font-bold border border-black hover:bg-lime-400 font-mono uppercase"
                               >
                                 CLAIM
                               </motion.button>
@@ -759,36 +798,36 @@ export function GamificationHub() {
   const renderSeasonPass = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white">Season Pass</h2>
-        <span className="px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold rounded-full">
+        <h2 className="text-xl font-black text-white font-mono uppercase">Season Pass</h2>
+        <span className="px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold border border-black font-mono uppercase">
           Season 1
         </span>
       </div>
 
       {/* Current Progress */}
-      <div className="brutal-card bg-gray-900 border-purple-500/30 p-4">
+      <Card variant="brutal" className="bg-zinc-900 border-purple-500/30">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <p className="text-gray-400 text-sm">Current Tier</p>
-            <p className="text-3xl font-black text-white">{seasonPass.currentTier}</p>
+            <p className="text-gray-400 text-sm font-mono uppercase">Current Tier</p>
+            <p className="text-3xl font-black text-white font-mono">{seasonPass.currentTier}</p>
           </div>
           <div className="text-right">
-            <p className="text-gray-400 text-sm">Next Tier</p>
-            <p className="text-xl font-bold text-purple-400">{Math.min(seasonPass.currentTier + 1, 50)}</p>
+            <p className="text-gray-400 text-sm font-mono uppercase">Next Tier</p>
+            <p className="text-xl font-bold text-purple-400 font-mono">{Math.min(seasonPass.currentTier + 1, 50)}</p>
           </div>
         </div>
         
-        <div className="h-3 bg-gray-800 rounded-full overflow-hidden">
+        <div className="h-4 bg-black border-2 border-white/20">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${(seasonPass.xpProgress / seasonPass.xpPerTier) * 100}%` }}
-            className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
+            className="h-full bg-gradient-to-r from-purple-500 to-pink-500 border-r-2 border-black"
           />
         </div>
-        <p className="text-xs text-gray-500 mt-2 text-center">
+        <p className="text-xs text-gray-500 mt-2 text-center font-mono">
           {seasonPass.xpProgress} / {seasonPass.xpPerTier} XP to next tier
         </p>
-      </div>
+      </Card>
 
       {/* Reward Track */}
       <div className="overflow-x-auto pb-4">
@@ -799,20 +838,20 @@ export function GamificationHub() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className={`w-32 p-3 rounded-xl border-2 ${
+              className={`w-32 p-3 border-2 ${
                 reward.claimed 
-                  ? 'bg-purple-500/20 border-purple-500/50' 
+                  ? 'bg-purple-500/20 border-purple-500' 
                   : seasonPass.currentTier >= reward.tier - 5 && seasonPass.currentTier < reward.tier
-                    ? 'bg-gray-800 border-cyan-500 ring-2 ring-cyan-400'
-                    : 'bg-gray-800 border-gray-700'
+                    ? 'bg-zinc-800 border-cyan-500 shadow-[4px_4px_0px_0px_rgba(34,211,238,1)]'
+                    : 'bg-zinc-800 border-zinc-700'
               }`}
             >
-              <p className="text-center text-xs text-gray-400 mb-2">Tier {reward.tier}</p>
+              <p className="text-center text-xs text-gray-400 mb-2 font-mono uppercase">Tier {reward.tier}</p>
               
               {/* Free Reward */}
-              <div className="p-2 bg-gray-700 rounded mb-2 text-center">
-                <p className="text-[10px] text-gray-400">FREE</p>
-                <p className="text-xs text-white font-bold">{reward.free}</p>
+              <div className="p-2 bg-zinc-700 border border-zinc-600 mb-2 text-center">
+                <p className="text-[10px] text-gray-400 font-mono uppercase">FREE</p>
+                <p className="text-xs text-white font-bold font-mono">{reward.free}</p>
                 {seasonPass.currentTier >= reward.tier && !claimedSeasonRewards.has(reward.tier) && (
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -846,7 +885,7 @@ export function GamificationHub() {
                         });
                       }
                     }}
-                    className="mt-1 px-2 py-1 bg-lime-500 text-black text-[10px] font-bold rounded border border-black w-full"
+                    className="mt-1 px-2 py-1 bg-lime-500 text-black text-[10px] font-bold border border-black w-full font-mono uppercase hover:bg-lime-400"
                   >
                     CLAIM
                   </motion.button>
@@ -854,9 +893,9 @@ export function GamificationHub() {
               </div>
               
               {/* Premium Reward */}
-              <div className="p-2 bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded text-center border border-purple-500/30">
-                <p className="text-[10px] text-purple-300">PREMIUM</p>
-                <p className="text-xs text-white font-bold">{reward.premium}</p>
+              <div className="p-2 bg-gradient-to-r from-purple-900/50 to-pink-900/50 text-center border border-purple-500/30">
+                <p className="text-[10px] text-purple-300 font-mono uppercase">PREMIUM</p>
+                <p className="text-xs text-white font-bold font-mono">{reward.premium}</p>
               </div>
               
               {claimedSeasonRewards.has(reward.tier) && (
@@ -872,11 +911,11 @@ export function GamificationHub() {
       {/* Premium Upgrade CTA */}
       <motion.div
         whileHover={{ scale: 1.02 }}
-        className="p-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl text-center cursor-pointer"
+        className="p-4 bg-gradient-to-r from-purple-600 to-pink-600 border-2 border-black text-center cursor-pointer shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)]"
       >
         <Crown className="text-yellow-300 mx-auto mb-2" size={28} />
-        <h3 className="text-lg font-bold text-white">Upgrade to Premium</h3>
-        <p className="text-sm text-purple-200">Unlock exclusive rewards & 2x XP boost</p>
+        <h3 className="text-lg font-black text-white font-mono uppercase">Upgrade to Premium</h3>
+        <p className="text-sm text-purple-200 font-mono">Unlock exclusive rewards & 2x XP boost</p>
       </motion.div>
     </div>
   );

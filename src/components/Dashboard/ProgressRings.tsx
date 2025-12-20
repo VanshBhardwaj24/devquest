@@ -1,25 +1,26 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useApp } from '../../contexts/AppContext';
+import { Card } from '../ui/card';
+import { PieChart } from 'lucide-react';
 
 export function ProgressRings() {
   const { state } = useApp();
   const { careerStats, darkMode } = state;
 
   const stats = [
-    { name: 'Knowledge', value: careerStats.knowledge, color: '#8B5CF6', max: 100 },
-    { name: 'Mindset', value: careerStats.mindset, color: '#06B6D4', max: 100 },
-    { name: 'Communication', value: careerStats.communication, color: '#10B981', max: 100 },
-    { name: 'Portfolio', value: careerStats.portfolio, color: '#F59E0B', max: 100 },
+    { name: 'Knowledge', value: careerStats.knowledge, color: '#a855f7', max: 100 }, // Purple-500
+    { name: 'Mindset', value: careerStats.mindset, color: '#06b6d4', max: 100 },    // Cyan-500
+    { name: 'Communication', value: careerStats.communication, color: '#10b981', max: 100 }, // Emerald-500
+    { name: 'Portfolio', value: careerStats.portfolio, color: '#f59e0b', max: 100 }, // Amber-500
   ];
 
   const circumference = 2 * Math.PI * 45;
 
   return (
-    <div className={`rounded-2xl p-6 ${
-      darkMode ? 'bg-gray-800' : 'bg-white'
-    } shadow-lg`}>
-      <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+    <Card variant="brutal" className={`p-6 rounded-none ${darkMode ? 'bg-zinc-900 border-white text-white' : 'bg-white border-black text-black'}`}>
+      <h2 className="text-2xl font-black font-mono mb-6 uppercase tracking-tight flex items-center gap-2">
+        <PieChart className={darkMode ? "text-white" : "text-black"} />
         Career Stats
       </h2>
       
@@ -32,14 +33,14 @@ export function ProgressRings() {
             transition={{ delay: index * 0.1 }}
             className="flex flex-col items-center"
           >
-            <div className="relative w-24 h-24 mb-2">
-              <svg className="w-24 h-24 transform -rotate-90">
+            <div className="relative w-24 h-24 mb-3">
+              <svg className="w-24 h-24 transform -rotate-90 drop-shadow-[4px_4px_0px_rgba(0,0,0,1)]">
                 <circle
                   cx="48"
                   cy="48"
                   r="45"
-                  stroke={darkMode ? '#374151' : '#E5E7EB'}
-                  strokeWidth="6"
+                  stroke={darkMode ? '#3f3f46' : '#e5e7eb'} // zinc-700 / gray-200
+                  strokeWidth="8"
                   fill="none"
                 />
                 <motion.circle
@@ -47,9 +48,9 @@ export function ProgressRings() {
                   cy="48"
                   r="45"
                   stroke={stat.color}
-                  strokeWidth="6"
+                  strokeWidth="8"
                   fill="none"
-                  strokeLinecap="round"
+                  strokeLinecap="butt"
                   initial={{ strokeDasharray: circumference, strokeDashoffset: circumference }}
                   animate={{
                     strokeDashoffset: circumference - (stat.value / stat.max) * circumference,
@@ -58,17 +59,17 @@ export function ProgressRings() {
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <span className={`text-lg font-black font-mono ${darkMode ? 'text-white' : 'text-black'}`}>
                   {stat.value}%
                 </span>
               </div>
             </div>
-            <div className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            <div className={`text-xs font-bold font-mono uppercase tracking-wider border-2 border-black px-2 py-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${darkMode ? 'bg-zinc-800 text-white' : 'bg-white text-black'}`}>
               {stat.name}
             </div>
           </motion.div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }

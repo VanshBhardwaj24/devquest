@@ -44,9 +44,9 @@ export function useAuth() {
         } else if (mounted) {
           setUser(session?.user ?? null);
         }
-      } catch (error: any) {
+      } catch (error) {
         // Log error safely (stringify to avoid React conversion issues)
-        console.error('Error in getSession:', error?.message || JSON.stringify(error));
+        console.error('Error in getSession:', (error as any)?.message || JSON.stringify(error));
         if (mounted) {
           setError('Failed to connect to authentication service');
         }
@@ -75,9 +75,9 @@ export function useAuth() {
             setLoading(false);
           }
         }
-      } catch (error: any) {
+      } catch (error) {
         // Log error safely (stringify to avoid React conversion issues)
-        console.error('Error in auth state change:', error?.message || JSON.stringify(error));
+        console.error('Error in auth state change:', (error as any)?.message || JSON.stringify(error));
         if (mounted) {
           setError('Authentication state error');
         }
@@ -127,10 +127,10 @@ export function useAuth() {
 
       console.log('Sign up successful:', data.user?.email);
       return { data, error: null };
-    } catch (error: any) {
+    } catch (error) {
       // Log error safely (stringify to avoid React conversion issues)
-      console.error('Sign up exception:', error?.message || JSON.stringify(error));
-      const errorMessage = error.message || 'An unexpected error occurred during sign up';
+      console.error('Sign up exception:', (error as any)?.message || JSON.stringify(error));
+      const errorMessage = (error as any).message || 'An unexpected error occurred during sign up';
       setError(errorMessage);
       return { data: null, error: { message: errorMessage } };
     } finally {
@@ -172,10 +172,10 @@ export function useAuth() {
 
       console.log('Sign in successful:', data.user?.email);
       return { data, error: null };
-    } catch (error: any) {
+    } catch (error) {
       // Log error safely (stringify to avoid React conversion issues)
-      console.error('Sign in exception:', error?.message || JSON.stringify(error));
-      const errorMessage = error.message || 'An unexpected error occurred during sign in';
+      console.error('Sign in exception:', (error as any)?.message || JSON.stringify(error));
+      const errorMessage = (error as any).message || 'An unexpected error occurred during sign in';
       setError(errorMessage);
       return { data: null, error: { message: errorMessage } };
     } finally {
@@ -205,10 +205,10 @@ export function useAuth() {
       console.log('Sign out successful');
       setUser(null);
       return { error: null };
-    } catch (error: any) {
+    } catch (error) {
       // Log error safely (stringify to avoid React conversion issues)
-      console.error('Sign out exception:', error?.message || JSON.stringify(error));
-      const errorMessage = error.message || 'An unexpected error occurred during sign out';
+      console.error('Sign out exception:', (error as any)?.message || JSON.stringify(error));
+      const errorMessage = (error as any).message || 'An unexpected error occurred during sign out';
       setError(errorMessage);
       return { error: { message: errorMessage } };
     } finally {
@@ -239,9 +239,9 @@ export function useAuth() {
       }
 
       return { error: null };
-    } catch (error: any) {
+    } catch (error) {
       console.error('Reset password exception:', error);
-      const errorMessage = error.message || 'An unexpected error occurred';
+      const errorMessage = (error as any).message || 'An unexpected error occurred';
       setError(errorMessage);
       return { error: { message: errorMessage } };
     } finally {

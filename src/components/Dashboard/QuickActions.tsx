@@ -22,6 +22,7 @@ export function QuickActions() {
         completed: false,
         xp: taskData.xp,
         category: taskData.category,
+        relatedSkillId: taskData.relatedSkillId,
         dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
         createdAt: new Date(),
         streak: 0,
@@ -50,115 +51,123 @@ export function QuickActions() {
       title: 'Solve LeetCode Problem',
       description: 'Practice algorithmic thinking',
       icon: Code,
-      color: 'from-orange-500 to-red-500',
+      color: 'bg-orange-500',
       action: () => createQuickTask({
         title: 'Solve 2 LeetCode Problems',
         description: 'Practice data structures and algorithms',
         priority: 'Core',
         xp: 100,
-        category: 'DSA'
+        category: 'DSA',
+        relatedSkillId: 'dsa'
       }),
     },
     {
       title: 'Update Resume',
       description: 'Keep your profile current',
       icon: Target,
-      color: 'from-green-500 to-emerald-500',
+      color: 'bg-emerald-500',
       action: () => createQuickTask({
         title: 'Update Resume with Latest Projects',
         description: 'Add recent work and skills to resume',
         priority: 'Elite',
         xp: 150,
-        category: 'Profile'
+        category: 'Profile',
+        relatedSkillId: 'communication'
       }),
     },
     {
       title: 'Read Tech Article',
       description: 'Stay updated with trends',
       icon: BookOpen,
-      color: 'from-blue-500 to-cyan-500',
+      color: 'bg-cyan-500',
       action: () => createQuickTask({
         title: 'Read 2 Tech Articles',
         description: 'Stay updated with latest technology trends',
         priority: 'Bonus',
         xp: 50,
-        category: 'Learning'
+        category: 'Learning',
+        relatedSkillId: 'javascript'
       }),
     },
     {
       title: 'Mock Interview',
       description: 'Practice interview skills',
       icon: Users,
-      color: 'from-purple-500 to-pink-500',
+      color: 'bg-pink-500',
       action: () => createQuickTask({
         title: 'Complete Mock Interview',
         description: 'Practice technical and behavioral questions',
         priority: 'Elite',
         xp: 200,
-        category: 'Interview'
+        category: 'Interview',
+        relatedSkillId: 'communication'
       }),
     },
     {
       title: 'Build Side Project',
       description: 'Enhance your portfolio',
       icon: Rocket,
-      color: 'from-indigo-500 to-purple-500',
+      color: 'bg-purple-500',
       action: () => createQuickTask({
         title: 'Work on Side Project',
         description: 'Spend 2 hours building your portfolio project',
         priority: 'Core',
         xp: 175,
-        category: 'Portfolio'
+        category: 'Portfolio',
+        relatedSkillId: 'react'
       }),
     },
     {
       title: 'Network on LinkedIn',
       description: 'Connect with professionals',
       icon: Users,
-      color: 'from-blue-600 to-blue-800',
+      color: 'bg-blue-600',
       action: () => createQuickTask({
         title: 'Connect with 5 Professionals',
         description: 'Expand your professional network on LinkedIn',
         priority: 'Core',
         xp: 75,
-        category: 'Networking'
+        category: 'Networking',
+        relatedSkillId: 'communication'
       }),
     },
     {
       title: 'Learn New Technology',
       description: 'Expand your skill set',
       icon: Brain,
-      color: 'from-yellow-500 to-orange-500',
+      color: 'bg-yellow-500',
       action: () => createQuickTask({
         title: 'Learn New Framework/Library',
         description: 'Spend time learning a new technology',
         priority: 'Bonus',
         xp: 125,
-        category: 'Learning'
+        category: 'Learning',
+        relatedSkillId: 'problem-solving'
       }),
     },
     {
       title: 'Contribute to Open Source',
       description: 'Give back to the community',
       icon: Trophy,
-      color: 'from-green-600 to-green-800',
+      color: 'bg-green-600',
       action: () => createQuickTask({
         title: 'Make Open Source Contribution',
         description: 'Contribute to an open source project',
         priority: 'Elite',
         xp: 250,
-        category: 'Open Source'
+        category: 'Open Source',
+        relatedSkillId: 'typescript'
       }),
     },
   ];
 
   return (
-    <div className={`rounded-2xl p-6 ${
-      darkMode ? 'bg-gray-800' : 'bg-white'
-    } shadow-lg`}>
+    <Card variant="brutal" className={`p-6 ${darkMode ? 'bg-zinc-900 border-white text-white' : 'bg-white border-black text-black'}`}>
       <div className="flex items-center space-x-3 mb-6">
-        <Zap className={`h-6 w-6 ${darkMode ? 'text-yellow-400' : 'text-yellow-500'}`} />
-        <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+        <div className={`p-2 border-2 border-black shadow-[2px_2px_0px_0px_#000] ${darkMode ? 'bg-yellow-400' : 'bg-yellow-500'}`}>
+          <Zap className="h-6 w-6 text-black" />
+        </div>
+        <h2 className={`text-2xl font-black uppercase tracking-tight ${darkMode ? 'text-white' : 'text-black'}`}>
           Quick Actions
         </h2>
       </div>
@@ -175,17 +184,20 @@ export function QuickActions() {
               whileHover={{ scale: 1.02, x: 5 }}
               whileTap={{ scale: 0.98 }}
               onClick={action.action}
-              className={`p-4 rounded-xl bg-gradient-to-r ${action.color} text-white hover:shadow-lg transition-all duration-300 text-left group`}
+              className={`p-4 border-2 border-black ${action.color} text-white hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-300 text-left group relative overflow-hidden`}
             >
-              <div className="flex items-start space-x-3">
-                <div className="p-2 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+              <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                <Icon size={64} />
+              </div>
+              <div className="flex items-start space-x-3 relative z-10">
+                <div className="p-2 bg-black/20 border-2 border-black/10 rounded-none">
                   <Icon className="h-5 w-5" />
                 </div>
                 <div className="flex-1">
-                  <div className="font-semibold text-sm mb-1">{action.title}</div>
-                  <div className="text-xs opacity-90">{action.description}</div>
+                  <div className="font-bold font-mono text-sm mb-1 uppercase">{action.title}</div>
+                  <div className="text-xs opacity-90 font-mono">{action.description}</div>
                 </div>
-                <div className="text-xs opacity-75 group-hover:opacity-100 transition-opacity">
+                <div className="text-xs font-bold bg-black/20 px-2 py-1 border border-black/10 font-mono">
                   +XP
                 </div>
               </div>
@@ -198,18 +210,18 @@ export function QuickActions() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8 }}
-        className={`mt-6 p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} text-center`}
+        className={`mt-6 p-4 border-2 ${darkMode ? 'bg-zinc-800 border-white text-gray-300' : 'bg-gray-100 border-black text-gray-600'} text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`}
       >
-        <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-2`}>
-          💡 Pro Tip: Complete daily tasks to maintain your streak!
+        <p className="text-sm font-mono mb-2 uppercase font-bold">
+          💡 Pro Tip: Maintain your streak!
         </p>
         <div className="flex items-center justify-center space-x-2">
           <Zap className="h-4 w-4 text-yellow-500" />
-          <span className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          <span className="text-xs font-mono">
             Each action creates a trackable task with XP rewards
           </span>
         </div>
       </motion.div>
-    </div>
+    </Card>
   );
 }

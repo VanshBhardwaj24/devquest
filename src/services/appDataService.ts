@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface UserAppData {
   timeBasedStreak?: {
     currentStreak: number;
@@ -104,9 +105,9 @@ export const appDataService = {
         integrationData: data.integration_data as any,
         appPreferences: data.app_preferences as any,
       };
-    } catch (error: any) {
+    } catch (error) {
       // Log error safely (stringify to avoid React conversion issues)
-      console.error('Error in getAppData:', error?.message || JSON.stringify(error));
+      console.error('Error in getAppData:', (error as any)?.message || JSON.stringify(error));
       return this.getAppDataFromLocalStorage();
     }
   },
@@ -184,9 +185,9 @@ export const appDataService = {
       }
 
       return true;
-    } catch (error: any) {
+    } catch (error) {
       // Log error safely (stringify to avoid React conversion issues)
-      console.error('Error in saveAppData:', error?.message || JSON.stringify(error));
+      console.error('Error in saveAppData:', (error as any)?.message || JSON.stringify(error));
       return false;
     }
   },
@@ -238,7 +239,6 @@ export const appDataService = {
     }
 
     // Save to localStorage
-    const localStorageData = this.getAppDataFromLocalStorage();
     this.saveAppDataToLocalStorage({ [field]: value });
 
     if (!isSupabaseConfigured()) {
@@ -262,9 +262,9 @@ export const appDataService = {
       }
 
       return true;
-    } catch (error: any) {
+    } catch (error) {
       // Log error safely (stringify to avoid React conversion issues)
-      console.error(`Error in updateAppDataField for ${field}:`, error?.message || JSON.stringify(error));
+      console.error(`Error in updateAppDataField for ${field}:`, (error as any)?.message || JSON.stringify(error));
       return false;
     }
   },
@@ -297,9 +297,9 @@ export const appDataService = {
         integrationData: integrationData ? JSON.parse(integrationData) : undefined,
         appPreferences: appPreferences ? JSON.parse(appPreferences) : undefined,
       };
-    } catch (error: any) {
+    } catch (error) {
       // Log error safely (stringify to avoid React conversion issues)
-      console.error('Error reading from localStorage:', error?.message || JSON.stringify(error));
+      console.error('Error reading from localStorage:', (error as any)?.message || JSON.stringify(error));
       return null;
     }
   },
@@ -338,9 +338,9 @@ export const appDataService = {
       if (appData.appPreferences !== undefined) {
         localStorage.setItem('appPreferences', JSON.stringify(appData.appPreferences));
       }
-    } catch (error: any) {
+    } catch (error) {
       // Log error safely (stringify to avoid React conversion issues)
-      console.error('Error saving to localStorage:', error?.message || JSON.stringify(error));
+      console.error('Error saving to localStorage:', (error as any)?.message || JSON.stringify(error));
     }
   },
 

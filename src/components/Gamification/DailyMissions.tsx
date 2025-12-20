@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Target, Clock, CheckCircle, Zap, Trophy, Flame } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { Card } from '../ui/card';
+import { Button } from '../ui/button';
 
 interface Mission {
   id: string;
@@ -20,7 +22,7 @@ interface Mission {
 
 export function DailyMissions() {
   const { state, dispatch } = useApp();
-  const { tasks, codingStats, user } = state;
+  const { tasks, codingStats, user, darkMode } = state;
   
   const completedTasks = tasks?.filter(t => t.completed).length || 0;
   const totalTasks = tasks?.length || 0;
@@ -150,88 +152,90 @@ export function DailyMissions() {
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
-      case 'epic': return 'border-purple-400 bg-purple-900/20';
-      case 'rare': return 'border-blue-400 bg-blue-900/20';
-      default: return 'border-gray-400 bg-gray-800/20';
+      case 'epic': return 'bg-purple-500 text-white';
+      case 'rare': return 'bg-blue-500 text-white';
+      default: return 'bg-gray-200 text-black dark:bg-gray-700 dark:text-white';
     }
   };
 
   return (
-    <div className="brutal-card bg-gray-900 border-orange-500/30 p-4 sm:p-6">
+    <Card variant="brutal" className={`p-4 sm:p-6 ${darkMode ? 'bg-zinc-900 border-white' : 'bg-white border-black'}`}>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
-          <Target className="text-orange-400" size={20} />
+        <h3 className={`text-lg sm:text-xl font-black flex items-center gap-2 uppercase ${darkMode ? 'text-white' : 'text-black'}`}>
+          <Target className="text-red-500" size={20} />
           Daily Missions
         </h3>
         <div className="text-right">
-          <div className="text-sm font-bold text-orange-400">{completedMissions}/{missions.length}</div>
-          <div className="text-xs text-gray-500">Completed</div>
+          <div className="text-sm font-bold bg-red-500 text-white px-2 py-0.5 border border-black inline-block shadow-[2px_2px_0px_0px_#000]">{completedMissions}/{missions.length}</div>
+          <div className="text-xs text-gray-500 mt-1 font-bold uppercase">Completed</div>
         </div>
       </div>
 
       {/* Progress Overview */}
-      <div className="mb-4 p-3 bg-gray-800 border border-gray-700">
+      <div className={`mb-6 p-3 border-2 border-black shadow-[4px_4px_0px_0px_#000] ${darkMode ? 'bg-zinc-800' : 'bg-gray-50'}`}>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-gray-400">Daily Progress</span>
-          <span className="text-xs text-lime-400 font-bold">{Math.floor((completedMissions / missions.length) * 100)}%</span>
+          <span className="text-xs font-bold uppercase">Daily Progress</span>
+          <span className="text-xs font-bold">{Math.floor((completedMissions / missions.length) * 100)}%</span>
         </div>
-        <div className="h-2 bg-gray-700 overflow-hidden">
+        <div className="h-4 bg-gray-300 dark:bg-gray-700 border-2 border-black">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${(completedMissions / missions.length) * 100}%` }}
-            className="h-full bg-gradient-to-r from-orange-500 to-yellow-500"
+            className="h-full bg-red-500"
           />
         </div>
-        <div className="mt-2 flex items-center justify-between text-xs">
-          <span className="text-gray-400">Total Rewards</span>
-          <span className="text-lime-400 font-bold">+{totalRewards} XP & Coins</span>
+        <div className="mt-2 flex items-center justify-between text-xs font-bold">
+          <span className="uppercase opacity-70">Total Rewards</span>
+          <span className="text-green-600 dark:text-green-400">+{totalRewards} XP & Coins</span>
         </div>
       </div>
 
       {/* Missions List */}
-      <div className="space-y-3 max-h-96 overflow-y-auto scrollbar-hide">
+      <div className="space-y-4 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
         {missions.map((mission, index) => (
           <motion.div
             key={mission.id}
             initial={{ x: -20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: index * 0.1 }}
-            className={`p-3 border-2 ${getRarityColor(mission.rarity)} ${
-              mission.completed ? 'opacity-100' : 'opacity-80'
+            className={`p-3 border-2 border-black shadow-[4px_4px_0px_0px_#000] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#000] ${
+              mission.completed 
+                ? 'bg-green-100 dark:bg-green-900/20' 
+                : darkMode ? 'bg-zinc-800' : 'bg-white'
             }`}
           >
             <div className="flex items-start gap-3">
-              <div className="text-2xl">{mission.icon}</div>
+              <div className="text-2xl border-2 border-black p-1 bg-white dark:bg-gray-700">{mission.icon}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <h4 className={`font-bold text-sm ${mission.completed ? 'text-lime-400' : 'text-white'}`}>
+                  <h4 className={`font-bold text-sm uppercase ${mission.completed ? 'line-through opacity-70' : ''} ${darkMode ? 'text-white' : 'text-black'}`}>
                     {mission.title}
                   </h4>
                   {mission.completed && (
-                    <CheckCircle className="text-lime-400" size={16} />
+                    <CheckCircle className="text-green-500" size={16} />
                   )}
                 </div>
-                <p className="text-xs text-gray-400 mb-2">{mission.description}</p>
+                <p className="text-xs opacity-70 mb-2 font-mono">{mission.description}</p>
                 
                 {/* Progress Bar */}
                 <div className="mb-2">
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] text-gray-500">{mission.progress}/{mission.target}</span>
+                    <span className="text-[10px] font-bold">{mission.progress}/{mission.target}</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-lime-400 flex items-center gap-1">
+                      <span className="text-[10px] bg-purple-200 text-purple-800 border border-black px-1 font-bold flex items-center gap-1">
                         <Zap size={10} /> {mission.xpReward} XP
                       </span>
-                      <span className="text-[10px] text-yellow-400 flex items-center gap-1">
+                      <span className="text-[10px] bg-yellow-200 text-yellow-800 border border-black px-1 font-bold flex items-center gap-1">
                         💰 {mission.coinReward}
                       </span>
                     </div>
                   </div>
-                  <div className="h-1.5 bg-gray-700 overflow-hidden">
+                  <div className="h-2 bg-gray-300 dark:bg-gray-700 border border-black">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${(mission.progress / mission.target) * 100}%` }}
                       className={`h-full ${
-                        mission.completed ? 'bg-lime-500' : 'bg-orange-500'
+                        mission.completed ? 'bg-green-500' : 'bg-blue-500'
                       }`}
                     />
                   </div>
@@ -239,22 +243,22 @@ export function DailyMissions() {
 
                 {/* Time Left */}
                 <div className="flex items-center justify-between mt-2">
-                  <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                  <div className="flex items-center gap-1 text-[10px] font-bold opacity-60">
                     <Clock size={10} />
                     <span>{mission.timeLeft} left</span>
                   </div>
                   {mission.completed && (
                     claimedMissions.has(mission.id) ? (
-                      <CheckCircle size={16} className="text-lime-400" />
+                      <span className="text-[10px] font-bold bg-green-500 text-white px-2 py-0.5 border border-black uppercase">Claimed</span>
                     ) : (
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                      <Button
+                        variant="brutal"
+                        size="sm"
                         onClick={() => claimReward(mission)}
-                        className="px-3 py-1 bg-lime-500 text-black text-xs font-bold border-2 border-black"
+                        className="h-6 text-[10px] px-2 bg-yellow-400 hover:bg-yellow-500 border-black text-black"
                       >
-                        CLAIM
-                      </motion.button>
+                        CLAIM REWARD
+                      </Button>
                     )
                   )}
                 </div>
@@ -265,13 +269,12 @@ export function DailyMissions() {
       </div>
 
       {/* Daily Reset Timer */}
-      <div className="mt-4 p-3 bg-gray-800 border border-gray-700 text-center">
-        <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+      <div className={`mt-6 p-3 border-2 border-black text-center ${darkMode ? 'bg-zinc-800' : 'bg-gray-100'}`}>
+        <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase">
           <Clock size={12} />
-          <span>New missions in <span className="text-lime-400 font-bold">12h 30m</span></span>
+          <span>New missions in <span className="text-red-500">12h 30m</span></span>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
-

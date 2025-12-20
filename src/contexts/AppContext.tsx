@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { User, Task, Achievement, Milestone, CareerStats } from '../types';
+import { User, Task, Achievement, Milestone, CareerStats, SystemLog } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { profileService } from '../services/profileService';
 import { taskService } from '../services/taskService';
@@ -8,7 +8,7 @@ import { codingService } from '../services/codingService';
 
 interface Notification {
   id: string;
-  type: 'achievement' | 'level-up' | 'task-completed' | 'streak' | 'challenge' | 'badge' | 'reward' | 'social' | 'mission';
+  type: 'achievement' | 'level-up' | 'task-completed' | 'streak' | 'challenge' | 'badge' | 'reward' | 'social' | 'mission' | 'skill-up' | 'success';
   title: string;
   message: string;
   timestamp: Date;
@@ -96,6 +96,17 @@ interface AppState {
   careerStats: CareerStats;
   badges: Badge[];
   challenges: Challenge[];
+  vitality: {
+    energy: {
+      current: number;
+      max: number;
+      lastUpdated: string;
+    };
+    mood: {
+      value: number;
+      label: string;
+    };
+  };
   codingStats: {
     totalSolved: number;
     currentStreak: number;
@@ -154,6 +165,9 @@ interface AppState {
     streakStartDate: string;
     streakType: 'daily' | 'coding' | 'task' | 'combined';
   };
+  systemLogs: SystemLog[];
+  activePowerUps: { id: string; expiresAt: number }[];
+  ownedPowerUps: { [key: string]: number };
 }
 
 type AppAction =
@@ -196,7 +210,16 @@ type AppAction =
   | { type: 'UPDATE_ACTIVITY_TIMER'; payload: { isActive: boolean; timestamp: Date } }
   | { type: 'UPDATE_COUNTDOWN'; payload: number }
   | { type: 'RECORD_DAILY_ACTIVITY'; payload: { date: string; activity: Partial<TimeBasedStreak['dailyActivity'][string]> } }
-  | { type: 'INITIALIZE_XP_SYSTEM'; payload: { xp: number; level: number } };
+  | { type: 'INITIALIZE_XP_SYSTEM'; payload: { xp: number; level: number } }
+  | { type: 'ADD_SYSTEM_LOG'; payload: SystemLog }
+  | { type: 'SPEND_GOLD'; payload: { amount: number; item: string } }
+  | { type: 'ADD_SKILL_XP'; payload: { skillId: string; amount: number; source: string } }
+  | { type: 'CONVERT_XP_TO_GOLD'; payload: { amount: number } }
+  | { type: 'BUY_POWERUP'; payload: { powerUpId: string; cost: number } }
+  | { type: 'ACTIVATE_POWERUP'; payload: { powerUpId: string; duration: number } }
+  | { type: 'EXPIRE_POWERUP'; payload: string }
+  | { type: 'UPDATE_ENERGY'; payload: { amount: number } }
+  | { type: 'RESTORE_ENERGY'; payload: number };
 
 // Dynamic XP calculation functions - Unified formula across app
 const getXPForLevel = (level: number): number => {
@@ -410,9 +433,20 @@ const initialState: AppState = {
   tasks: [],
   achievements: [],
   milestones: [],
-  careerStats: { knowledge: 0, mindset: 0, communication: 0, portfolio: 0 },
+  careerStats: { totalApplications: 0, interviews: 0, offers: 0, rejections: 0, skillsMastered: 0, projectsCompleted: 0 },
   badges: generateBadges(),
   challenges: generateChallenges(),
+  vitality: {
+    energy: {
+      current: 100,
+      max: 100,
+      lastUpdated: new Date().toISOString(),
+    },
+    mood: {
+      value: 100,
+      label: 'Energized',
+    },
+  },
   codingStats: {
     totalSolved: 0,
     currentStreak: 0,
@@ -468,6 +502,9 @@ const initialState: AppState = {
   recentRewards: [],
   activeTheme: 'default',
   unlockedThemes: ['default'],
+  systemLogs: [],
+  activePowerUps: [],
+  ownedPowerUps: {},
 };
 
 const AppContext = createContext<{
@@ -491,6 +528,10 @@ function appReducer(state: AppState, action: AppAction): AppState {
       const wasCompleted = state.tasks.find(t => t.id === updatedTask.id)?.completed || false;
       const isNowCompleted = updatedTask.completed;
       
+      let streakUpdates = {};
+      let userUpdates = {};
+      let notificationUpdates: Notification[] = [];
+
       // If task was just completed, update time-based streak
       if (!wasCompleted && isNowCompleted) {
         const taskCompleteTime = new Date();
@@ -508,9 +549,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
         const updatedTaskDailyActivity = {
           ...state.timeBasedStreak.dailyActivity,
           [todayStr]: {
-            problemsSolved: existingTaskActivity.problemsSolved,
+            ...existingTaskActivity,
             tasksCompleted: existingTaskActivity.tasksCompleted + 1,
-            xpEarned: existingTaskActivity.xpEarned,
             activeMinutes: existingTaskActivity.activeMinutes + 1,
             lastActivityTime: taskCompleteTime.toISOString(),
           },
@@ -533,11 +573,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
           todayStr
         );
         
-        return {
-          ...state,
-          tasks: state.tasks.map(task =>
-            task.id === updatedTask.id ? updatedTask : task
-          ),
+        streakUpdates = {
           timeBasedStreak: {
             ...state.timeBasedStreak,
             currentStreak: newTaskStreak,
@@ -554,6 +590,74 @@ function appReducer(state: AppState, action: AppAction): AppState {
             streakStartDate: globalTaskStreakResult.streakBroken ? todayStr : state.globalStreak.streakStartDate,
           },
         };
+
+          // Skill Integration Logic
+        if (updatedTask.relatedSkillId && state.user && state.user.skills) {
+          const skillIndex = state.user.skills.findIndex(s => s.id === updatedTask.relatedSkillId);
+          if (skillIndex !== -1) {
+            const skill = state.user.skills[skillIndex];
+            const xpGain = updatedTask.xpReward || updatedTask.xp || 50;
+            let newXp = skill.xp + xpGain;
+            let newLevel = skill.level;
+            let newMaxXp = skill.maxXp;
+            let leveledUp = false;
+
+            while (newXp >= newMaxXp) {
+              newLevel += 1;
+              newXp = newXp - newMaxXp;
+              newMaxXp = Math.floor(newMaxXp * 1.5);
+              leveledUp = true;
+            }
+
+            const updatedSkill = { ...skill, level: newLevel, xp: newXp, maxXp: newMaxXp };
+            const updatedSkills = [...state.user.skills];
+            updatedSkills[skillIndex] = updatedSkill;
+
+            const logEntry: SystemLog = {
+              id: Date.now().toString() + '-skill-log',
+              message: leveledUp 
+                ? `SYSTEM: ${skill.name} protocol upgraded to LEVEL ${newLevel}` 
+                : `SYSTEM: Processed task data. Allocated ${xpGain} XP to ${skill.name} matrix.`,
+              type: 'success',
+              timestamp: new Date(),
+              source: 'SKILL_KERNEL'
+            };
+
+            userUpdates = {
+              ...userUpdates,
+              user: { ...state.user, ...(userUpdates as any).user, skills: updatedSkills },
+              systemLogs: [logEntry, ...state.systemLogs].slice(0, 50)
+            };
+
+            notificationUpdates.push({
+              id: Date.now().toString() + '-skill',
+              type: leveledUp ? 'level-up' : 'skill-up',
+              title: leveledUp ? `${skill.name} Leveled Up! 🆙` : `${skill.name} XP Gained`,
+              message: leveledUp ? `Reached Level ${newLevel}!` : `+${xpGain} XP`,
+              timestamp: new Date(),
+              read: false,
+              priority: 'medium',
+            });
+          }
+        }
+        
+        // Update HP and Gold
+        if (state.user) {
+          const hpGain = 5; // Regain HP on task completion
+          const goldGain = 25 + (updatedTask.priority === 'Elite' ? 50 : updatedTask.priority === 'Core' ? 25 : 10);
+          
+          userUpdates = {
+             ...userUpdates,
+             user: { 
+               ...state.user, 
+               ...(userUpdates as any).user, // Merge with previous user updates (skills)
+               hp: Math.min((state.user.maxHp || 100), (state.user.hp || 50) + hpGain),
+               gold: (state.user.gold || 0) + goldGain
+             }
+          };
+        }
+
+
       }
       
       return {
@@ -561,6 +665,11 @@ function appReducer(state: AppState, action: AppAction): AppState {
         tasks: state.tasks.map(task =>
           task.id === updatedTask.id ? updatedTask : task
         ),
+        ...streakUpdates,
+        ...userUpdates,
+        notifications: notificationUpdates.length > 0 
+          ? [...notificationUpdates, ...state.notifications].slice(0, 10) 
+          : state.notifications
       };
     }
     
@@ -635,6 +744,185 @@ function appReducer(state: AppState, action: AppAction): AppState {
             ? { ...challenge, status: 'completed', completedAt: new Date(), progress: challenge.maxProgress }
             : challenge
         ),
+      };
+
+    case 'CONVERT_XP_TO_GOLD': {
+      const { amount } = action.payload;
+      const xpCost = amount * 10;
+      
+      if (state.xpSystem.currentXP < xpCost) {
+        return state;
+      }
+
+      return {
+        ...state,
+        xpSystem: {
+          ...state.xpSystem,
+          currentXP: state.xpSystem.currentXP - xpCost,
+        },
+        user: state.user ? {
+          ...state.user,
+          xp: state.xpSystem.currentXP - xpCost,
+          gold: (state.user.gold || 0) + amount,
+        } : null,
+        notifications: [
+          {
+            id: Date.now().toString(),
+            type: 'reward',
+            title: 'Gold Acquired! 💰',
+            message: `Converted ${xpCost} XP into ${amount} Gold`,
+            timestamp: new Date(),
+            read: false,
+            priority: 'medium',
+          },
+          ...state.notifications.slice(0, 9)
+        ],
+      };
+    }
+
+    case 'BUY_POWERUP': {
+      const { powerUpId, cost } = action.payload;
+      
+      if (!state.user || (state.user.gold || 0) < cost) {
+        return state;
+      }
+
+      const currentCount = state.ownedPowerUps?.[powerUpId] || 0;
+
+      return {
+        ...state,
+        user: {
+          ...state.user,
+          gold: (state.user.gold || 0) - cost,
+        },
+        ownedPowerUps: {
+          ...state.ownedPowerUps,
+          [powerUpId]: currentCount + 1,
+        },
+        notifications: [
+          {
+            id: Date.now().toString(),
+            type: 'reward',
+            title: 'Power-up Acquired! ⚡',
+            message: 'You purchased a new power-up',
+            timestamp: new Date(),
+            read: false,
+            priority: 'medium',
+          },
+          ...state.notifications.slice(0, 9)
+        ],
+      };
+    }
+
+    case 'ACTIVATE_POWERUP': {
+      const { powerUpId, duration } = action.payload;
+      const currentCount = state.ownedPowerUps?.[powerUpId] || 0;
+
+      if (currentCount <= 0) {
+        return state;
+      }
+
+      const expiresAt = Date.now() + duration * 60 * 1000;
+
+      return {
+        ...state,
+        ownedPowerUps: {
+          ...state.ownedPowerUps,
+          [powerUpId]: currentCount - 1,
+        },
+        activePowerUps: [
+          ...(state.activePowerUps || []),
+          { id: powerUpId, expiresAt },
+        ],
+        notifications: [
+          {
+            id: Date.now().toString(),
+            type: 'achievement',
+            title: 'Power-up Activated! 🚀',
+            message: 'Your boost is now active',
+            timestamp: new Date(),
+            read: false,
+            priority: 'high',
+          },
+          ...state.notifications.slice(0, 9)
+        ],
+      };
+    }
+
+    case 'EXPIRE_POWERUP': {
+      return {
+        ...state,
+        activePowerUps: (state.activePowerUps || []).filter(p => p.id !== action.payload),
+        notifications: [
+          {
+            id: Date.now().toString(),
+            type: 'system',
+            title: 'Power-up Expired 📉',
+            message: 'A power-up effect has ended',
+            timestamp: new Date(),
+            read: false,
+            priority: 'low',
+          },
+          ...state.notifications.slice(0, 9)
+        ],
+      };
+    }
+
+    case 'UPDATE_ENERGY': {
+      const { amount } = action.payload;
+      const currentEnergy = state.vitality?.energy?.current ?? 100;
+      const maxEnergy = state.vitality?.energy?.max ?? 100;
+      
+      let newEnergy = Math.max(0, Math.min(maxEnergy, currentEnergy + amount));
+      
+      // Derive mood from energy
+      let moodLabel = 'Neutral';
+      let moodValue = 50;
+      
+      if (newEnergy >= 80) {
+        moodLabel = 'Energized';
+        moodValue = 100;
+      } else if (newEnergy >= 50) {
+        moodLabel = 'Motivated';
+        moodValue = 75;
+      } else if (newEnergy >= 20) {
+        moodLabel = 'Tired';
+        moodValue = 40;
+      } else {
+        moodLabel = 'Exhausted';
+        moodValue = 10;
+      }
+
+      return {
+        ...state,
+        vitality: {
+          energy: {
+            current: newEnergy,
+            max: maxEnergy,
+            lastUpdated: new Date().toISOString(),
+          },
+          mood: {
+            value: moodValue,
+            label: moodLabel,
+          }
+        }
+      };
+    }
+
+    case 'RESTORE_ENERGY':
+      const currentEnergy = state.vitality?.energy?.current ?? 0;
+      const maxEnergy = state.vitality?.energy?.max ?? 100;
+      return {
+        ...state,
+        vitality: {
+          ...state.vitality,
+          energy: {
+            current: Math.min(maxEnergy, currentEnergy + action.payload),
+            max: maxEnergy,
+            lastUpdated: new Date().toISOString(),
+          },
+          mood: state.vitality?.mood ?? { value: 50, label: 'Neutral' }
+        }
       };
     
     case 'TOGGLE_DARK_MODE':
@@ -818,10 +1106,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
       };
       
       const statBoost = difficultyMultiplier * 2;
-      const newCareerStats = {
-        ...state.careerStats,
-        knowledge: Math.min(100, state.careerStats.knowledge + statBoost),
-      };
+      // Career stats update removed as 'knowledge' field is deprecated
+      const newCareerStats = state.careerStats;
 
       // Notify about streak milestones
       const notifications = [];
@@ -1041,6 +1327,28 @@ function appReducer(state: AppState, action: AppAction): AppState {
       const resetToday = getTodayDateString();
       const nextResetTime = getNextResetTime();
       
+      // Check streak status on daily reset
+      let currentStreak = state.user?.streak || 0;
+      let streakBroken = false;
+      
+      if (state.user?.lastActivity) {
+        const lastDate = new Date(state.user.lastActivity);
+        const todayDate = new Date(); // use current date for comparison
+        
+        // Normalize to just dates (remove time)
+        const lastDateOnly = new Date(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate());
+        const todayDateOnly = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate());
+        
+        const daysDiff = Math.floor((todayDateOnly.getTime() - lastDateOnly.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // If more than 1 day has passed since last activity, streak is broken
+        // (If daysDiff is 1, it means last activity was yesterday, so streak is still valid but pending today's action)
+        if (daysDiff > 1) {
+          currentStreak = 0;
+          streakBroken = true;
+        }
+      }
+
       // Reset daily counters
       const resetCodingStats = {
         ...state.codingStats,
@@ -1086,8 +1394,36 @@ function appReducer(state: AppState, action: AppAction): AppState {
         }
       }
       
+      const resetNotifications = [
+        {
+          id: Date.now().toString(),
+          type: 'mission',
+          title: 'Daily Reset Complete! 🌅',
+          message: 'New day, new opportunities! Your daily counters have been reset.',
+          timestamp: new Date(),
+          read: false,
+          priority: 'medium',
+        },
+      ];
+
+      if (streakBroken) {
+        resetNotifications.push({
+          id: Date.now().toString() + '-streak',
+          type: 'system',
+          title: 'Streak Broken 💔',
+          message: 'You missed a day! Your streak has been reset to 0.',
+          timestamp: new Date(),
+          read: false,
+          priority: 'high',
+        });
+      }
+
       return {
         ...state,
+        user: state.user ? {
+          ...state.user,
+          streak: currentStreak,
+        } : state.user,
         codingStats: finalCodingStats,
         dailyReset: {
           lastResetDate: resetToday,
@@ -1096,15 +1432,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
           hasResetToday: true,
         },
         notifications: [
-          {
-            id: Date.now().toString(),
-            type: 'mission',
-            title: 'Daily Reset Complete! 🌅',
-            message: 'New day, new opportunities! Your daily counters have been reset.',
-            timestamp: new Date(),
-            read: false,
-            priority: 'medium',
-          },
+          ...resetNotifications,
           ...state.notifications.slice(0, 9),
         ],
       };
@@ -1190,7 +1518,88 @@ function appReducer(state: AppState, action: AppAction): AppState {
           },
         },
       };
-    
+
+    case 'ADD_SYSTEM_LOG':
+      return { ...state, systemLogs: [action.payload, ...state.systemLogs].slice(0, 50) };
+
+    case 'SPEND_GOLD': {
+      if (!state.user || (state.user.gold || 0) < action.payload.amount) {
+        return state;
+      }
+      
+      const newGold = (state.user.gold || 0) - action.payload.amount;
+      
+      const purchaseLog: SystemLog = {
+        id: Date.now().toString() + '-purchase',
+        message: `TRANSACTION: Acquired ${action.payload.item}. -${action.payload.amount} Gold.`,
+        type: 'info',
+        timestamp: new Date(),
+        source: 'MARKETPLACE_NODE'
+      };
+
+      return {
+        ...state,
+        user: { ...state.user, gold: newGold },
+        systemLogs: [purchaseLog, ...state.systemLogs].slice(0, 50)
+      };
+    }
+
+    case 'ADD_SKILL_XP': {
+      if (!state.user || !state.user.skills) return state;
+
+      const { skillId, amount, source } = action.payload;
+      const skillIndex = state.user.skills.findIndex(s => s.id === skillId);
+      
+      if (skillIndex === -1) return state;
+
+      const skill = state.user.skills[skillIndex];
+      let newXp = skill.xp + amount;
+      let newLevel = skill.level;
+      let newMaxXp = skill.maxXp;
+      let leveledUp = false;
+
+      while (newXp >= newMaxXp) {
+        newLevel += 1;
+        newXp = newXp - newMaxXp;
+        newMaxXp = Math.floor(newMaxXp * 1.5);
+        leveledUp = true;
+      }
+
+      const updatedSkill = { ...skill, level: newLevel, xp: newXp, maxXp: newMaxXp };
+      const updatedSkills = [...state.user.skills];
+      updatedSkills[skillIndex] = updatedSkill;
+
+      const logEntry: SystemLog = {
+        id: Date.now().toString() + '-skill-xp',
+        message: leveledUp 
+          ? `SYSTEM: ${skill.name} protocol upgraded to LEVEL ${newLevel}` 
+          : `SYSTEM: Received ${amount} XP for ${skill.name} from ${source}.`,
+        type: leveledUp ? 'success' : 'info',
+        timestamp: new Date(),
+        source: 'SKILL_KERNEL'
+      };
+      
+      // If leveled up, maybe show notification
+      const notificationUpdates = [...state.notifications];
+      if (leveledUp) {
+        notificationUpdates.push({
+          id: Date.now().toString(),
+          type: 'skill-up',
+          title: `Skill Level Up: ${skill.name}`,
+          message: `Reached Level ${newLevel}!`,
+          timestamp: new Date()
+        });
+      }
+
+      return {
+        ...state,
+        user: { ...state.user, skills: updatedSkills },
+        systemLogs: [logEntry, ...state.systemLogs].slice(0, 50),
+        notifications: notificationUpdates,
+        showConfetti: leveledUp ? true : state.showConfetti
+      };
+    }
+     
     default:
       return state;
   }
@@ -1212,6 +1621,21 @@ const DEMO_PROFILE: User = {
   tier: 'Silver',
   streak: 7,
   lastActivity: new Date(),
+  skills: [
+    { id: 'react', name: 'React', level: 5, xp: 2400, maxXp: 5000, category: 'technical', icon: '⚛️' },
+    { id: 'typescript', name: 'TypeScript', level: 4, xp: 1800, maxXp: 4000, category: 'technical', icon: '📘' },
+    { id: 'communication', name: 'Communication', level: 3, xp: 1200, maxXp: 3000, category: 'soft', icon: '🗣️' },
+    { id: 'problem-solving', name: 'Problem Solving', level: 6, xp: 3200, maxXp: 6000, category: 'technical', icon: '🧩' },
+    { id: 'leadership', name: 'Leadership', level: 2, xp: 800, maxXp: 2000, category: 'soft', icon: '👑' },
+  ],
+  totalXpSpent: 0,
+  rank: 124,
+  comboMultiplier: 1.5,
+  dailyLoginStreak: 5,
+  lastLoginDate: new Date(),
+  hp: 80,
+  maxHp: 100,
+  gold: 1500,
 };
 
 export function AppProvider({ children }: { children: React.ReactNode }) {

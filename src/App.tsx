@@ -1,92 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { useAuth } from './hooks/useAuth';
 import { AuthForm } from './components/Auth/AuthForm';
 import { Header } from './components/Layout/Header';
 import { Sidebar } from './components/Layout/Sidebar';
-import { MobileBottomNav } from './components/Layout/MobileBottomNav';
-import { ProfileSetup } from './components/Profile/ProfileSetup';
-import { LevelUpModal } from './components/Gamification/LevelUpModal';
-import { ConfettiProvider } from './components/Gamification/ConfettiProvider';
-import { BadgeUnlockModal } from './components/Gamification/BadgeUnlockModal';
-import { BonusXPIndicator } from './components/Gamification/BonusXPIndicator';
-import { Toaster } from 'react-hot-toast';
-
-// Import all components directly (no lazy loading)
 import { Dashboard } from './components/Dashboard/Dashboard';
 import { TaskBoard } from './components/Tasks/TaskBoard';
-import { AchievementWall } from './components/Achievements/AchievementWall';
-import { CareerRoadmap } from './components/Questline/CareerRoadmap';
-import { LeaderBoard } from './components/Social/LeaderBoard';
-import { ProfileCard } from './components/Profile/ProfileCard';
-import { RewardsShop } from './components/Rewards/RewardsShop';
+import { CodingArena } from './components/Coding/CodingArena';
 import { GamificationHub } from './components/Gamification/GamificationHub';
-import { IntegrationsHub } from './components/Integrations/IntegrationsHub';
+import { ProfileSetup } from './components/Profile/ProfileSetup';
+import { RewardsShop } from './components/Rewards/RewardsShop';
 import { Fitness } from './components/Life/Fitness';
 import { Accountability } from './components/Life/Accountability';
 import { Finance } from './components/Life/Finance';
 import { Relationships } from './components/Life/Relationships';
 import { Learning } from './components/Life/Learning';
 import { LifeMap } from './components/Life/LifeMap';
-import { CodingArena } from './components/Coding/CodingArena';
-
-// Error Boundary Component
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; error: Error | null }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log error safely (stringify to avoid React conversion issues)
-    try {
-      const errorMessage = error?.message || (error ? JSON.stringify(error) : 'Unknown error');
-      const errorStack = errorInfo?.componentStack || '';
-      console.error('Error caught by boundary:', errorMessage, errorStack);
-    } catch (e) {
-      // Fallback if even logging fails
-      console.error('Error in error boundary');
-    }
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-gray-900 border-4 border-red-500 brutal-shadow p-8 max-w-md w-full text-center"
-          >
-            <div className="text-6xl mb-4">💀</div>
-            <h2 className="text-2xl font-black text-red-500 mb-4 font-mono">SYSTEM CRASH</h2>
-            <p className="text-gray-400 mb-6 font-mono text-sm">
-              Critical error detected. Memory dump in progress...
-            </p>
-            <motion.button
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => window.location.reload()}
-              className="w-full px-6 py-3 bg-red-500 border-2 border-black brutal-shadow text-black font-black font-mono hover:bg-red-400 transition-colors"
-            >
-              🔄 REBOOT SYSTEM
-            </motion.button>
-          </motion.div>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
+import { InternshipTracker as InternshipTrackerLife } from './components/Life/InternshipTracker';
+import { AchievementWall } from './components/Achievements/AchievementWall';
+import { LevelUpModal } from './components/Gamification/LevelUpModal';
+import { ConfettiProvider } from './components/Gamification/ConfettiProvider';
+import { BadgeUnlockModal } from './components/Gamification/BadgeUnlockModal';
+import { BonusXPIndicator } from './components/Gamification/BonusXPIndicator';
+import { CareerRoadmap } from './components/Questline/CareerRoadmap';
+import { IntegrationsHub } from './components/Integrations/IntegrationsHub';
+import { LeaderBoard } from './components/Social/LeaderBoard';
+import { ProfileCard } from './components/Profile/ProfileCard';
+import { MobileBottomNav } from './components/Layout/MobileBottomNav';
+import { Toaster } from 'react-hot-toast';
 
 // Loading Component
 function LoadingScreen() {
@@ -218,177 +160,145 @@ function AppContent() {
   }
 
   const renderContent = () => {
-    try {
-      switch (activeTab) {
-        case 'dashboard':
-          return <Dashboard />;
-        case 'gamification':
-          return <GamificationHub />;
-        case 'rewards':
-          return <RewardsShop />;
-        case 'tasks':
-          return <TaskBoard />;
-        case 'coding':
-          return <CodingArena />;
-        case 'fitness':
-          return <Fitness />;
-        case 'accountability':
-          return <Accountability />;
-        case 'finance':
-          return <Finance />;
-        case 'relationships':
-          return <Relationships />;
-        case 'learning':
-          return <Learning />;
-        case 'lifemap':
-          return <LifeMap />;
-        case 'achievements':
-          return <AchievementWall />;
-        case 'questline':
-          return <CareerRoadmap />;
-        case 'integrations':
-          return <IntegrationsHub />;
-        case 'leaderboard':
-          return <LeaderBoard />;
-        case 'profile':
-          return (
-            <div className={`p-6 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} min-h-screen`}>
-              <div className="max-w-4xl mx-auto">
-                <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-8`}>
-                  Profile 👤
-                </h1>
-                <ProfileCard />
-              </div>
+    switch (activeTab) {
+      case 'dashboard':
+        return <Dashboard />;
+      case 'tasks':
+        return <TaskBoard />;
+      case 'coding':
+        return <CodingArena />;
+      case 'gamification':
+        return <GamificationHub />;
+      case 'rewards':
+        return <RewardsShop />;
+      case 'fitness':
+        return <Fitness />;
+      case 'accountability':
+        return <Accountability />;
+      case 'finance':
+        return <Finance />;
+      case 'relationships':
+        return <Relationships />;
+      case 'learning':
+        return <Learning />;
+      case 'lifemap':
+        return <LifeMap />;
+      case 'internships':
+        return <InternshipTrackerLife />;
+      case 'achievements':
+        return <AchievementWall />;
+      case 'questline':
+        return <CareerRoadmap />;
+      case 'integrations':
+        return <IntegrationsHub />;
+      case 'leaderboard':
+        return <LeaderBoard />;
+      case 'profile':
+        return (
+          <div className={`p-6 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} min-h-screen`}>
+            <div className="max-w-4xl mx-auto">
+              <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-8`}>
+                Profile 👤
+              </h1>
+              <ProfileCard />
             </div>
-          );
-        default:
-          return <Dashboard />;
-      }
-    } catch (error: any) {
-      // Log error safely (stringify to avoid React conversion issues)
-      try {
-        const errorMessage = error?.message || (error ? JSON.stringify(error) : 'Unknown error');
-        console.error('Error rendering content:', errorMessage);
-      } catch (e) {
-        console.error('Error rendering content: Unable to log error');
-      }
-      return (
-        <div className={`p-6 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} min-h-screen flex items-center justify-center`}>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center"
-          >
-            <div className="text-6xl mb-4">⚠️</div>
-            <h2 className={`text-2xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              Something went wrong
-            </h2>
-            <p className={`mb-6 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-              Unable to load this section. Please try refreshing the page.
-            </p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => window.location.reload()}
-              className="px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-200 font-medium"
-            >
-              🔄 Refresh Page
-            </motion.button>
-          </motion.div>
-        </div>
-      );
+          </div>
+        );
+      case 'help':
+        return <Help />;
+      default:
+        return <Dashboard />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
-      <Header onMenuClick={() => {
-        setSidebarOpen(prev => !prev);
-      }} />
-      <div className="flex">
-        {/* Mobile Sidebar Overlay */}
-        <AnimatePresence>
-          {sidebarOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSidebarOpen(false)}
-              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[35] lg:hidden"
-            />
-          )}
-        </AnimatePresence>
-        
-        {/* Sidebar */}
-        <div className={`
-          fixed lg:block
-          transform transition-transform duration-300 ease-in-out z-[40] lg:z-30
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}>
-          <Sidebar 
-            activeTab={activeTab} 
-            onTabChange={(tab) => {
-              setActiveTab(tab);
-              setSidebarOpen(false);
-            }} 
-          />
-        </div>
-        
-        {/* Main Content - Add left margin to account for sidebar with gap */}
-        <div className="flex-1 lg:ml-[280px] xl:ml-[300px] 2xl:ml-[320px] overflow-auto min-h-screen bg-[#0a0a0a] pb-20 lg:pb-0">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              {renderContent()}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </div>
-
-      {/* Mobile Bottom Navigation */}
-      <MobileBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
-
-      {/* Gamification Overlays */}
-      <LevelUpModal
-        isOpen={showLevelUpModal}
-        onClose={() => setShowLevelUpModal(false)}
-        newLevel={levelUpData.newLevel}
-        xpGained={levelUpData.xpGained}
-      />
-      
-      <BadgeUnlockModal />
-      <BonusXPIndicator />
-      
-      {/* Toast Notifications */}
-      <Toaster
-        position="top-right"
+    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'dark bg-[#0d0d0d] text-white' : 'bg-gray-100 text-gray-900'} font-sans selection:bg-lime-500/30`}>
+      <Toaster 
+        position="bottom-right"
         toastOptions={{
-          duration: 4000,
-          className: darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900',
           style: {
-            background: darkMode ? '#1F2937' : '#FFFFFF',
-            color: darkMode ? '#FFFFFF' : '#111827',
+            background: '#333',
+            color: '#fff',
+            borderRadius: '0px',
+            border: '2px solid #000',
+            boxShadow: '4px 4px 0px 0px #000',
+            fontFamily: 'monospace'
           },
         }}
       />
+      
+      <ConfettiProvider>
+        {/* Level Up Modal */}
+        <AnimatePresence>
+          {showLevelUpModal && (
+            <LevelUpModal 
+              newLevel={levelUpData.newLevel} 
+              xpGained={levelUpData.xpGained}
+              onClose={() => setShowLevelUpModal(false)} 
+            />
+          )}
+        </AnimatePresence>
+
+        <BadgeUnlockModal />
+        <BonusXPIndicator />
+
+        {/* Main Layout */}
+        <div className="flex h-screen overflow-hidden">
+          {/* Sidebar - Desktop */}
+          <div className="hidden lg:block w-64 h-full border-r-4 border-gray-800 bg-[#111] overflow-y-auto custom-scrollbar">
+            <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+          </div>
+
+          {/* Mobile Sidebar Overlay */}
+          <AnimatePresence>
+            {sidebarOpen && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 0.5 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setSidebarOpen(false)}
+                  className="fixed inset-0 bg-black z-40 lg:hidden"
+                />
+                <motion.div
+                  initial={{ x: '-100%' }}
+                  animate={{ x: 0 }}
+                  exit={{ x: '-100%' }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                  className="fixed inset-y-0 left-0 w-64 bg-[#111] z-50 border-r-4 border-gray-800 overflow-y-auto lg:hidden"
+                >
+                  <Sidebar activeTab={activeTab} onTabChange={(tab) => {
+                    setActiveTab(tab);
+                    setSidebarOpen(false);
+                  }} />
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+
+          {/* Content Area */}
+          <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+            <Header onMenuClick={() => setSidebarOpen(true)} />
+            
+            <main className="flex-1 overflow-y-auto p-4 pb-20 lg:p-6 custom-scrollbar scroll-smooth">
+              <div className="max-w-7xl mx-auto pb-20 lg:pb-0">
+                {renderContent()}
+              </div>
+            </main>
+            
+            <MobileBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+          </div>
+        </div>
+      </ConfettiProvider>
     </div>
   );
 }
 
 function App() {
   return (
-    <ErrorBoundary>
-      <AppProvider>
-        <ConfettiProvider>
-          <AppContent />
-        </ConfettiProvider>
-      </AppProvider>
-    </ErrorBoundary>
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
   );
 }
 

@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Map, Lock, Unlock, Star, Trophy, Target, Zap, Crown,
-  CheckCircle, ChevronRight, Flame, Sparkles
+  CheckCircle, ChevronRight, Flame, Sparkles, Battery, Smile,
+  Activity, ZapOff
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
@@ -27,9 +28,12 @@ interface Mission {
   xpReward: number;
   completed: boolean;
   type: 'main' | 'side' | 'daily';
+  energyCost?: number;
+  moodEffect?: number;
+  relatedSkillId?: string; // Links mission to a skill
 }
 
-const lifeZones: LifeZone[] = [
+const initialLifeZones: LifeZone[] = [
   {
     id: 'spawn',
     name: 'THE BEGINNING',
@@ -41,8 +45,8 @@ const lifeZones: LifeZone[] = [
     unlocked: true,
     progress: 100,
     missions: [
-      { id: 'm1', title: 'Create Profile', description: 'Set up your identity', xpReward: 50, completed: true, type: 'main' },
-      { id: 'm2', title: 'First Task', description: 'Complete your first task', xpReward: 25, completed: true, type: 'main' },
+      { id: 'm1', title: 'Create Profile', description: 'Set up your identity', xpReward: 50, completed: true, type: 'main', energyCost: 10, moodEffect: 5 },
+      { id: 'm2', title: 'First Task', description: 'Complete your first task', xpReward: 25, completed: true, type: 'main', energyCost: 5, moodEffect: 5 },
     ],
     rewards: ['🎮 Player Status Unlocked', '📊 Stats Dashboard'],
   },
@@ -57,10 +61,10 @@ const lifeZones: LifeZone[] = [
     unlocked: true,
     progress: 45,
     missions: [
-      { id: 'c1', title: 'Solve 10 Easy Problems', description: 'Build fundamentals', xpReward: 100, completed: true, type: 'main' },
-      { id: 'c2', title: 'Solve 5 Medium Problems', description: 'Level up your skills', xpReward: 150, completed: false, type: 'main' },
-      { id: 'c3', title: 'Complete a Hard Problem', description: 'Prove your worth', xpReward: 300, completed: false, type: 'side' },
-      { id: 'c4', title: '7-Day Coding Streak', description: 'Consistency is key', xpReward: 200, completed: false, type: 'daily' },
+      { id: 'c1', title: 'Solve 10 Easy Problems', description: 'Build fundamentals', xpReward: 100, completed: true, type: 'main', energyCost: 20, moodEffect: -5, relatedSkillId: 'dsa' },
+      { id: 'c2', title: 'Solve 5 Medium Problems', description: 'Level up your skills', xpReward: 150, completed: false, type: 'main', energyCost: 30, moodEffect: -10, relatedSkillId: 'dsa' },
+      { id: 'c3', title: 'Complete a Hard Problem', description: 'Prove your worth', xpReward: 300, completed: false, type: 'side', energyCost: 40, moodEffect: 20, relatedSkillId: 'dsa' }, // High satisfaction
+      { id: 'c4', title: '7-Day Coding Streak', description: 'Consistency is key', xpReward: 200, completed: false, type: 'daily', energyCost: 0, moodEffect: 15, relatedSkillId: 'dsa' },
     ],
     rewards: ['🏆 Code Warrior Badge', '⚡ +10% XP on coding tasks'],
   },
@@ -75,10 +79,10 @@ const lifeZones: LifeZone[] = [
     unlocked: true,
     progress: 30,
     missions: [
-      { id: 'f1', title: 'First Workout', description: 'Begin your physical journey', xpReward: 75, completed: true, type: 'main' },
-      { id: 'f2', title: '10 Gym Sessions', description: 'Build the habit', xpReward: 200, completed: false, type: 'main' },
-      { id: 'f3', title: 'Run 5K', description: 'Cardio milestone', xpReward: 150, completed: false, type: 'side' },
-      { id: 'f4', title: '30-Day Streak', description: 'Become unstoppable', xpReward: 500, completed: false, type: 'main' },
+      { id: 'f1', title: 'First Workout', description: 'Begin your physical journey', xpReward: 75, completed: true, type: 'main', energyCost: 30, moodEffect: 10 },
+      { id: 'f2', title: '10 Gym Sessions', description: 'Build the habit', xpReward: 200, completed: false, type: 'main', energyCost: 40, moodEffect: 15 },
+      { id: 'f3', title: 'Run 5K', description: 'Cardio milestone', xpReward: 150, completed: false, type: 'side', energyCost: 50, moodEffect: 20 },
+      { id: 'f4', title: '30-Day Streak', description: 'Become unstoppable', xpReward: 500, completed: false, type: 'main', energyCost: 0, moodEffect: 30 },
     ],
     rewards: ['💪 Iron Will Badge', '🔥 +2 Energy per day'],
   },
@@ -93,10 +97,10 @@ const lifeZones: LifeZone[] = [
     unlocked: false,
     progress: 0,
     missions: [
-      { id: 'w1', title: 'Track First Income', description: 'Know your money', xpReward: 50, completed: false, type: 'main' },
-      { id: 'w2', title: 'Save ₹10,000', description: 'Emergency fund start', xpReward: 200, completed: false, type: 'main' },
-      { id: 'w3', title: 'First Investment', description: 'Make money work', xpReward: 300, completed: false, type: 'main' },
-      { id: 'w4', title: 'Zero Debt', description: 'Financial freedom', xpReward: 500, completed: false, type: 'side' },
+      { id: 'w1', title: 'Track First Income', description: 'Know your money', xpReward: 50, completed: false, type: 'main', energyCost: 5, moodEffect: 5 },
+      { id: 'w2', title: 'Save ₹10,000', description: 'Emergency fund start', xpReward: 200, completed: false, type: 'main', energyCost: 10, moodEffect: 10 },
+      { id: 'w3', title: 'First Investment', description: 'Make money work', xpReward: 300, completed: false, type: 'main', energyCost: 15, moodEffect: 5 },
+      { id: 'w4', title: 'Zero Debt', description: 'Financial freedom', xpReward: 500, completed: false, type: 'side', energyCost: 0, moodEffect: 50 },
     ],
     rewards: ['💎 Wealthy Mindset', '📈 Investment Tracker'],
   },
@@ -111,10 +115,10 @@ const lifeZones: LifeZone[] = [
     unlocked: false,
     progress: 0,
     missions: [
-      { id: 's1', title: 'Add 5 Connections', description: 'Map your circle', xpReward: 75, completed: false, type: 'main' },
-      { id: 's2', title: 'Weekly Check-in', description: 'Stay connected', xpReward: 50, completed: false, type: 'daily' },
-      { id: 's3', title: 'Deep Conversation', description: 'Meaningful connections', xpReward: 100, completed: false, type: 'side' },
-      { id: 's4', title: 'Help Someone', description: 'Give back', xpReward: 150, completed: false, type: 'main' },
+      { id: 's1', title: 'Add 5 Connections', description: 'Map your circle', xpReward: 75, completed: false, type: 'main', energyCost: 10, moodEffect: 10, relatedSkillId: 'communication' },
+      { id: 's2', title: 'Weekly Check-in', description: 'Stay connected', xpReward: 50, completed: false, type: 'daily', energyCost: 15, moodEffect: 15, relatedSkillId: 'communication' },
+      { id: 's3', title: 'Deep Conversation', description: 'Meaningful connections', xpReward: 100, completed: false, type: 'side', energyCost: 20, moodEffect: 25, relatedSkillId: 'communication' },
+      { id: 's4', title: 'Help Someone', description: 'Give back', xpReward: 150, completed: false, type: 'main', energyCost: 15, moodEffect: 30, relatedSkillId: 'communication' },
     ],
     rewards: ['💕 Social Butterfly', '🤝 Network Bonus'],
   },
@@ -129,10 +133,10 @@ const lifeZones: LifeZone[] = [
     unlocked: true,
     progress: 20,
     missions: [
-      { id: 'k1', title: 'Read First Book', description: 'Begin the journey', xpReward: 100, completed: true, type: 'main' },
-      { id: 'k2', title: 'Complete a Course', description: 'Structured learning', xpReward: 200, completed: false, type: 'main' },
-      { id: 'k3', title: '100 Pages Read', description: 'Bookworm milestone', xpReward: 150, completed: false, type: 'side' },
-      { id: 'k4', title: 'Teach Someone', description: 'Master by teaching', xpReward: 250, completed: false, type: 'main' },
+      { id: 'k1', title: 'Read First Book', description: 'Begin the journey', xpReward: 100, completed: true, type: 'main', energyCost: 10, moodEffect: 5 },
+      { id: 'k2', title: 'Complete a Course', description: 'Structured learning', xpReward: 200, completed: false, type: 'main', energyCost: 30, moodEffect: -5 },
+      { id: 'k3', title: '100 Pages Read', description: 'Bookworm milestone', xpReward: 150, completed: false, type: 'side', energyCost: 20, moodEffect: 10 },
+      { id: 'k4', title: 'Teach Someone', description: 'Master by teaching', xpReward: 250, completed: false, type: 'main', energyCost: 25, moodEffect: 20, relatedSkillId: 'communication' },
     ],
     rewards: ['🧠 Big Brain Badge', '📖 +25% Learning XP'],
   },
@@ -147,10 +151,10 @@ const lifeZones: LifeZone[] = [
     unlocked: false,
     progress: 0,
     missions: [
-      { id: 'd1', title: 'Track Distractions', description: 'Know your enemy', xpReward: 50, completed: false, type: 'main' },
-      { id: 'd2', title: '24 Hours No Social Media', description: 'Digital detox', xpReward: 200, completed: false, type: 'main' },
-      { id: 'd3', title: '7 Days Under 1 Hour Reels', description: 'Break the addiction', xpReward: 300, completed: false, type: 'main' },
-      { id: 'd4', title: '30 Days Clean', description: 'Absolute discipline', xpReward: 1000, completed: false, type: 'side' },
+      { id: 'd1', title: 'Track Distractions', description: 'Know your enemy', xpReward: 50, completed: false, type: 'main', energyCost: 5, moodEffect: -5, relatedSkillId: 'mindfulness' },
+      { id: 'd2', title: '24 Hours No Social Media', description: 'Digital detox', xpReward: 200, completed: false, type: 'main', energyCost: 40, moodEffect: 20, relatedSkillId: 'mindfulness' },
+      { id: 'd3', title: '7 Days Under 1 Hour Reels', description: 'Break the addiction', xpReward: 300, completed: false, type: 'main', energyCost: 50, moodEffect: 30, relatedSkillId: 'mindfulness' },
+      { id: 'd4', title: '30 Days Clean', description: 'Absolute discipline', xpReward: 1000, completed: false, type: 'side', energyCost: 0, moodEffect: 100, relatedSkillId: 'mindfulness' },
     ],
     rewards: ['👁️ Shadow Hunter', '🛡️ Discipline Shield'],
   },
@@ -165,25 +169,39 @@ const lifeZones: LifeZone[] = [
     unlocked: false,
     progress: 0,
     missions: [
-      { id: 'l1', title: 'Reach Level 10', description: 'Prove your dedication', xpReward: 500, completed: false, type: 'main' },
-      { id: 'l2', title: 'Complete All Zones', description: 'Master of all', xpReward: 1000, completed: false, type: 'main' },
-      { id: 'l3', title: '100-Day Streak', description: 'Legendary consistency', xpReward: 2000, completed: false, type: 'main' },
-      { id: 'l4', title: 'Help 10 People', description: 'Leave a legacy', xpReward: 1500, completed: false, type: 'side' },
+      { id: 'l1', title: 'Reach Level 10', description: 'Prove your dedication', xpReward: 500, completed: false, type: 'main', energyCost: 0, moodEffect: 50 },
+      { id: 'l2', title: 'Complete All Zones', description: 'Master of all', xpReward: 1000, completed: false, type: 'main', energyCost: 0, moodEffect: 100 },
+      { id: 'l3', title: '100-Day Streak', description: 'Legendary consistency', xpReward: 2000, completed: false, type: 'main', energyCost: 0, moodEffect: 100 },
+      { id: 'l4', title: 'Help 10 People', description: 'Leave a legacy', xpReward: 1500, completed: false, type: 'side', energyCost: 50, moodEffect: 100 },
     ],
     rewards: ['👑 Legend Status', '🌟 All XP +50%', '🏆 Hall of Fame'],
   },
 ];
 
 export function LifeMap() {
-  const { state } = useApp();
+  const { state, dispatch } = useApp();
   const [selectedZone, setSelectedZone] = useState<LifeZone | null>(null);
-  const [zones, setZones] = useState(lifeZones);
+  const [zones, setZones] = useState(initialLifeZones);
+  
+  // Life Stats State
+  const [energy, setEnergy] = useState(100);
+  const [maxEnergy, setMaxEnergy] = useState(100);
+  const [mood, setMood] = useState(75);
+  const [showStats, setShowStats] = useState(true);
 
   const currentLevel = state.xpSystem?.currentLevel || 1;
   const unlockedCount = zones.filter(z => z.unlocked).length;
   const totalMissions = zones.reduce((sum, z) => sum + z.missions.length, 0);
   const completedMissions = zones.reduce((sum, z) => sum + z.missions.filter(m => m.completed).length, 0);
   const overallProgress = Math.round((completedMissions / totalMissions) * 100);
+
+  // Regen energy over time (simulated)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setEnergy(prev => Math.min(maxEnergy, prev + 1));
+    }, 60000); // +1 Energy every minute
+    return () => clearInterval(timer);
+  }, [maxEnergy]);
 
   const getZoneStatus = (zone: LifeZone) => {
     if (zone.progress === 100) return 'completed';
@@ -196,20 +214,108 @@ export function LifeMap() {
     setZones(prev => prev.map(z => 
       z.id === zoneId ? { ...z, unlocked: true } : z
     ));
+    dispatch({ type: 'ADD_XP', payload: { amount: 50, source: 'Zone Unlocked' } });
+  };
+
+  const completeMission = (zoneId: string, mission: Mission) => {
+    if (energy < (mission.energyCost || 0)) {
+      alert("Not enough energy! Rest or wait for regeneration.");
+      return;
+    }
+
+    setEnergy(prev => Math.max(0, prev - (mission.energyCost || 0)));
+    setMood(prev => Math.min(100, Math.max(0, prev + (mission.moodEffect || 0))));
+
+    setZones(prev => prev.map(z => {
+      if (z.id === zoneId) {
+        const updatedMissions = z.missions.map(m => 
+          m.id === mission.id ? { ...m, completed: true } : m
+        );
+        const progress = Math.round((updatedMissions.filter(m => m.completed).length / updatedMissions.length) * 100);
+        return { ...z, missions: updatedMissions, progress };
+      }
+      return z;
+    }));
+
+    dispatch({ type: 'ADD_XP', payload: { amount: mission.xpReward, source: `Completed Mission: ${mission.title}` } });
+
+    // Interconnectedness: Add Skill XP if related
+    if (mission.relatedSkillId) {
+      dispatch({ 
+        type: 'ADD_SKILL_XP', 
+        payload: { 
+          skillId: mission.relatedSkillId, 
+          amount: mission.xpReward, // Mission XP counts towards Skill XP
+          source: `Life Mission: ${mission.title}` 
+        } 
+      });
+    }
+    
+    // Update selected zone to reflect changes immediately
+    if (selectedZone && selectedZone.id === zoneId) {
+      setSelectedZone(prev => {
+        if (!prev) return null;
+        const updatedMissions = prev.missions.map(m => 
+          m.id === mission.id ? { ...m, completed: true } : m
+        );
+        const progress = Math.round((updatedMissions.filter(m => m.completed).length / updatedMissions.length) * 100);
+        return { ...prev, missions: updatedMissions, progress };
+      });
+    }
   };
 
   return (
-    <div className="p-3 sm:p-4 lg:p-6 bg-[#0a0a0a] min-h-screen pb-20 lg:pb-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl sm:text-4xl font-black text-white mb-2 font-mono flex items-center gap-3">
-            <Map className="text-amber-400" size={36} />
-            LIFE MAP <span className="text-amber-400">🗺️</span>
-          </h1>
-          <p className="text-base sm:text-lg text-gray-500 font-mono">
-            // Your world. Your story. Unlock zones. Complete missions. Become legendary.
-          </p>
+    <div className="p-3 sm:p-4 lg:p-6 bg-[#0a0a0a] min-h-screen pb-20 lg:pb-6 relative overflow-hidden">
+      {/* Background Grid */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none opacity-20" />
+
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Header & Stats HUD */}
+        <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-black text-white mb-2 font-mono flex items-center gap-3">
+              <Map className="text-amber-400" size={36} />
+              LIFE MAP <span className="text-amber-400">🗺️</span>
+            </h1>
+            <p className="text-base sm:text-lg text-gray-500 font-mono">
+              // Manage your Energy. Boost your Mood. Conquer Life.
+            </p>
+          </div>
+
+          {/* Life Stats HUD */}
+          <div className="flex gap-4">
+            {/* Energy */}
+            <div className="brutal-card bg-gray-900 border-cyan-500/30 p-3 min-w-[140px]">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-cyan-400 font-bold text-xs flex items-center gap-1">
+                  <Battery size={14} /> ENERGY
+                </span>
+                <span className="text-white font-mono text-sm">{energy}/{maxEnergy}</span>
+              </div>
+              <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                <motion.div 
+                  className="h-full bg-cyan-500"
+                  animate={{ width: `${(energy / maxEnergy) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Mood */}
+            <div className="brutal-card bg-gray-900 border-pink-500/30 p-3 min-w-[140px]">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-pink-400 font-bold text-xs flex items-center gap-1">
+                  <Smile size={14} /> MOOD
+                </span>
+                <span className="text-white font-mono text-sm">{mood}%</span>
+              </div>
+              <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                <motion.div 
+                  className="h-full bg-pink-500"
+                  animate={{ width: `${mood}%` }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Overall Progress */}
@@ -350,7 +456,7 @@ export function LifeMap() {
                         e.stopPropagation();
                         unlockZone(zone.id);
                       }}
-                      className="px-3 py-1 bg-amber-500 text-black font-bold text-xs border border-amber-400"
+                      className="brutal-btn px-3 py-1 bg-amber-500 text-black text-xs hover:bg-amber-400"
                     >
                       <Unlock size={12} className="inline mr-1" /> UNLOCK
                     </button>
@@ -454,18 +560,18 @@ export function LifeMap() {
                     {selectedZone.missions.map(mission => (
                       <div
                         key={mission.id}
-                        className={`brutal-card p-4 ${
+                        className={`brutal-card p-4 transition-all ${
                           mission.completed 
                             ? 'bg-green-900/30 border-green-500/50' 
-                            : 'bg-gray-800 border-gray-700'
+                            : 'bg-gray-800 border-gray-700 hover:border-gray-500'
                         }`}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-start gap-3 flex-1">
                             {mission.completed ? (
-                              <CheckCircle className="text-green-400" size={20} />
+                              <CheckCircle className="text-green-400 mt-1" size={20} />
                             ) : (
-                              <div className={`w-5 h-5 rounded-full border-2 ${
+                              <div className={`mt-1 w-5 h-5 rounded-full border-2 flex-shrink-0 ${
                                 mission.type === 'main' ? 'border-amber-400' :
                                 mission.type === 'side' ? 'border-purple-400' :
                                 'border-cyan-400'
@@ -475,20 +581,49 @@ export function LifeMap() {
                               <h4 className={`font-bold ${mission.completed ? 'text-green-400 line-through' : 'text-white'}`}>
                                 {mission.title}
                               </h4>
-                              <p className="text-xs text-gray-500">{mission.description}</p>
+                              <p className="text-xs text-gray-500 mb-2">{mission.description}</p>
+                              
+                              {/* Energy/Mood Indicators */}
+                              {!mission.completed && (
+                                <div className="flex gap-3">
+                                  {mission.energyCost !== undefined && mission.energyCost > 0 && (
+                                    <span className="text-[10px] flex items-center gap-1 font-mono text-cyan-400 bg-cyan-900/30 px-1.5 py-0.5 rounded">
+                                      <Battery size={10} /> -{mission.energyCost}
+                                    </span>
+                                  )}
+                                  {mission.moodEffect !== undefined && mission.moodEffect !== 0 && (
+                                    <span className={`text-[10px] flex items-center gap-1 font-mono ${mission.moodEffect > 0 ? 'text-pink-400 bg-pink-900/30' : 'text-red-400 bg-red-900/30'} px-1.5 py-0.5 rounded`}>
+                                      <Smile size={10} /> {mission.moodEffect > 0 ? '+' : ''}{mission.moodEffect}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className={`font-black ${mission.completed ? 'text-green-400' : 'text-amber-400'}`}>
-                              +{mission.xpReward} XP
-                            </p>
-                            <span className={`text-xs uppercase font-mono ${
-                              mission.type === 'main' ? 'text-amber-500' :
-                              mission.type === 'side' ? 'text-purple-500' :
-                              'text-cyan-500'
-                            }`}>
-                              {mission.type}
-                            </span>
+                          
+                          <div className="text-right flex flex-col items-end gap-2">
+                            <div>
+                              <p className={`font-black ${mission.completed ? 'text-green-400' : 'text-amber-400'}`}>
+                                +{mission.xpReward} XP
+                              </p>
+                              <span className={`text-xs uppercase font-mono ${
+                                mission.type === 'main' ? 'text-amber-500' :
+                                mission.type === 'side' ? 'text-purple-500' :
+                                'text-cyan-500'
+                              }`}>
+                                {mission.type}
+                              </span>
+                            </div>
+                            
+                            {!mission.completed && (
+                              <button
+                                onClick={() => completeMission(selectedZone.id, mission)}
+                                disabled={energy < (mission.energyCost || 0)}
+                                className="brutal-btn px-3 py-1 bg-white text-black text-xs hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                COMPLETE
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -513,7 +648,7 @@ export function LifeMap() {
 
                 <button
                   onClick={() => setSelectedZone(null)}
-                  className="w-full bg-gray-700 hover:bg-gray-600 text-white font-black py-3 border-2 border-gray-600"
+                  className="brutal-btn w-full bg-gray-700 hover:bg-gray-600 text-white py-3 border-gray-600"
                 >
                   CLOSE
                 </button>
@@ -533,8 +668,8 @@ export function LifeMap() {
                 <Zap className="text-cyan-400" size={20} />
               </div>
               <div>
-                <h4 className="text-white font-bold">Complete Tasks</h4>
-                <p className="text-sm text-gray-500">Every completed task gives XP and unlocks missions</p>
+                <h4 className="text-white font-bold">Manage Energy</h4>
+                <p className="text-sm text-gray-500">Missions cost energy. Rest or wait to regenerate.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -542,8 +677,8 @@ export function LifeMap() {
                 <Star className="text-amber-400" size={20} />
               </div>
               <div>
-                <h4 className="text-white font-bold">Level Up</h4>
-                <p className="text-sm text-gray-500">Higher levels unlock new zones and abilities</p>
+                <h4 className="text-white font-bold">Boost Mood</h4>
+                <p className="text-sm text-gray-500">Complete side quests to improve mood and multipliers.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">

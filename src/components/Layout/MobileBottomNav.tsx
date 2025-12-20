@@ -79,4 +79,3 @@ export function MobileBottomNav({ activeTab, onTabChange }: MobileBottomNavProps
     </nav>
   );
 }
-

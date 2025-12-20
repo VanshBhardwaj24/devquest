@@ -1,153 +1,168 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Battery, Zap, Coffee, Clock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Battery, Zap, Coffee, Clock, Activity, Brain } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { Card } from '../ui/card';
+import { Button } from '../ui/button';
 
 export function EnergySystem() {
   const { state, dispatch } = useApp();
-  const [energy, setEnergy] = useState(100);
-  const [maxEnergy] = useState(100);
+  const { darkMode } = state;
+  const energyState = state.vitality?.energy || { current: 100, max: 100, lastUpdated: new Date().toISOString() };
+  const moodState = state.vitality?.mood || { value: 100, label: 'Energized' };
+  
   const [rechargeTime, setRechargeTime] = useState(0);
 
-  // Simulate energy consumption and recharge
+  // Passive recharge on mount (catch up logic)
+  useEffect(() => {
+    const lastUpdate = new Date(energyState.lastUpdated);
+    const now = new Date();
+    const diffSeconds = (now.getTime() - lastUpdate.getTime()) / 1000;
+    
+    // Recharge 1 energy every 30 seconds
+    const rechargeAmount = Math.floor(diffSeconds / 30);
+    
+    if (rechargeAmount > 0 && energyState.current < energyState.max) {
+      dispatch({ type: 'RESTORE_ENERGY', payload: rechargeAmount });
+    }
+  }, []);
+
+  // Active recharge interval
   useEffect(() => {
     const interval = setInterval(() => {
-      setEnergy((prev) => {
-        if (prev < maxEnergy) {
-          const newEnergy = Math.min(prev + 1, maxEnergy);
-          return newEnergy;
-        }
-        return prev;
-      });
+      if (energyState.current < energyState.max) {
+        dispatch({ type: 'RESTORE_ENERGY', payload: 1 });
+      }
     }, 30000); // Recharge 1 energy every 30 seconds
 
     return () => clearInterval(interval);
-  }, [maxEnergy]);
+  }, [energyState.current, energyState.max, dispatch]);
 
-  // Calculate recharge time
+  // Calculate recharge time text
   useEffect(() => {
-    if (energy < maxEnergy) {
-      const missing = maxEnergy - energy;
+    if (energyState.current < energyState.max) {
+      const missing = energyState.max - energyState.current;
       const minutes = missing * 0.5; // 30 seconds per energy = 0.5 minutes
       setRechargeTime(Math.ceil(minutes));
     } else {
       setRechargeTime(0);
     }
-  }, [energy, maxEnergy]);
-
-  const useEnergy = (amount: number) => {
-    if (energy >= amount) {
-      setEnergy(energy - amount);
-      return true;
-    }
-    return false;
-  };
+  }, [energyState.current, energyState.max]);
 
   const getEnergyColor = () => {
-    if (energy >= 75) return 'from-green-400 to-emerald-500';
-    if (energy >= 50) return 'from-yellow-400 to-orange-500';
-    if (energy >= 25) return 'from-orange-400 to-red-500';
-    return 'from-red-500 to-red-700';
+    if (energyState.current >= 75) return 'bg-green-500';
+    if (energyState.current >= 50) return 'bg-yellow-500';
+    if (energyState.current >= 25) return 'bg-orange-500';
+    return 'bg-red-500';
   };
 
   const getEnergyIcon = () => {
-    if (energy >= 75) return '⚡';
-    if (energy >= 50) return '🔋';
-    if (energy >= 25) return '🔌';
+    if (energyState.current >= 75) return '⚡';
+    if (energyState.current >= 50) return '🔋';
+    if (energyState.current >= 25) return '🔌';
     return '💀';
+  };
+  
+  const getMoodColor = () => {
+    switch (moodState.label) {
+      case 'Energized': return 'text-green-500';
+      case 'Motivated': return 'text-blue-500';
+      case 'Neutral': return 'text-gray-500';
+      case 'Tired': return 'text-orange-500';
+      case 'Exhausted': return 'text-red-500';
+      default: return 'text-gray-500';
+    }
   };
 
   return (
-    <div className="brutal-card bg-gray-900 border-cyan-500/30 p-4">
+    <Card variant="brutal" className={`p-4 rounded-none ${darkMode ? 'bg-zinc-900 border-white text-white' : 'bg-white border-black text-black'}`}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-          <Battery className="text-cyan-400" size={18} />
-          Energy
+        <h3 className="text-sm sm:text-base font-bold font-mono uppercase tracking-wider flex items-center gap-2">
+          <Battery className={darkMode ? "text-white" : "text-black"} size={18} />
+          Vitality
         </h3>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-400">{getEnergyIcon()}</span>
-          <span className="text-sm font-black text-cyan-400">{energy}/{maxEnergy}</span>
+        <div className="flex items-center gap-2 font-mono">
+          <span className="text-xs opacity-100">{getEnergyIcon()}</span>
+          <span className="text-sm font-black">{energyState.current}/{energyState.max}</span>
         </div>
       </div>
 
       {/* Energy Bar */}
-      <div className="relative h-6 bg-gray-800 border-2 border-gray-700 overflow-hidden mb-2">
+      <div className={`relative h-8 border-2 mb-2 rounded-none ${darkMode ? 'bg-zinc-800 border-white' : 'bg-gray-100 border-black'}`}>
         <motion.div
           initial={{ width: 0 }}
-          animate={{ width: `${(energy / maxEnergy) * 100}%` }}
+          animate={{ width: `${(energyState.current / energyState.max) * 100}%` }}
           transition={{ duration: 0.5 }}
-          className={`h-full bg-gradient-to-r ${getEnergyColor()} relative`}
-        >
-          <div className="absolute inset-0 bg-[repeating-linear-gradient(90deg,transparent,transparent_4px,rgba(255,255,255,0.1)_4px,rgba(255,255,255,0.1)_8px)]" />
-        </motion.div>
-        {energy < maxEnergy && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-[10px] font-bold text-white drop-shadow-lg">
-              {energy}%
-            </span>
-          </div>
-        )}
+          className={`h-full border-r-2 border-black ${getEnergyColor()}`}
+        />
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <span className={`text-xs font-bold font-mono uppercase ${energyState.current > 50 ? 'text-black' : (darkMode ? 'text-white' : 'text-black')}`}>
+            {energyState.current}% CHARGED
+          </span>
+        </div>
+      </div>
+      
+      {/* Mood Indicator */}
+      <div className={`flex items-center justify-between p-2 mb-2 border-2 ${darkMode ? 'bg-zinc-800 border-white' : 'bg-gray-50 border-black'}`}>
+        <div className="flex items-center gap-2">
+          <Brain size={16} />
+          <span className="text-xs font-bold font-mono uppercase">Mood Status</span>
+        </div>
+        <div className={`text-xs font-black font-mono uppercase ${getMoodColor()}`}>
+          {moodState.label}
+        </div>
       </div>
 
       {/* Recharge Info */}
-      {energy < maxEnergy && (
-        <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-1 text-gray-400">
+      {energyState.current < energyState.max && (
+        <div className="flex items-center justify-between text-xs mt-2 font-mono uppercase">
+          <div className="flex items-center gap-1">
             <Clock size={12} />
-            <span>Recharge in {rechargeTime} min</span>
+            <span>Recharge: {rechargeTime} min</span>
           </div>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-1 px-2 py-1 bg-lime-500/20 border border-lime-500/50 text-lime-400 hover:bg-lime-500/30 transition-colors"
+          <Button
+            variant="brutal"
+            size="sm"
+            className="h-6 text-[10px] px-2 bg-yellow-400 hover:bg-yellow-500 border-black text-black rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:shadow-none transition-all"
             onClick={() => {
-              // Quick recharge - costs coins or watch ad
-              if (confirm('Quick recharge? (Costs 50 coins)')) {
-                setEnergy(maxEnergy);
-                dispatch({ type: 'ADD_XP', payload: { amount: -50, source: 'Energy Recharge' } });
+              if (state.user && state.user.gold >= 50) {
+                 if (confirm('Quick recharge? (Costs 50 gold)')) {
+                    dispatch({ type: 'RESTORE_ENERGY', payload: 100 }); // Full restore
+                    dispatch({ type: 'SPEND_GOLD', payload: { amount: 50, item: 'Energy Drink' } });
+                 }
+              } else {
+                alert('Not enough gold! Need 50 gold.');
               }
             }}
           >
-            <Coffee size={12} />
-            <span>Quick Recharge</span>
-          </motion.button>
+            <Coffee size={12} className="mr-1" />
+            QUICK RECHARGE
+          </Button>
         </div>
       )}
 
-      {energy >= maxEnergy && (
-        <div className="text-center">
+      {energyState.current >= energyState.max && (
+        <div className="text-center mt-2">
           <motion.div
-            animate={{ scale: [1, 1.1, 1] }}
+            animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
-            className="text-xs text-lime-400 font-bold flex items-center justify-center gap-1"
+            className="text-xs font-bold font-mono flex items-center justify-center gap-1 uppercase bg-green-400 text-black border-2 border-black p-1 inline-block shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
           >
             <Zap size={12} />
-            <span>ENERGY FULL!</span>
+            <span>Energy Full</span>
           </motion.div>
         </div>
       )}
 
       {/* Energy Usage Info */}
-      <div className="mt-3 pt-3 border-t border-gray-800">
-        <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-500">
+      <div className={`mt-3 pt-3 border-t-2 ${darkMode ? 'border-zinc-700' : 'border-black'}`}>
+        <div className="grid grid-cols-2 gap-2 text-[10px] uppercase font-mono font-bold">
           <div>Task: -5 energy</div>
           <div>Coding: -10 energy</div>
           <div>Challenge: -15 energy</div>
           <div>Recharge: 1/30s</div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
-
-// Export hook for using energy
-export const useEnergy = () => {
-  // This would be connected to the EnergySystem state
-  // For now, it's a placeholder
-  return {
-    energy: 100,
-    maxEnergy: 100,
-    useEnergy: (amount: number) => true,
-  };
-};
-

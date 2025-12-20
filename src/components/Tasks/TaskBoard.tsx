@@ -13,34 +13,34 @@ import { Task } from '../../types';
 
 // Default tasks for new users
 const DEFAULT_TASKS: Omit<Task, 'id'>[] = [
-  { title: 'Solve 2 LeetCode Problems', description: 'Practice DSA with medium difficulty', priority: 'Elite', completed: false, xp: 150, category: 'DSA', dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Complete Striver SDE Sheet - Arrays', description: 'Master array concepts', priority: 'Elite', completed: false, xp: 200, category: 'DSA', dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Solve Graph Traversal Problems', description: 'Master BFS and DFS', priority: 'Elite', completed: false, xp: 175, category: 'DSA', dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Practice Dynamic Programming', description: 'Solve 3 DP problems', priority: 'Elite', completed: false, xp: 200, category: 'DSA', dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Complete Binary Tree Problems', description: 'Practice tree traversals', priority: 'Elite', completed: false, xp: 175, category: 'DSA', dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Attend Live Coding Contest', description: 'Participate in weekly contest', priority: 'Elite', completed: false, xp: 250, category: 'Contest', dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'System Design Interview Prep', description: 'Design scalable systems', priority: 'Elite', completed: false, xp: 200, category: 'Interview', dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Implement Advanced Data Structure', description: 'Code Trie or Segment Tree', priority: 'Elite', completed: false, xp: 225, category: 'DSA', dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Crack Hard LeetCode Problem', description: 'Solve one hard problem', priority: 'Elite', completed: false, xp: 250, category: 'DSA', dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Complete Mock Technical Interview', description: 'Full technical simulation', priority: 'Elite', completed: false, xp: 300, category: 'Interview', dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Read System Design Chapter', description: 'Learn scalable architecture', priority: 'Core', completed: false, xp: 100, category: 'Learning', dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Build Portfolio Project', description: 'Work on React/Node.js project', priority: 'Core', completed: false, xp: 175, category: 'Portfolio', dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Practice Mock Interview', description: 'Prepare for interview rounds', priority: 'Core', completed: false, xp: 125, category: 'Interview', dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Learn New Framework', description: 'Explore Next.js or Vue', priority: 'Core', completed: false, xp: 150, category: 'Learning', dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Contribute to Open Source', description: 'Make your first PR', priority: 'Core', completed: false, xp: 150, category: 'Portfolio', dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Write Technical Blog Post', description: 'Share learnings on Medium', priority: 'Core', completed: false, xp: 125, category: 'Learning', dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Complete API Integration', description: 'Integrate REST/GraphQL API', priority: 'Core', completed: false, xp: 125, category: 'Portfolio', dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Deploy Project to Cloud', description: 'Deploy to Vercel or AWS', priority: 'Core', completed: false, xp: 150, category: 'Portfolio', dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Database Design Practice', description: 'Design schema for app', priority: 'Core', completed: false, xp: 125, category: 'Learning', dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Prepare FAANG Resume', description: 'Update resume for FAANG', priority: 'Core', completed: false, xp: 100, category: 'Interview', dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Update GitHub README', description: 'Showcase skills & projects', priority: 'Bonus', completed: false, xp: 75, category: 'Profile', dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Review OOP Concepts', description: 'Revise SOLID principles', priority: 'Bonus', completed: false, xp: 50, category: 'Learning', dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Connect on LinkedIn', description: 'Network with professionals', priority: 'Bonus', completed: false, xp: 50, category: 'Networking', dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Watch Tech Conference Talk', description: 'Learn from industry experts', priority: 'Bonus', completed: false, xp: 50, category: 'Learning', dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Read Tech Articles', description: 'Stay updated with trends', priority: 'Bonus', completed: false, xp: 40, category: 'Learning', dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Learn Git Advanced', description: 'Master rebase & cherry-pick', priority: 'Bonus', completed: false, xp: 75, category: 'Learning', dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Explore Design Patterns', description: 'Study Singleton, Factory', priority: 'Bonus', completed: false, xp: 75, category: 'Learning', dueDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
-  { title: 'Join Developer Community', description: 'Participate in Discord/Reddit', priority: 'Bonus', completed: false, xp: 50, category: 'Networking', dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0 },
+  { title: 'Solve 2 LeetCode Problems', description: 'Practice DSA with medium difficulty', priority: 'Elite', completed: false, xp: 150, category: 'DSA', dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'dsa' },
+  { title: 'Complete Striver SDE Sheet - Arrays', description: 'Master array concepts', priority: 'Elite', completed: false, xp: 200, category: 'DSA', dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'dsa' },
+  { title: 'Solve Graph Traversal Problems', description: 'Master BFS and DFS', priority: 'Elite', completed: false, xp: 175, category: 'DSA', dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'dsa' },
+  { title: 'Practice Dynamic Programming', description: 'Solve 3 DP problems', priority: 'Elite', completed: false, xp: 200, category: 'DSA', dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'dsa' },
+  { title: 'Complete Binary Tree Problems', description: 'Practice tree traversals', priority: 'Elite', completed: false, xp: 175, category: 'DSA', dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'dsa' },
+  { title: 'Attend Live Coding Contest', description: 'Participate in weekly contest', priority: 'Elite', completed: false, xp: 250, category: 'Contest', dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'dsa' },
+  { title: 'System Design Interview Prep', description: 'Design scalable systems', priority: 'Elite', completed: false, xp: 200, category: 'Interview', dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'problem-solving' },
+  { title: 'Implement Advanced Data Structure', description: 'Code Trie or Segment Tree', priority: 'Elite', completed: false, xp: 225, category: 'DSA', dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'dsa' },
+  { title: 'Crack Hard LeetCode Problem', description: 'Solve one hard problem', priority: 'Elite', completed: false, xp: 250, category: 'DSA', dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'dsa' },
+  { title: 'Complete Mock Technical Interview', description: 'Full technical simulation', priority: 'Elite', completed: false, xp: 300, category: 'Interview', dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'communication' },
+  { title: 'Read System Design Chapter', description: 'Learn scalable architecture', priority: 'Core', completed: false, xp: 100, category: 'Learning', dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'problem-solving' },
+  { title: 'Build Portfolio Project', description: 'Work on React/Node.js project', priority: 'Core', completed: false, xp: 175, category: 'Portfolio', dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'react' },
+  { title: 'Practice Mock Interview', description: 'Prepare for interview rounds', priority: 'Core', completed: false, xp: 125, category: 'Interview', dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'communication' },
+  { title: 'Learn New Framework', description: 'Explore Next.js or Vue', priority: 'Core', completed: false, xp: 150, category: 'Learning', dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'react' },
+  { title: 'Contribute to Open Source', description: 'Make your first PR', priority: 'Core', completed: false, xp: 150, category: 'Portfolio', dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'typescript' },
+  { title: 'Write Technical Blog Post', description: 'Share learnings on Medium', priority: 'Core', completed: false, xp: 125, category: 'Learning', dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'communication' },
+  { title: 'Complete API Integration', description: 'Integrate REST/GraphQL API', priority: 'Core', completed: false, xp: 125, category: 'Portfolio', dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'typescript' },
+  { title: 'Deploy Project to Cloud', description: 'Deploy to Vercel or AWS', priority: 'Core', completed: false, xp: 150, category: 'Portfolio', dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'react' },
+  { title: 'Database Design Practice', description: 'Design schema for app', priority: 'Core', completed: false, xp: 125, category: 'Learning', dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'problem-solving' },
+  { title: 'Prepare FAANG Resume', description: 'Update resume for FAANG', priority: 'Core', completed: false, xp: 100, category: 'Interview', dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'communication' },
+  { title: 'Update GitHub README', description: 'Showcase skills & projects', priority: 'Bonus', completed: false, xp: 75, category: 'Profile', dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'communication' },
+  { title: 'Review OOP Concepts', description: 'Revise SOLID principles', priority: 'Bonus', completed: false, xp: 50, category: 'Learning', dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'typescript' },
+  { title: 'Connect on LinkedIn', description: 'Network with professionals', priority: 'Bonus', completed: false, xp: 50, category: 'Networking', dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'communication' },
+  { title: 'Watch Tech Conference Talk', description: 'Learn from industry experts', priority: 'Bonus', completed: false, xp: 50, category: 'Learning', dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'problem-solving' },
+  { title: 'Read Tech Articles', description: 'Stay updated with trends', priority: 'Bonus', completed: false, xp: 40, category: 'Learning', dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'problem-solving' },
+  { title: 'Learn Git Advanced', description: 'Master rebase & cherry-pick', priority: 'Bonus', completed: false, xp: 75, category: 'Learning', dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'problem-solving' },
+  { title: 'Explore Design Patterns', description: 'Study Singleton, Factory', priority: 'Bonus', completed: false, xp: 75, category: 'Learning', dueDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'problem-solving' },
+  { title: 'Join Developer Community', description: 'Participate in Discord/Reddit', priority: 'Bonus', completed: false, xp: 50, category: 'Networking', dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), createdAt: new Date(), streak: 0, relatedSkillId: 'communication' },
 ];
 
 // Skinner Box: Variable Reward System
@@ -65,7 +65,22 @@ export function TaskBoard() {
   const [dailyHP, setDailyHP] = useState(100);
   const [dailyGold, setDailyGold] = useState(500);
   const [goblinAlert, setGoblinAlert] = useState(false);
-  const [newTask, setNewTask] = useState({ title: '', description: '', priority: 'Core' as 'Elite' | 'Core' | 'Bonus', category: '', xp: 100 });
+  const [newTask, setNewTask] = useState({ 
+    title: '', 
+    description: '', 
+    priority: 'Core' as 'Elite' | 'Core' | 'Bonus', 
+    category: '', 
+    xp: 100, 
+    relatedSkillId: '',
+    difficulty: 'medium' as 'easy' | 'medium' | 'hard'
+  });
+
+  // Difficulty Multipliers
+  const difficultyConfig = {
+    easy: { xp: 50, label: 'Easy', color: 'text-green-400', border: 'border-green-500/30' },
+    medium: { xp: 100, label: 'Medium', color: 'text-yellow-400', border: 'border-yellow-500/30' },
+    hard: { xp: 200, label: 'Hard', color: 'text-red-400', border: 'border-red-500/30' }
+  };
 
   // Loss Aversion: HP Decay after 6 PM
   useEffect(() => {
@@ -139,11 +154,28 @@ export function TaskBoard() {
           dispatch({ type: 'ADD_XP', payload: { amount: Math.round(task.xp * 0.25), source: 'Goal Gradient Bonus! 🎯' } });
         }
 
+        if (task.relatedSkillId) {
+          dispatch({ 
+            type: 'ADD_SKILL_XP', 
+            payload: { 
+              skillId: task.relatedSkillId, 
+              amount: finalXP, 
+              source: `Task: ${task.title}` 
+            } 
+          });
+        }
+
+        const skillName = task.relatedSkillId && user?.skills 
+          ? user.skills.find(s => s.id === task.relatedSkillId)?.name 
+          : null;
+
         dispatch({ type: 'ADD_NOTIFICATION', payload: {
           id: Date.now().toString(),
           type: 'task-completed',
           title: crit.type !== 'normal' ? crit.message! : 'Quest Completed! 🎉',
-          message: `+${finalXP} XP earned!`,
+          message: skillName 
+            ? `+${finalXP} XP to ${skillName}!` 
+            : `+${finalXP} XP earned!`,
           timestamp: completionTime,
         }});
 
@@ -190,10 +222,12 @@ export function TaskBoard() {
         dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
         createdAt: new Date(),
         streak: 0,
+        // Include relatedSkillId from state
+        relatedSkillId: newTask.relatedSkillId || undefined
       };
       await taskService.createTask(authUser.id, taskData);
       dispatch({ type: 'ADD_TASK', payload: { ...taskData, id: Date.now().toString() } });
-      setNewTask({ title: '', description: '', priority: 'Core', category: '', xp: 100 });
+      setNewTask({ title: '', description: '', priority: 'Core', category: '', xp: 100, relatedSkillId: '' });
       setShowAddTask(false);
     } catch (error: any) {
       // Log error safely (stringify to avoid React conversion issues)
@@ -500,12 +534,33 @@ export function TaskBoard() {
                       <option value="Core">⚡ Core</option>
                       <option value="Bonus">✨ Bonus</option>
                     </select>
+                    
+                    <select
+                      value={newTask.difficulty}
+                      onChange={(e) => {
+                        const diff = e.target.value as 'easy' | 'medium' | 'hard';
+                        setNewTask(prev => ({ 
+                          ...prev, 
+                          difficulty: diff,
+                          xp: difficultyConfig[diff].xp 
+                        }));
+                      }}
+                      className="px-3 py-2 rounded-lg border text-sm bg-gray-700 border-gray-600 text-white"
+                    >
+                      <option value="easy">🟢 Easy (50 XP)</option>
+                      <option value="medium">🟡 Medium (100 XP)</option>
+                      <option value="hard">🔴 Hard (200 XP)</option>
+                    </select>
+                  </div>
+                  
+                  {/* XP Override (Optional) */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400">Custom XP:</span>
                     <input
                       type="number"
                       value={newTask.xp}
-                      onChange={(e) => setNewTask(prev => ({ ...prev, xp: parseInt(e.target.value) || 100 }))}
-                      className="px-3 py-2 rounded-lg border text-sm bg-gray-700 border-gray-600 text-white"
-                      min="25" max="500" step="25"
+                      onChange={(e) => setNewTask(prev => ({ ...prev, xp: parseInt(e.target.value) || 0 }))}
+                      className="w-20 px-2 py-1 rounded border text-sm bg-gray-700 border-gray-600 text-white"
                     />
                   </div>
                   <input
@@ -515,6 +570,21 @@ export function TaskBoard() {
                     className="w-full px-3 py-2 rounded-lg border text-sm bg-gray-700 border-gray-600 text-white placeholder-gray-500"
                     placeholder="Category (DSA, Learning...)"
                   />
+                  
+                  {user?.skills && user.skills.length > 0 && (
+                    <select
+                      value={newTask.relatedSkillId}
+                      onChange={(e) => setNewTask(prev => ({ ...prev, relatedSkillId: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border text-sm bg-gray-700 border-gray-600 text-white"
+                    >
+                      <option value="">-- Link to Skill (Optional) --</option>
+                      {user.skills.map(skill => (
+                        <option key={skill.id} value={skill.id}>
+                          {skill.name} (Lvl {skill.level})
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 <div className="flex gap-3 mt-6">
                   <button onClick={() => setShowAddTask(false)} className="flex-1 py-2 rounded-lg border text-sm border-gray-600 text-gray-300 hover:bg-gray-700 transition-colors">Cancel</button>

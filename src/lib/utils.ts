@@ -200,6 +200,15 @@ export function calculateXPProgress(currentXP: number, currentLevel: number): {
   return { levelXP, neededXP, progress };
 }
 
+export function calculateTier(xp: number): 'Bronze' | 'Silver' | 'Gold' | 'Platinum' | 'Mythic' | 'Legend' {
+  if (xp >= 100000) return 'Legend';
+  if (xp >= 50000) return 'Mythic';
+  if (xp >= 30000) return 'Platinum';
+  if (xp >= 15000) return 'Gold';
+  if (xp >= 5000) return 'Silver';
+  return 'Bronze';
+}
+
 // Streak utilities
 export function calculateStreak(lastActivityDate: string | Date, currentStreak: number = 0): {
   newStreak: number;
@@ -218,7 +227,6 @@ export function calculateStreak(lastActivityDate: string | Date, currentStreak: 
   // Normalize to just dates (remove time)
   const lastDateOnly = new Date(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate());
   const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
 
   const daysDiff = Math.floor((todayOnly.getTime() - lastDateOnly.getTime()) / (1000 * 60 * 60 * 24));
 
@@ -387,7 +395,7 @@ export function isValidUrl(url: string): boolean {
   }
 }
 
-export function isValidDate(date: any): boolean {
+export function isValidDate(date: unknown): boolean {
   return date instanceof Date && !isNaN(date.getTime());
 }
 
@@ -421,6 +429,7 @@ export function removeLocalStorage(key: string): void {
 }
 
 // Debounce and throttle utilities
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
@@ -436,6 +445,7 @@ export function debounce<T extends (...args: any[]) => any>(
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
   limit: number
@@ -543,6 +553,7 @@ export const utils = {
     calculateLevelFromXP,
     calculateXPToNextLevel,
     calculateXPProgress,
+    calculateTier,
   },
   streak: {
     calculateStreak,

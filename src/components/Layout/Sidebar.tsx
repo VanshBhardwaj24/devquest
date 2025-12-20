@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import {
   LayoutDashboard,
   Trophy,
+  Briefcase,
   Swords,
   Users,
   Map,
@@ -67,6 +68,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: 'learning', label: 'Learning', icon: BookOpen, color: 'orange', desc: 'Skills & Books' },
     { id: 'accountability', label: 'Accountability', icon: Shield, color: 'lime', desc: 'Punishments' },
     { id: 'lifemap', label: 'Life Map', icon: Map, color: 'cyan', desc: 'Progress View' },
+    { id: 'internship', label: 'Internship', icon: Briefcase, color: 'cyan', desc: 'Internship Quest' },
   ];
 
   const progressTabs = [
