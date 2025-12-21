@@ -198,12 +198,33 @@ export function SkillTree() {
   };
 
   const handleCreateTask = (skillId: string, skillName: string) => {
-    // Dispatch action to open task modal with this skill pre-selected
-    // For now, we'll just log it or maybe we need a way to trigger the modal from here
-    // Ideally, we should have a global UI state for modals
-    console.log(`Create task for ${skillName}`);
-    // This would require a global modal state which we might not have exposed yet
-    // Alternatively, we can just navigate to tasks page
+    const newTask: Task = {
+      id: `task-${Date.now()}`,
+      title: `Practice ${skillName}`,
+      description: `Dedicate 30 minutes to practicing ${skillName} concepts.`,
+      priority: 'medium',
+      completed: false,
+      xp: 50,
+      category: 'learning',
+      dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Due tomorrow
+      createdAt: new Date(),
+      streak: 0,
+      relatedSkillId: skillId,
+      difficulty: 'medium'
+    };
+    
+    dispatch({ type: 'ADD_TASK', payload: newTask });
+    
+    dispatch({
+      type: 'ADD_NOTIFICATION',
+      payload: {
+        id: Date.now().toString(),
+        type: 'mission',
+        title: 'New Skill Task Created',
+        message: `A new task to practice ${skillName} has been added to your board.`,
+        timestamp: new Date()
+      }
+    });
   };
 
   return (
@@ -401,9 +422,14 @@ export function SkillTree() {
                             <Target className="w-4 h-4 text-neon-green" />
                             Active Tasks
                           </h3>
-                          <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => handleCreateTask(selectedSkill.id, selectedSkill.name)}>
-                            <Plus className="w-3 h-3 mr-1" /> Add Task
-                          </Button>
+                          <div className="flex gap-2">
+                             <Button size="sm" variant="neon" className="h-6 text-xs" onClick={handleQuickPractice}>
+                                <Zap className="w-3 h-3 mr-1" /> Quick Practice
+                             </Button>
+                             <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => handleCreateTask(selectedSkill.id, selectedSkill.name)}>
+                                <Plus className="w-3 h-3 mr-1" /> Add Task
+                             </Button>
+                          </div>
                         </div>
                         
                         {relatedTasks && relatedTasks.length > 0 ? (

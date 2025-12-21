@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Map,
@@ -34,6 +34,8 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
+
+
 interface Milestone {
   id: string;
   title: string;
@@ -65,7 +67,7 @@ interface CareerPhase {
 }
 
 export function CareerRoadmap() {
-  const { state } = useApp();
+  const { state, dispatch } = useApp();
   const { user, careerStats } = state;
   const [selectedPhase, setSelectedPhase] = useState<string | null>(null);
   const [selectedMilestone, setSelectedMilestone] = useState<string | null>(null);
@@ -73,275 +75,352 @@ export function CareerRoadmap() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'available' | 'in-progress' | 'completed'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-
-  // Career phases with milestones
-  const careerPhases: CareerPhase[] = [
-    {
-      id: 'foundation',
-      title: 'Foundation',
-      subtitle: 'Build Your Base',
-      icon: '🌱',
-      color: 'lime',
-      level: 'Beginner',
-      description: 'Master the fundamentals and establish strong coding habits',
-      unlocked: true,
-      completed: (user?.level || 1) >= 5,
-      xpRequired: 0,
-      bonusReward: { type: 'badge', value: 'Foundation Master' },
-      milestones: [
-        {
-          id: 'f1',
-          title: 'First Steps',
-          description: 'Complete your profile and set your first goal',
-          xpReward: 100,
-          status: 'completed',
-          estimatedTime: '15 min',
-          skills: ['Goal Setting', 'Planning'],
-          progress: 100,
-          resources: [
-            { type: 'article', title: 'How to Set SMART Goals', url: '#' },
-            { type: 'video', title: 'Getting Started Guide', url: '#' }
-          ],
-          subtasks: [
-            { id: 's1', title: 'Complete profile setup', completed: true },
-            { id: 's2', title: 'Set your first weekly goal', completed: true },
-            { id: 's3', title: 'Explore the dashboard', completed: true }
-          ]
-        },
-        {
-          id: 'f2',
-          title: 'Daily Warrior',
-          description: 'Complete tasks for 7 consecutive days',
-          xpReward: 250,
-          status: 'completed',
-          estimatedTime: '7 days',
-          skills: ['Consistency', 'Discipline'],
-          progress: 100,
-          resources: [
-            { type: 'article', title: 'Building Habits That Stick', url: '#' }
-          ],
-          subtasks: [
-            { id: 's1', title: 'Day 1 complete', completed: true },
-            { id: 's2', title: 'Day 2 complete', completed: true },
-            { id: 's3', title: 'Day 3 complete', completed: true },
-            { id: 's4', title: 'Day 4 complete', completed: true },
-            { id: 's5', title: 'Day 5 complete', completed: true },
-            { id: 's6', title: 'Day 6 complete', completed: true },
-            { id: 's7', title: 'Day 7 complete', completed: true }
-          ]
-        },
-        {
-          id: 'f3',
-          title: 'Skill Explorer',
-          description: 'Unlock your first 3 skills in the skill tree',
-          xpReward: 200,
-          status: 'in-progress',
-          estimatedTime: '2 hours',
-          skills: ['Learning', 'Exploration'],
-          progress: 66,
-          resources: [
-            { type: 'article', title: 'Skill Tree Overview', url: '#' },
-            { type: 'project', title: 'Practice Challenge', url: '#' }
-          ],
-          subtasks: [
-            { id: 's1', title: 'Unlock first skill', completed: true },
-            { id: 's2', title: 'Unlock second skill', completed: true },
-            { id: 's3', title: 'Unlock third skill', completed: false }
-          ]
-        },
-        {
-          id: 'f4',
-          title: 'First Challenge',
-          description: 'Complete your first coding challenge',
-          xpReward: 300,
-          status: 'available',
-          estimatedTime: '30 min',
-          skills: ['Problem Solving', 'Coding'],
-          progress: 0,
-          resources: [
-            { type: 'video', title: 'How to Approach Challenges', url: '#' },
-            { type: 'quiz', title: 'Pre-Challenge Quiz', url: '#' }
-          ],
-          subtasks: [
-            { id: 's1', title: 'Read challenge requirements', completed: false },
-            { id: 's2', title: 'Write solution', completed: false },
-            { id: 's3', title: 'Submit and pass tests', completed: false }
-          ]
-        }
-      ]
-    },
-    {
-      id: 'growth',
-      title: 'Growth',
-      subtitle: 'Level Up Your Skills',
-      icon: '🚀',
-      color: 'cyan',
-      level: 'Intermediate',
-      description: 'Expand your abilities and tackle harder challenges',
-      unlocked: (user?.level || 1) >= 5,
-      completed: (user?.level || 1) >= 15,
-      xpRequired: 5000,
-      bonusReward: { type: 'title', value: 'Rising Developer' },
-      milestones: [
-        {
-          id: 'g1',
-          title: 'Challenge Champion',
-          description: 'Complete 25 coding challenges',
-          xpReward: 500,
-          status: (user?.level || 1) >= 5 ? 'in-progress' : 'locked',
-          estimatedTime: '2 weeks',
-          skills: ['Algorithms', 'Problem Solving'],
-          progress: 40,
-          resources: [
-            { type: 'article', title: 'Common Algorithm Patterns', url: '#' },
-            { type: 'video', title: 'Problem Solving Strategies', url: '#' }
-          ],
-          subtasks: [
-            { id: 's1', title: 'Complete 10 easy challenges', completed: true },
-            { id: 's2', title: 'Complete 10 medium challenges', completed: false },
-            { id: 's3', title: 'Complete 5 hard challenges', completed: false }
-          ]
-        },
-        {
-          id: 'g2',
-          title: 'Streak Master',
-          description: 'Maintain a 30-day streak',
-          xpReward: 750,
-          status: (user?.level || 1) >= 5 ? 'available' : 'locked',
-          estimatedTime: '30 days',
-          dueDate: '2025-01-15',
-          skills: ['Consistency', 'Dedication'],
-          progress: 0,
-          resources: [
-            { type: 'article', title: 'Maintaining Long Streaks', url: '#' }
-          ],
-          subtasks: [
-            { id: 's1', title: 'Reach 10-day streak', completed: false },
-            { id: 's2', title: 'Reach 20-day streak', completed: false },
-            { id: 's3', title: 'Complete 30-day streak', completed: false }
-          ]
-        },
-        {
-          id: 'g3',
-          title: 'Skill Specialist',
-          description: 'Max out one complete skill branch',
-          xpReward: 600,
-          status: (user?.level || 1) >= 7 ? 'available' : 'locked',
-          estimatedTime: '1 week',
-          skills: ['Specialization', 'Mastery'],
-          progress: 0,
-          resources: [
-            { type: 'project', title: 'Skill Mastery Project', url: '#' }
-          ],
-          subtasks: [
-            { id: 's1', title: 'Choose a skill branch', completed: false },
-            { id: 's2', title: 'Unlock all skills in branch', completed: false },
-            { id: 's3', title: 'Complete mastery challenge', completed: false }
-          ]
-        },
-        {
-          id: 'g4',
-          title: 'Community Star',
-          description: 'Help 10 other users with their goals',
-          xpReward: 400,
-          status: 'locked',
-          estimatedTime: '2 weeks',
-          skills: ['Collaboration', 'Mentoring'],
-          progress: 0,
-          resources: [
-            { type: 'article', title: 'How to Help Others Effectively', url: '#' }
-          ],
-          subtasks: [
-            { id: 's1', title: 'Join a study group', completed: false },
-            { id: 's2', title: 'Answer 5 questions', completed: false },
-            { id: 's3', title: 'Help 10 users', completed: false }
-          ]
-        }
-      ]
-    },
-    {
-      id: 'mastery',
-      title: 'Mastery',
-      subtitle: 'Become Elite',
-      icon: '👑',
-      color: 'magenta',
-      level: 'Advanced',
-      description: 'Prove your expertise and lead others',
-      unlocked: (user?.level || 1) >= 15,
-      completed: (user?.level || 1) >= 30,
-      xpRequired: 15000,
-      bonusReward: { type: 'exclusive', value: 'Elite Status + Custom Theme' },
-      milestones: [
-        {
-          id: 'm1',
-          title: 'Elite Coder',
-          description: 'Solve 50 hard challenges with optimal solutions',
-          xpReward: 1000,
-          status: 'locked',
-          estimatedTime: '1 month',
-          skills: ['Advanced Algorithms', 'Optimization'],
-          progress: 0,
-          resources: [
-            { type: 'video', title: 'Advanced Problem Solving', url: '#' },
-            { type: 'article', title: 'Optimization Techniques', url: '#' }
-          ],
-          subtasks: [
-            { id: 's1', title: 'Complete 25 hard challenges', completed: false },
-            { id: 's2', title: 'Achieve optimal solutions', completed: false },
-            { id: 's3', title: 'Complete 50 hard challenges', completed: false }
-          ]
-        },
-        {
-          id: 'm2',
-          title: 'Century Streak',
-          description: 'Maintain a 100-day streak',
-          xpReward: 2000,
-          status: 'locked',
-          estimatedTime: '100 days',
-          skills: ['Legendary Consistency'],
-          progress: 0,
-          resources: [],
-          subtasks: [
-            { id: 's1', title: 'Reach 50-day streak', completed: false },
-            { id: 's2', title: 'Reach 75-day streak', completed: false },
-            { id: 's3', title: 'Complete 100-day streak', completed: false }
-          ]
-        },
-        {
-          id: 'm3',
-          title: 'Mentor',
-          description: 'Help 50 users achieve their goals',
-          xpReward: 1500,
-          status: 'locked',
-          estimatedTime: '2 months',
-          skills: ['Leadership', 'Teaching'],
-          progress: 0,
-          resources: [],
-          subtasks: [
-            { id: 's1', title: 'Complete mentor training', completed: false },
-            { id: 's2', title: 'Help 25 users', completed: false },
-            { id: 's3', title: 'Help 50 users', completed: false }
-          ]
-        },
-        {
-          id: 'm4',
-          title: 'Legend',
-          description: 'Reach the top 1% of all users',
-          xpReward: 5000,
-          status: 'locked',
-          estimatedTime: 'Ongoing',
-          skills: ['Excellence', 'Dedication'],
-          progress: 0,
-          resources: [],
-          subtasks: [
-            { id: 's1', title: 'Reach top 10%', completed: false },
-            { id: 's2', title: 'Reach top 5%', completed: false },
-            { id: 's3', title: 'Reach top 1%', completed: false }
-          ]
-        }
-      ]
+  
+  // Persistence for subtasks
+  const [completedSubtasks, setCompletedSubtasks] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('career_completed_subtasks');
+      return saved ? JSON.parse(saved) : {
+        'f1-s1': true, 'f1-s2': true, 'f1-s3': true, // Defaults for demo
+        'f2-s1': true, 'f2-s2': true
+      };
+    } catch {
+      return {};
     }
-  ];
+  });
+
+  // Persistence for claimed phase rewards
+  const [claimedPhases, setClaimedPhases] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('career_claimed_phases');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const toggleSubtask = (milestoneId: string, subtaskId: string) => {
+    const key = `${milestoneId}-${subtaskId}`;
+    const isCompleted = !completedSubtasks[key];
+    
+    const newCompletedSubtasks = {
+      ...completedSubtasks,
+      [key]: isCompleted
+    };
+    
+    setCompletedSubtasks(newCompletedSubtasks);
+    localStorage.setItem('career_completed_subtasks', JSON.stringify(newCompletedSubtasks));
+    
+    if (isCompleted) {
+      dispatch({ type: 'ADD_XP', payload: { amount: 50, source: 'Career Task' } });
+    }
+  };
+
+  const claimPhaseReward = (phaseId: string, reward: any) => {
+    if (claimedPhases[phaseId]) return;
+
+    const newClaimedPhases = { ...claimedPhases, [phaseId]: true };
+    setClaimedPhases(newClaimedPhases);
+    localStorage.setItem('career_claimed_phases', JSON.stringify(newClaimedPhases));
+
+    dispatch({ 
+      type: 'ADD_NOTIFICATION', 
+      payload: {
+        id: Date.now().toString(),
+        type: 'achievement',
+        title: 'Phase Completed!',
+        message: `You've mastered the ${phaseId} phase!`,
+        timestamp: new Date()
+      }
+    });
+
+    // Award bonus XP if defined, or just a flat amount
+    dispatch({ type: 'ADD_XP', payload: { amount: 1000, source: 'Phase Completion' } });
+  };
+
+
+  // Helper to check if milestone is completed based on subtasks
+  const getMilestoneStatus = (milestone: any, defaultStatus: string, phaseUnlocked: boolean) => {
+    if (!phaseUnlocked) return 'locked';
+    
+    const totalSubtasks = milestone.subtasks.length;
+    const completedCount = milestone.subtasks.filter((s: any) => completedSubtasks[`${milestone.id}-${s.id}`]).length;
+    
+    if (completedCount === totalSubtasks && totalSubtasks > 0) return 'completed';
+    if (completedCount > 0) return 'in-progress';
+    return defaultStatus === 'locked' ? 'locked' : 'available';
+  };
+
+  const getMilestoneProgress = (milestone: any) => {
+    const totalSubtasks = milestone.subtasks.length;
+    if (totalSubtasks === 0) return milestone.progress || 0;
+    const completedCount = milestone.subtasks.filter((s: any) => completedSubtasks[`${milestone.id}-${s.id}`]).length;
+    return Math.round((completedCount / totalSubtasks) * 100);
+  };
+
+  // Career phases with milestones (Memoized and dynamic)
+  const careerPhases: CareerPhase[] = useMemo(() => {
+    // Static definition as base
+    const phases: Omit<CareerPhase, 'unlocked' | 'completed'>[] = [
+      {
+        id: 'foundation',
+        title: 'Foundation',
+        subtitle: 'Build Your Base',
+        icon: '🌱',
+        color: 'lime',
+        level: 'Beginner',
+        description: 'Master the fundamentals and establish strong coding habits',
+        xpRequired: 0,
+        bonusReward: { type: 'badge', value: 'Foundation Master' },
+        milestones: [
+          {
+            id: 'f1',
+            title: 'First Steps',
+            description: 'Complete your profile and set your first goal',
+            xpReward: 100,
+            status: 'available',
+            estimatedTime: '15 min',
+            skills: ['Goal Setting', 'Planning'],
+            progress: 0,
+            resources: [
+              { type: 'article', title: 'How to Set SMART Goals', url: '#' },
+              { type: 'video', title: 'Getting Started Guide', url: '#' }
+            ],
+            subtasks: [
+              { id: 's1', title: 'Complete profile setup', completed: false },
+              { id: 's2', title: 'Set your first weekly goal', completed: false },
+              { id: 's3', title: 'Explore the dashboard', completed: false }
+            ]
+          },
+          {
+            id: 'f2',
+            title: 'Daily Warrior',
+            description: 'Complete tasks for 7 consecutive days',
+            xpReward: 250,
+            status: 'available',
+            estimatedTime: '7 days',
+            skills: ['Consistency', 'Discipline'],
+            progress: 0,
+            resources: [
+              { type: 'article', title: 'Building Habits That Stick', url: '#' }
+            ],
+            subtasks: [
+              { id: 's1', title: 'Day 1 complete', completed: false },
+              { id: 's2', title: 'Day 2 complete', completed: false },
+              { id: 's3', title: 'Day 3 complete', completed: false },
+              { id: 's4', title: 'Day 4 complete', completed: false },
+              { id: 's5', title: 'Day 5 complete', completed: false },
+              { id: 's6', title: 'Day 6 complete', completed: false },
+              { id: 's7', title: 'Day 7 complete', completed: false }
+            ]
+          },
+          {
+            id: 'f3',
+            title: 'Skill Explorer',
+            description: 'Unlock your first 3 skills in the skill tree',
+            xpReward: 200,
+            status: 'available',
+            estimatedTime: '2 hours',
+            skills: ['Learning', 'Exploration'],
+            progress: 0,
+            resources: [
+              { type: 'article', title: 'Skill Tree Overview', url: '#' },
+              { type: 'project', title: 'Practice Challenge', url: '#' }
+            ],
+            subtasks: [
+              { id: 's1', title: 'Unlock first skill', completed: false },
+              { id: 's2', title: 'Unlock second skill', completed: false },
+              { id: 's3', title: 'Unlock third skill', completed: false }
+            ]
+          },
+          {
+            id: 'f4',
+            title: 'First Challenge',
+            description: 'Complete your first coding challenge',
+            xpReward: 300,
+            status: 'available',
+            estimatedTime: '30 min',
+            skills: ['Problem Solving', 'Coding'],
+            progress: 0,
+            resources: [
+              { type: 'video', title: 'How to Approach Challenges', url: '#' },
+              { type: 'quiz', title: 'Pre-Challenge Quiz', url: '#' }
+            ],
+            subtasks: [
+              { id: 's1', title: 'Read challenge requirements', completed: false },
+              { id: 's2', title: 'Write solution', completed: false },
+              { id: 's3', title: 'Submit and pass tests', completed: false }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'growth',
+        title: 'Growth',
+        subtitle: 'Level Up Your Skills',
+        icon: '🚀',
+        color: 'cyan',
+        level: 'Intermediate',
+        description: 'Expand your abilities and tackle harder challenges',
+        xpRequired: 1000,
+        bonusReward: { type: 'title', value: 'Rising Developer' },
+        milestones: [
+          {
+            id: 'g1',
+            title: 'Challenge Champion',
+            description: 'Complete 25 coding challenges',
+            xpReward: 500,
+            status: 'available',
+            estimatedTime: '2 weeks',
+            skills: ['Algorithms', 'Problem Solving'],
+            progress: 0,
+            resources: [
+              { type: 'article', title: 'Common Algorithm Patterns', url: '#' },
+              { type: 'video', title: 'Problem Solving Strategies', url: '#' }
+            ],
+            subtasks: [
+              { id: 's1', title: 'Complete 10 easy challenges', completed: false },
+              { id: 's2', title: 'Complete 10 medium challenges', completed: false },
+              { id: 's3', title: 'Complete 5 hard challenges', completed: false }
+            ]
+          },
+          {
+            id: 'g2',
+            title: 'Streak Master',
+            description: 'Maintain a 30-day streak',
+            xpReward: 750,
+            status: 'available',
+            estimatedTime: '30 days',
+            dueDate: '2025-01-15',
+            skills: ['Consistency', 'Dedication'],
+            progress: 0,
+            resources: [
+              { type: 'article', title: 'Maintaining Long Streaks', url: '#' }
+            ],
+            subtasks: [
+              { id: 's1', title: 'Week 1 streak maintained', completed: false },
+              { id: 's2', title: 'Week 2 streak maintained', completed: false },
+              { id: 's3', title: 'Week 3 streak maintained', completed: false },
+              { id: 's4', title: 'Week 4 streak maintained', completed: false }
+            ]
+          },
+          {
+            id: 'g3',
+            title: 'Open Source Contributor',
+            description: 'Make your first open source contribution',
+            xpReward: 1000,
+            status: 'available',
+            estimatedTime: '1 week',
+            track: 'open-source',
+            skills: ['Git', 'Collaboration', 'Open Source'],
+            progress: 0,
+            resources: [
+              { type: 'article', title: 'First Contributions Guide', url: '#' },
+              { type: 'github', title: 'Find Good First Issues', url: '#' }
+            ],
+            subtasks: [
+              { id: 's1', title: 'Find a project', completed: false },
+              { id: 's2', title: 'Fork and clone', completed: false },
+              { id: 's3', title: 'Create pull request', completed: false },
+              { id: 's4', title: 'PR merged', completed: false }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'mastery',
+        title: 'Mastery',
+        subtitle: 'Become an Expert',
+        icon: '👑',
+        color: 'purple',
+        level: 'Advanced',
+        description: 'Achieve mastery in your domain and mentor others',
+        xpRequired: 5000,
+        bonusReward: { type: 'badge', value: 'Code Master' },
+        milestones: [
+          {
+            id: 'm1',
+            title: 'System Architect',
+            description: 'Design a complex scalable system',
+            xpReward: 2000,
+            status: 'available',
+            estimatedTime: '1 month',
+            track: 'general',
+            skills: ['System Design', 'Architecture'],
+            progress: 0,
+            resources: [
+              { type: 'article', title: 'System Design Primer', url: '#' }
+            ],
+            subtasks: [
+              { id: 's1', title: 'Define requirements', completed: false },
+              { id: 's2', title: 'Create high-level design', completed: false },
+              { id: 's3', title: 'Design database schema', completed: false },
+              { id: 's4', title: 'API design', completed: false }
+            ]
+          }
+        ]
+      }
+    ];
+
+    return phases.map(phase => {
+      const unlocked = (user?.xp || 0) >= phase.xpRequired;
+      
+      // Calculate milestone progress
+      const milestonesWithProgress = phase.milestones.map(m => ({
+        ...m,
+        progress: getMilestoneProgress(m),
+        status: getMilestoneStatus(m, m.status, unlocked) as Milestone['status']
+      }));
+
+      // Check if all milestones are completed
+      const allMilestonesCompleted = milestonesWithProgress.every(m => m.status === 'completed');
+      
+      return {
+        ...phase,
+        unlocked,
+        completed: allMilestonesCompleted,
+        milestones: milestonesWithProgress
+      };
+    });
+  }, [user?.xp, completedSubtasks]);
+
+  // Process phases to apply dynamic status
+  const processedPhases = careerPhases.map((phase, index) => {
+    // Check if previous phase is completed to unlock this one
+    // First phase is always unlocked
+    let isUnlocked = index === 0;
+    if (index > 0) {
+      const prevPhase = careerPhases[index - 1];
+      const prevPhaseMilestones = prevPhase.milestones;
+      const prevPhaseCompleted = prevPhaseMilestones.every(m => {
+        const total = m.subtasks.length;
+        const done = m.subtasks.filter(s => completedSubtasks[`${m.id}-${s.id}`]).length;
+        return done === total && total > 0;
+      });
+      isUnlocked = prevPhaseCompleted;
+    }
+    
+    // Calculate completion of THIS phase
+    const updatedMilestones = phase.milestones.map(m => ({
+      ...m,
+      status: getMilestoneStatus(m, m.status as string, isUnlocked),
+      progress: getMilestoneProgress(m),
+      subtasks: m.subtasks.map(s => ({
+        ...s,
+        completed: !!completedSubtasks[`${m.id}-${s.id}`]
+      }))
+    }));
+
+    const isCompleted = updatedMilestones.every(m => m.status === 'completed');
+
+    return {
+      ...phase,
+      unlocked: isUnlocked,
+      completed: isCompleted,
+      milestones: updatedMilestones
+    };
+  });
+
 
   const getStatusIcon = (status: Milestone['status']) => {
     switch (status) {
@@ -380,7 +459,7 @@ export function CareerRoadmap() {
     return Math.round((completed / allMilestones.length) * 100);
   };
 
-  const filteredPhases = careerPhases.map(phase => ({
+  const filteredPhases = processedPhases.map(phase => ({
     ...phase,
     milestones: phase.milestones.filter(m => {
       const matchesStatus = filterStatus === 'all' || m.status === filterStatus;
@@ -392,7 +471,7 @@ export function CareerRoadmap() {
     })
   }));
 
-  const selectedPhaseData = careerPhases.find(p => p.id === selectedPhase);
+  const selectedPhaseData = processedPhases.find(p => p.id === selectedPhase);
 
   // Stats calculation
   const totalApplications = careerStats?.totalApplications || 0;
@@ -796,7 +875,11 @@ export function CareerRoadmap() {
                                   </h4>
                                   <div className="space-y-2">
                                     {milestone.subtasks.map((subtask) => (
-                                      <div key={subtask.id} className="flex items-center gap-2">
+                                      <div 
+                                        key={subtask.id} 
+                                        className={`flex items-center gap-2 cursor-pointer p-1 rounded hover:bg-gray-800/50 transition-colors`}
+                                        onClick={() => toggleSubtask(milestone.id, subtask.id)}
+                                      >
                                         {subtask.completed ? (
                                           <CheckCircle className="w-4 h-4 text-lime-400" />
                                         ) : (

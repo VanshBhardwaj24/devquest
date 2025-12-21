@@ -9,9 +9,16 @@ export function DailyChallenge() {
   const [dailyChallenge, setDailyChallenge] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [completed, setCompleted] = useState(false);
+  const { dispatch } = useApp();
 
   useEffect(() => {
     loadDailyChallenge();
+    // Check local storage for today's completion
+    const today = new Date().toISOString().split('T')[0];
+    const completedDate = localStorage.getItem('daily_challenge_completed_date');
+    if (completedDate === today) {
+      setCompleted(true);
+    }
   }, []);
 
   const loadDailyChallenge = async () => {
@@ -19,7 +26,7 @@ export function DailyChallenge() {
       // Simulate loading daily challenge
       setTimeout(() => {
         setDailyChallenge({
-          id: 'daily-1',
+          id: `daily-${new Date().toISOString().split('T')[0]}`,
           title: 'Two Sum',
           description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
           difficulty: 'Easy',
@@ -39,8 +46,40 @@ export function DailyChallenge() {
   };
 
   const markCompleted = () => {
+    if (!dailyChallenge) return;
+    
     setCompleted(true);
-    // Add bonus XP logic here
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem('daily_challenge_completed_date', today);
+    
+    // Add XP
+    dispatch({ 
+      type: 'ADD_XP', 
+      payload: { 
+        amount: dailyChallenge.xp + dailyChallenge.bonusXp, 
+        source: 'Daily Challenge' 
+      } 
+    });
+
+    // Update Streak
+    dispatch({
+      type: 'UPDATE_TIME_BASED_STREAK',
+      payload: {
+        activityType: 'coding',
+        timestamp: new Date()
+      }
+    });
+
+    // Update Coding Stats
+    dispatch({
+      type: 'SOLVE_PROBLEM',
+      payload: {
+        xp: dailyChallenge.xp,
+        difficulty: dailyChallenge.difficulty,
+        platform: dailyChallenge.platform,
+        topic: dailyChallenge.tags[0] || 'General'
+      }
+    });
   };
 
   if (loading) {

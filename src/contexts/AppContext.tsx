@@ -1786,6 +1786,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(countdownInterval);
   }, []);
 
+  // Energy regeneration
+  useEffect(() => {
+    const energyInterval = setInterval(() => {
+      // Only restore if not at max
+      if (state.vitality.energy.current < state.vitality.energy.max) {
+        dispatch({ type: 'RESTORE_ENERGY', payload: 1 }); // +1 Energy every 5 minutes
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(energyInterval);
+  }, [state.vitality.energy.current, state.vitality.energy.max]);
+
   // Track activity timer
   useEffect(() => {
     let activityInterval: NodeJS.Timeout | null = null;

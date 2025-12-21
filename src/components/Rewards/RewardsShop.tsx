@@ -57,33 +57,48 @@ const DEFAULT_REWARDS: Reward[] = [
 export function RewardsShop() {
   const { state, dispatch } = useApp();
   const { darkMode, user } = state;
-  const [rewards, setRewards] = useState<Reward[]>(DEFAULT_REWARDS);
-  const [selectedCategory, setSelectedCategory] = useState<'all' | Reward['category']>('all');
-  const [showRedeemModal, setShowRedeemModal] = useState(false);
-  const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
-  const [showAddCustom, setShowAddCustom] = useState(false);
-  const [recentlyRedeemed, setRecentlyRedeemed] = useState<string[]>([]);
-  const [isSpinning, setIsSpinning] = useState(false);
-  const [spinResult, setSpinResult] = useState<{ prize: string; xp: number } | null>(null);
-  const [freeSpinsAvailable, setFreeSpinsAvailable] = useState(1);
-  
-  // 6-hour cooldown state
-  const [lastSpinTime, setLastSpinTime] = useState<number>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('lastSpinTime');
-      return saved ? parseInt(saved, 10) : 0;
+  const [rewards, setRewards] = useState<Reward[]>(() => {
+    try {
+      const saved = localStorage.getItem('shop_rewards');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error("Failed to parse shop rewards", e);
     }
-    return 0;
+    return DEFAULT_REWARDS;
+  });
+
+  const [lastSpinTime, setLastSpinTime] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('lastSpinTime');
+      return saved ? parseInt(saved) : 0;
+    } catch {
+      return 0;
+    }
   });
   const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
-  
-  const [customReward, setCustomReward] = useState({
+  const [freeSpinsAvailable, setFreeSpinsAvailable] = useState<number>(1);
+  const [isSpinning, setIsSpinning] = useState<boolean>(false);
+  const [spinResult, setSpinResult] = useState<any>(null);
+  const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'break' | 'entertainment' | 'food' | 'gaming' | 'social' | 'custom'>('all');
+  const [showRedeemModal, setShowRedeemModal] = useState<boolean>(false);
+  const [recentlyRedeemed, setRecentlyRedeemed] = useState<string[]>([]);
+  const [showAddCustom, setShowAddCustom] = useState<boolean>(false);
+  const [customReward, setCustomReward] = useState<Partial<Reward>>({
     name: '',
     description: '',
     cost: 100,
-    category: 'custom' as Reward['category'],
     icon: '🎁',
+    category: 'custom',
+    rarity: 'common'
   });
+
+  // Save rewards to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('shop_rewards', JSON.stringify(rewards));
+  }, [rewards]);
 
   // Cooldown timer effect
   useEffect(() => {
@@ -197,7 +212,13 @@ export function RewardsShop() {
       timesRedeemed: 0
     };
 
-    setRewards([newReward, ...rewards]);
+    const updatedRewards = [newReward, ...rewards];
+    setRewards(updatedRewards);
+    
+    // Save custom rewards to localStorage
+    const customRewards = updatedRewards.filter(r => r.id.startsWith('custom-'));
+    localStorage.setItem('custom_rewards', JSON.stringify(customRewards));
+
     setShowAddCustom(false);
     setCustomReward({
       name: '',
@@ -438,41 +459,77 @@ export function RewardsShop() {
         </Dialog>
       )}
 
-      {/* Add Custom Reward Modal (Simplified) */}
-      {showAddCustom && (
-        <Dialog open={showAddCustom} onOpenChange={setShowAddCustom}>
-          <DialogContent>
-             <DialogHeader>
-              <DialogTitle>Create Custom Reward</DialogTitle>
-             </DialogHeader>
-             {/* Form implementation would go here, simplified for this file */}
-             <div className="space-y-4 py-4">
-               <div className="space-y-2">
-                 <Label>Reward Name</Label>
-                 <input 
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={customReward.name}
-                    onChange={(e) => setCustomReward({...customReward, name: e.target.value})}
-                    placeholder="e.g., Buy a new game"
-                 />
-               </div>
-               <div className="space-y-2">
-                 <Label>Cost (XP)</Label>
-                 <input 
-                    type="number"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={customReward.cost}
-                    onChange={(e) => setCustomReward({...customReward, cost: parseInt(e.target.value) || 0})}
-                 />
-               </div>
-             </div>
-             <DialogFooter>
-               <Button variant="ghost" onClick={() => setShowAddCustom(false)}>Cancel</Button>
-               <Button onClick={addCustomReward}>Create Reward</Button>
-             </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* Add Custom Reward Modal */}
+      <Dialog open={showAddCustom} onOpenChange={setShowAddCustom}>
+        <DialogContent className="sm:max-w-md border-neon-purple/50 bg-black/90 backdrop-blur-xl text-white">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-cyber text-neon-purple">Create Custom Reward</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Add your own personal rewards to the shop.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="reward-name" className="text-gray-300">Reward Name</Label>
+              <Input
+                id="reward-name"
+                placeholder="e.g., Buy a new game"
+                value={customReward.name}
+                onChange={(e) => setCustomReward({ ...customReward, name: e.target.value })}
+                className="bg-gray-800 border-gray-700 text-white focus:border-neon-purple"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="reward-desc" className="text-gray-300">Description (Optional)</Label>
+              <Input
+                id="reward-desc"
+                placeholder="What will you do?"
+                value={customReward.description}
+                onChange={(e) => setCustomReward({ ...customReward, description: e.target.value })}
+                className="bg-gray-800 border-gray-700 text-white focus:border-neon-purple"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="reward-cost" className="text-gray-300">Cost (Gold)</Label>
+                <Input
+                  id="reward-cost"
+                  type="number"
+                  min="1"
+                  value={customReward.cost}
+                  onChange={(e) => setCustomReward({ ...customReward, cost: parseInt(e.target.value) || 0 })}
+                  className="bg-gray-800 border-gray-700 text-white focus:border-neon-purple"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="reward-icon" className="text-gray-300">Icon (Emoji)</Label>
+                <Input
+                  id="reward-icon"
+                  placeholder="🎁"
+                  value={customReward.icon}
+                  onChange={(e) => setCustomReward({ ...customReward, icon: e.target.value })}
+                  className="bg-gray-800 border-gray-700 text-white focus:border-neon-purple text-center text-2xl"
+                  maxLength={2}
+                />
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowAddCustom(false)} className="text-gray-400 hover:text-white">
+              Cancel
+            </Button>
+            <Button variant="neon" onClick={addCustomReward} disabled={!customReward.name}>
+              Add Reward
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+

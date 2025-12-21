@@ -35,6 +35,8 @@ export function CodingArena() {
   const { state, dispatch } = useApp();
   const { user: authUser } = useAuth();
   const { darkMode, codingStats } = state;
+  // Read GitHub integration state safely from global app state (may be undefined)
+  const githubStats = (state as any).github ?? null;
   const [problems, setProblems] = useState<CodingProblem[]>([]);
   const [filteredProblems, setFilteredProblems] = useState<CodingProblem[]>([]);
   const [selectedPlatform, setSelectedPlatform] = useState<'all' | 'LeetCode' | 'GeeksforGeeks' | 'CodeChef'>('all');
@@ -987,22 +989,37 @@ export function CodingArena() {
 
   const loadProblems = useCallback(() => {
     setLoading(true);
-    // Simulate loading
-    setTimeout(() => {
-      const problemsWithSubmissions = problemDatabase.map(p => ({ 
-        ...p, 
-        solved: Math.random() > 0.85 
-      }));
-      setProblems(problemsWithSubmissions);
-      setLoading(false);
-    }, 800);
-    // problemDatabase is a stable constant, no need to include in deps
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
+    // Load progress from localStorage
+    const savedSolvedIds = JSON.parse(localStorage.getItem('coding_solved_ids') || '[]');
+    const savedRevisionIds = JSON.parse(localStorage.getItem('coding_revision_ids') || '[]');
+    
+    const problemsWithProgress = problemDatabase.map(p => ({ 
+      ...p, 
+      solved: savedSolvedIds.includes(p.id),
+      needsRevision: savedRevisionIds.includes(p.id),
+      // We could store solvedAt dates too if we wanted, for now just boolean
+      solvedAt: savedSolvedIds.includes(p.id) ? new Date() : undefined
+    }));
+    
+    setProblems(problemsWithProgress);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
     loadProblems();
   }, [authUser, loadProblems]);
+
+  // Save progress whenever problems change
+  useEffect(() => {
+    if (problems.length > 0) {
+      const solvedIds = problems.filter(p => p.solved).map(p => p.id);
+      const revisionIds = problems.filter(p => p.needsRevision).map(p => p.id);
+      
+      localStorage.setItem('coding_solved_ids', JSON.stringify(solvedIds));
+      localStorage.setItem('coding_revision_ids', JSON.stringify(revisionIds));
+    }
+  }, [problems]);
 
   // Memoize filtered problems for performance
   const filteredProblemsMemo = useMemo(() => {
@@ -1374,6 +1391,58 @@ export function CodingArena() {
             </div>
           </motion.div>
         </div>
+
+        {/* GitHub Integration Stats */}
+        {githubStats && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 sm:mb-6 lg:mb-8 brutal-card bg-gray-900 border-white/20 p-4"
+          >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gray-800 rounded-lg">
+                  <ExternalLink className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white font-mono">GITHUB_SYNC</h3>
+                  <p className="text-xs text-gray-400 font-mono">
+                    @{githubStats.username} • Last synced: {githubStats.lastSynced?.toLocaleTimeString()}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex gap-4 sm:gap-8 w-full sm:w-auto">
+                <div>
+                  <div className="text-2xl font-black text-white font-mono">{githubStats.totalCommits}</div>
+                  <div className="text-xs text-gray-500 font-mono uppercase">Commits</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-black text-white font-mono">{githubStats.streak}</div>
+                  <div className="text-xs text-gray-500 font-mono uppercase">Day Streak</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-black text-white font-mono">{githubStats.totalPRs}</div>
+                  <div className="text-xs text-gray-500 font-mono uppercase">PRs</div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Recent Activity Mini-List */}
+            <div className="mt-4 pt-4 border-t border-gray-800">
+              <h4 className="text-xs font-bold text-gray-500 font-mono uppercase mb-2">Recent Activity</h4>
+              <div className="space-y-2">
+                {githubStats.recentActivity.slice(0, 3).map((activity, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-sm font-mono text-gray-300">
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                    <span className="text-gray-500">[{activity.repo}]</span>
+                    <span className="truncate">{activity.message}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Tab Navigation */}
         <div className="mb-4 sm:mb-6">

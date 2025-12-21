@@ -28,6 +28,7 @@ import { IntegrationsHub } from './components/Integrations/IntegrationsHub';
 import { LeaderBoard } from './components/Social/LeaderBoard';
 import { ProfileCard } from './components/Profile/ProfileCard';
 import { MobileBottomNav } from './components/Layout/MobileBottomNav';
+import { Help } from './components/Support/Help';
 import { Toaster } from 'react-hot-toast';
 
 // Loading Component
