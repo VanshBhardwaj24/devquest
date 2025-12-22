@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { User, Task, Achievement, Milestone, CareerStats, SystemLog } from '../types';
+import { User, Task, Achievement, Milestone, CareerStats, SystemLog, ShopItem, Project } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { profileService } from '../services/profileService';
 import { taskService } from '../services/taskService';
@@ -96,6 +96,7 @@ interface AppState {
   careerStats: CareerStats;
   badges: Badge[];
   challenges: Challenge[];
+  shopItems: ShopItem[];
   vitality: {
     energy: {
       current: number;
@@ -219,7 +220,10 @@ type AppAction =
   | { type: 'ACTIVATE_POWERUP'; payload: { powerUpId: string; duration: number } }
   | { type: 'EXPIRE_POWERUP'; payload: string }
   | { type: 'UPDATE_ENERGY'; payload: { amount: number } }
-  | { type: 'RESTORE_ENERGY'; payload: number };
+  | { type: 'RESTORE_ENERGY'; payload: number }
+  | { type: 'ADD_PROJECT'; payload: Project }
+  | { type: 'UPDATE_PROJECT'; payload: Project }
+  | { type: 'BUY_SHOP_ITEM'; payload: { itemId: string; cost: number } };
 
 // Dynamic XP calculation functions - Unified formula across app
 const getXPForLevel = (level: number): number => {
@@ -237,10 +241,6 @@ const calculateLevelFromXP = (totalXP: number): number => {
     level++;
   }
   return level;
-};
-
-const calculateXPToNextLevel = (currentXP: number, currentLevel: number): number => {
-  return getXPForLevel(currentLevel + 1);
 };
 
 // Time-based streak calculation functions
@@ -306,7 +306,7 @@ const initializeTimeBasedStreak = (): TimeBasedStreak => {
   return {
     currentStreak: 0,
     longestStreak: 0,
-    lastActivityDate: today,
+    lastActivityDate: '',
     streakStartDate: today,
     dailyActivity: {},
   };
@@ -319,9 +319,9 @@ const initializeDailyReset = (): DailyReset => {
   if (typeof window !== 'undefined') {
     try {
       lastReset = localStorage.getItem('lastDailyReset') || today;
-    } catch (error: any) {
+    } catch (error) {
       // Log error safely (stringify to avoid React conversion issues)
-      console.error('Error reading from localStorage:', error?.message || JSON.stringify(error));
+      console.error('Error reading from localStorage:', (error as Error)?.message || JSON.stringify(error));
     }
   }
   
@@ -436,6 +436,7 @@ const initialState: AppState = {
   careerStats: { totalApplications: 0, interviews: 0, offers: 0, rejections: 0, skillsMastered: 0, projectsCompleted: 0 },
   badges: generateBadges(),
   challenges: generateChallenges(),
+  shopItems: [],
   vitality: {
     energy: {
       current: 100,
@@ -472,7 +473,7 @@ const initialState: AppState = {
   globalStreak: {
     currentStreak: 0,
     longestStreak: 0,
-    lastActivityDate: getTodayDateString(),
+    lastActivityDate: '',
     streakStartDate: getTodayDateString(),
     streakType: 'combined',
   },
@@ -507,7 +508,7 @@ const initialState: AppState = {
   ownedPowerUps: {},
 };
 
-const AppContext = createContext<{
+export const AppContext = createContext<{
   state: AppState;
   dispatch: React.Dispatch<AppAction>;
 }>({ state: initialState, dispatch: () => {} });
@@ -551,6 +552,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
           [todayStr]: {
             ...existingTaskActivity,
             tasksCompleted: existingTaskActivity.tasksCompleted + 1,
+            xpEarned: existingTaskActivity.xpEarned + (updatedTask.xpReward || updatedTask.xp || 0),
             activeMinutes: existingTaskActivity.activeMinutes + 1,
             lastActivityTime: taskCompleteTime.toISOString(),
           },
@@ -646,13 +648,32 @@ function appReducer(state: AppState, action: AppAction): AppState {
           const hpGain = 5; // Regain HP on task completion
           const goldGain = 25 + (updatedTask.priority === 'Elite' ? 50 : updatedTask.priority === 'Core' ? 25 : 10);
           
+          const iso = todayStr;
+          const xpGain = updatedTask.xpReward || updatedTask.xp || 0;
+          const existingLog = (state.user.activityLog || []).find(e => e.date === iso);
+          const newActivityLog = existingLog
+            ? (state.user.activityLog || []).map(e => 
+                e.date === iso 
+                  ? { 
+                      ...e, 
+                      xpEarned: (e.xpEarned || 0) + xpGain, 
+                      tasksCompleted: (e.tasksCompleted || 0) + 1, 
+                      minutesActive: (e.minutesActive || 0) + 1 
+                    } 
+                  : e
+              )
+            : [ ...(state.user.activityLog || []), { date: iso, xpEarned: xpGain, tasksCompleted: 1, minutesActive: 1 } ];
+          
           userUpdates = {
              ...userUpdates,
              user: { 
                ...state.user, 
                ...(userUpdates as any).user, // Merge with previous user updates (skills)
                hp: Math.min((state.user.maxHp || 100), (state.user.hp || 50) + hpGain),
-               gold: (state.user.gold || 0) + goldGain
+               gold: (state.user.gold || 0) + goldGain,
+               activityLog: newActivityLog,
+               lastActivity: taskCompleteTime,
+               streak: (streakUpdates as any).globalStreak?.currentStreak ?? state.user.streak
              }
           };
         }
@@ -973,6 +994,22 @@ function appReducer(state: AppState, action: AppAction): AppState {
       const newLevel = calculateLevelFromXP(newTotalXP);
       const leveledUp = newLevel > state.xpSystem.currentLevel;
       const newXPToNext = getXPForLevel(newLevel + 1);
+      const todayStrAdd = getTodayDateString();
+      const existingAddActivity = state.timeBasedStreak.dailyActivity[todayStrAdd] || {
+        problemsSolved: 0,
+        tasksCompleted: 0,
+        xpEarned: 0,
+        activeMinutes: 0,
+        lastActivityTime: new Date().toISOString(),
+      };
+      const updatedAddDailyActivity = {
+        ...state.timeBasedStreak.dailyActivity,
+        [todayStrAdd]: {
+          ...existingAddActivity,
+          xpEarned: existingAddActivity.xpEarned + (isSpending ? 0 : finalAmount),
+          lastActivityTime: new Date().toISOString(),
+        },
+      };
       
       // Update user XP as well
       const updatedUser = state.user ? { 
@@ -991,6 +1028,10 @@ function appReducer(state: AppState, action: AppAction): AppState {
           currentLevel: newLevel,
           xpToNextLevel: newXPToNext,
           totalXPEarned: isSpending ? state.xpSystem.totalXPEarned : state.xpSystem.totalXPEarned + finalAmount,
+        },
+        timeBasedStreak: {
+          ...state.timeBasedStreak,
+          dailyActivity: updatedAddDailyActivity,
         },
         notifications: [
           {
@@ -1105,6 +1146,25 @@ function appReducer(state: AppState, action: AppAction): AppState {
         streakStartDate: globalStreakResult.streakBroken ? todayStr : state.globalStreak.streakStartDate,
       };
       
+      // Sync coding activity into global time-based dailyActivity for analytics
+      const existingGlobalActivity = state.timeBasedStreak.dailyActivity[todayStr] || {
+        problemsSolved: 0,
+        tasksCompleted: 0,
+        xpEarned: 0,
+        activeMinutes: 0,
+        lastActivityTime: solveTimestamp.toISOString(),
+      };
+      const updatedGlobalDailyActivity = {
+        ...state.timeBasedStreak.dailyActivity,
+        [todayStr]: {
+          problemsSolved: existingGlobalActivity.problemsSolved + 1,
+          tasksCompleted: existingGlobalActivity.tasksCompleted,
+          xpEarned: existingGlobalActivity.xpEarned + xp,
+          activeMinutes: existingGlobalActivity.activeMinutes + 1,
+          lastActivityTime: solveTimestamp.toISOString(),
+        },
+      };
+
       const statBoost = difficultyMultiplier * 2;
       // Career stats update removed as 'knowledge' field is deprecated
       const newCareerStats = state.careerStats;
@@ -1123,11 +1183,41 @@ function appReducer(state: AppState, action: AppAction): AppState {
         });
       }
 
+      let updatedActivityLog = state.user?.activityLog || [];
+      if (state.user) {
+        const iso = todayStr;
+        const existing = updatedActivityLog.find(e => e.date === iso);
+        if (existing) {
+          updatedActivityLog = updatedActivityLog.map(e => 
+            e.date === iso ? { 
+              ...e, 
+              xpEarned: (e.xpEarned || 0) + xp, 
+              tasksCompleted: (e.tasksCompleted || 0), 
+              minutesActive: (e.minutesActive || 0) + 1 
+            } : e
+          );
+        } else {
+          updatedActivityLog = [
+            ...updatedActivityLog,
+            { date: iso, xpEarned: xp, tasksCompleted: 0, minutesActive: 1 }
+          ];
+        }
+      }
+
       return {
         ...state,
+        user: state.user ? { ...state.user, activityLog: updatedActivityLog, lastActivity: solveTimestamp, streak: updatedGlobalStreak.currentStreak } : state.user,
         codingStats: newCodingStats,
         careerStats: newCareerStats,
         globalStreak: updatedGlobalStreak,
+        timeBasedStreak: {
+          ...state.timeBasedStreak,
+          currentStreak: updatedGlobalStreak.currentStreak,
+          longestStreak: updatedGlobalStreak.longestStreak,
+          lastActivityDate: todayStr,
+          streakStartDate: updatedGlobalStreak.streakStartDate,
+          dailyActivity: updatedGlobalDailyActivity,
+        },
         notifications: notifications.length > 0 ? [...notifications, ...state.notifications.slice(0, 9 - notifications.length)] : state.notifications,
       };
     }
@@ -1323,7 +1413,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
     
-    case 'PERFORM_DAILY_RESET':
+    case 'PERFORM_DAILY_RESET': {
       const resetToday = getTodayDateString();
       const nextResetTime = getNextResetTime();
       
@@ -1436,8 +1526,9 @@ function appReducer(state: AppState, action: AppAction): AppState {
           ...state.notifications.slice(0, 9),
         ],
       };
+    }
     
-    case 'UPDATE_ACTIVITY_TIMER':
+    case 'UPDATE_ACTIVITY_TIMER': {
       const { isActive: timerActive, timestamp: timerTimestamp } = action.payload;
       
       if (timerActive && !state.activityTimer.isActive) {
@@ -1485,6 +1576,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
       }
       
       return state;
+    }
     
     case 'UPDATE_COUNTDOWN':
       return {
@@ -1495,7 +1587,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
     
-    case 'RECORD_DAILY_ACTIVITY':
+    case 'RECORD_DAILY_ACTIVITY': {
       const { date: activityDate, activity: activityData } = action.payload;
       const existingActivity = state.timeBasedStreak.dailyActivity[activityDate] || {
         problemsSolved: 0,
@@ -1518,6 +1610,35 @@ function appReducer(state: AppState, action: AppAction): AppState {
           },
         },
       };
+    }
+    
+    case 'COMPLETE_MINDFULNESS_SESSION': {
+      if (!state.user) return state;
+      const { durationMinutes, timestamp, moodScore } = action.payload;
+      const prev = state.user.mindfulness || { currentStreak: 0, totalMinutes: 0, averageMood: 0, totalSessions: 0 };
+      
+      const lastIso = prev.lastSessionDate ? new Date(prev.lastSessionDate).toISOString().split('T')[0] : '';
+      const todayStr = getTodayDateString();
+      const streakRes = calculateTimeBasedStreak(prev.currentStreak || 0, lastIso, todayStr);
+      
+      const newTotalSessions = (prev.totalSessions || 0) + 1;
+      const mood = typeof moodScore === 'number' ? moodScore : 7;
+      const newAvgMood = Math.round((((prev.averageMood || 0) * (prev.totalSessions || 0)) + mood) / newTotalSessions);
+      
+      const updatedMindfulness = {
+        ...prev,
+        currentStreak: streakRes.newStreak,
+        totalMinutes: (prev.totalMinutes || 0) + (durationMinutes || 0),
+        averageMood: newAvgMood,
+        totalSessions: newTotalSessions,
+        lastSessionDate: timestamp,
+      };
+      
+      return {
+        ...state,
+        user: { ...state.user, mindfulness: updatedMindfulness },
+      };
+    }
 
     case 'ADD_SYSTEM_LOG':
       return { ...state, systemLogs: [action.payload, ...state.systemLogs].slice(0, 50) };
@@ -1541,6 +1662,48 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         user: { ...state.user, gold: newGold },
         systemLogs: [purchaseLog, ...state.systemLogs].slice(0, 50)
+      };
+    }
+
+    case 'ADD_PROJECT': {
+      if (!state.user) return state;
+      const updatedProjects = [action.payload, ...(state.user.projects || [])];
+      return { ...state, user: { ...state.user, projects: updatedProjects } };
+    }
+    
+    case 'UPDATE_PROJECT': {
+      if (!state.user) return state;
+      const updatedProjects = (state.user.projects || []).map(p =>
+        p.id === action.payload.id ? { ...p, ...action.payload } : p
+      );
+      return { ...state, user: { ...state.user, projects: updatedProjects } };
+    }
+    
+    case 'BUY_SHOP_ITEM': {
+      if (!state.user) return state;
+      const { itemId, cost } = action.payload;
+      const currentGold = state.user.gold || 0;
+      if (currentGold < cost) return state;
+      
+      const updatedItems = (state.shopItems || []).map(item =>
+        item.id === itemId
+          ? { ...item, purchased: true, timesRedeemed: (item.timesRedeemed || 0) + 1, lastRedeemed: new Date() }
+          : item
+      );
+      
+      const logEntry: SystemLog = {
+        id: Date.now().toString() + '-shop',
+        message: `MARKET: Purchased ${itemId} for ${cost} Gold.`,
+        type: 'success',
+        timestamp: new Date(),
+        source: 'SHOP_CORE'
+      };
+      
+      return {
+        ...state,
+        user: { ...state.user, gold: currentGold - cost },
+        shopItems: updatedItems,
+        systemLogs: [logEntry, ...state.systemLogs].slice(0, 50),
       };
     }
 
@@ -1725,9 +1888,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           // Initialize XP system with user data
           dispatch({ type: 'ADD_XP', payload: { amount: 0, source: 'initialization' } });
         }
-      } catch (error: any) {
+      } catch (error) {
         // Log error safely (stringify to avoid React conversion issues)
-        console.error('Error loading user data:', error?.message || JSON.stringify(error));
+        console.error('Error loading user data:', (error as Error)?.message || JSON.stringify(error));
       } finally {
         dispatch({ type: 'SET_LOADING', payload: false });
       }
@@ -1760,9 +1923,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     
     try {
       lastReset = localStorage.getItem('lastDailyReset') || today;
-    } catch (error: any) {
+    } catch (error) {
       // Log error safely (stringify to avoid React conversion issues)
-      console.error('Error reading from localStorage:', error?.message || JSON.stringify(error));
+      console.error('Error reading from localStorage:', (error as Error)?.message || JSON.stringify(error));
     }
     
     if (lastReset !== today) {
@@ -1841,7 +2004,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     // Save immediately when XP changes (no debounce for XP to ensure it's saved)
     saveXPToBackend();
-  }, [state.user?.xp, state.user?.level, state.user?.tier, authUser, isDemoMode]);
+  }, [state.user?.xp, state.user?.level, state.user?.tier, state.user, authUser, isDemoMode]);
 
   // Also save when xpSystem changes (double check)
   useEffect(() => {
@@ -1870,7 +2033,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Debounce slightly to avoid too many calls
     const timeoutId = setTimeout(saveXPToBackend, 500);
     return () => clearTimeout(timeoutId);
-  }, [state.xpSystem.currentXP, state.xpSystem.currentLevel, authUser, isDemoMode]);
+  }, [state.xpSystem.currentXP, state.xpSystem.currentLevel, state.user, state.globalStreak.currentStreak, authUser, isDemoMode]);
 
   // Auto-save career stats to backend
   useEffect(() => {

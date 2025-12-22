@@ -22,6 +22,21 @@ export interface User {
   hp: number;
   maxHp: number;
   gold: number;
+  // New dynamic fields
+  bucketList: BucketItem[];
+  contacts: Contact[];
+  mindfulness: MindfulnessStats;
+  internships: InternshipApplication[];
+  projects: Project[];
+  activityLog: ActivityLog[];
+}
+
+export interface ActivityLog {
+  date: string;
+  xpEarned: number;
+  tasksCompleted: number;
+  minutesActive: number;
+  productivityScore?: number;
 }
 
 export interface Skill {
@@ -90,6 +105,74 @@ export interface XPTransaction {
   source: string;
   timestamp: Date;
   multiplier?: number;
+}
+export interface BucketItem {
+  id: string;
+  title: string;
+  completed: boolean;
+  category: 'travel' | 'skill' | 'experience' | 'creation';
+  targetDate?: Date;
+  description?: string;
+  image?: string;
+}
+
+export interface Contact {
+  id: string;
+  name: string;
+  role: string;
+  company: string;
+  lastContactedDate: Date;
+  relationshipScore: number; // 0-100
+  notes?: string;
+  avatar?: string;
+  email?: string;
+  linkedin?: string;
+  twitter?: string;
+}
+
+export interface MindfulnessStats {
+  currentStreak: number;
+  totalMinutes: number;
+  averageMood: number; // 1-10
+  totalSessions: number;
+  lastSessionDate?: Date;
+}
+
+export interface InternshipApplication {
+  id: string;
+  company: string;
+  role: string;
+  status: 'Applied' | 'Screening' | 'Interviewing' | 'Offer' | 'Rejected' | 'Accepted';
+  dateApplied: Date;
+  salary?: string;
+  location?: string;
+  notes?: string;
+  link?: string;
+  logo?: string;
+}
+
+export interface Project {
+  id: string;
+  title: string;
+  description: string;
+  techStack: string[];
+  status: 'planning' | 'in_progress' | 'completed' | 'paused';
+  progress: number;
+  imageUrl?: string;
+  liveUrl?: string;
+  githubUrl?: string;
+  likes?: number;
+  views?: number;
+  featured?: boolean;
+  createdAt: Date;
+  lastUpdated?: Date;
+  branch?: string;
+  stars?: number;
+}
+
+export interface ShopItem extends Reward {
+  stock?: number; // Unlimited if undefined
+  purchased: boolean;
 }
 
 export interface Milestone {

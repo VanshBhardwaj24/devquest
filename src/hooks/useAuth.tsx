@@ -46,7 +46,7 @@ export function useAuth() {
         }
       } catch (error) {
         // Log error safely (stringify to avoid React conversion issues)
-        console.error('Error in getSession:', (error as any)?.message || JSON.stringify(error));
+        console.error('Error in getSession:', (error as Error)?.message || JSON.stringify(error));
         if (mounted) {
           setError('Failed to connect to authentication service');
         }
@@ -77,7 +77,7 @@ export function useAuth() {
         }
       } catch (error) {
         // Log error safely (stringify to avoid React conversion issues)
-        console.error('Error in auth state change:', (error as any)?.message || JSON.stringify(error));
+        console.error('Error in auth state change:', (error as Error)?.message || JSON.stringify(error));
         if (mounted) {
           setError('Authentication state error');
         }
@@ -241,7 +241,7 @@ export function useAuth() {
       return { error: null };
     } catch (error) {
       console.error('Reset password exception:', error);
-      const errorMessage = (error as any).message || 'An unexpected error occurred';
+      const errorMessage = (error as Error).message || 'An unexpected error occurred';
       setError(errorMessage);
       return { error: { message: errorMessage } };
     } finally {

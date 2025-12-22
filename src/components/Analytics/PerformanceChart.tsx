@@ -1,10 +1,22 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { TrendingUp, Calendar, BarChart3 } from 'lucide-react';
+import { TrendingUp, Calendar, BarChart3, Activity } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
-export function PerformanceChart() {
+interface ChartDataPoint {
+  date: string;
+  xp: number;
+  tasks: number;
+  streak: number;
+  productivity: number;
+}
+
+interface PerformanceChartProps {
+  data?: ChartDataPoint[];
+}
+
+export function PerformanceChart({ data: externalData }: PerformanceChartProps) {
   const { state } = useApp();
   const { darkMode } = state;
   const [timeframe, setTimeframe] = useState<'7d' | '30d' | '90d'>('30d');
@@ -31,7 +43,8 @@ export function PerformanceChart() {
     return data;
   };
 
-  const data = generateData(timeframe === '7d' ? 7 : timeframe === '30d' ? 30 : 90);
+  const windowSize = timeframe === '7d' ? 7 : timeframe === '30d' ? 30 : 90;
+  const data = externalData ? externalData.slice(-windowSize) : generateData(windowSize);
 
   const metrics = [
     {
@@ -78,7 +91,7 @@ export function PerformanceChart() {
                   : 'text-gray-500'
               }`}
             >
-              <AreaChart size={16} />
+              <Activity size={16} />
             </button>
             <button
               onClick={() => setChartType('line')}

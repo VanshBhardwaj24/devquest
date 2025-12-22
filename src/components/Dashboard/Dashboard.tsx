@@ -11,7 +11,11 @@ import {
 import { LootBoxOpener } from '../Gamification/LootBoxOpener';
 import { EnergySystem } from '../Gamification/EnergySystem';
 import { DailyMissions } from '../Gamification/DailyMissions';
-import { InternshipTracker } from './InternshipTracker';
+import { Mindfulness } from '../Life/Mindfulness';
+import { Networking } from '../Life/Networking';
+import { BucketList } from '../Life/BucketList';
+import { Accountability } from '../Life/Accountability';
+
 import { Achievements } from './Achievements';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -129,13 +133,13 @@ export function Dashboard() {
               </CardContent>
             </Card>
 
-            <InternshipTracker />
+            <Accountability />
           </div>
         );
       case 'achievements':
         return <Achievements />;
       case 'career':
-        return <InternshipTracker />;
+        return <Accountability />;
       default:
         return <div className="p-4">Module under construction...</div>;
     }
@@ -226,7 +230,7 @@ export function Dashboard() {
                   {(user?.gold || 0).toLocaleString()} <span className="text-sm">🪙</span>
                 </span>
               </div>
-              <Button size="sm" variant="brutal" className="h-8 text-xs z-10 bg-white dark:bg-black hover:bg-gray-100">ADD</Button>
+              <Button size="sm" variant="brutal" className="h-8 text-xs z-10 bg-white dark:bg-black hover:bg-gray-100" onClick={() => dispatch({ type: 'UPDATE_USER', payload: { gold: (user?.gold || 0) + 100 } })}>ADD</Button>
             </div>
           </Card>
 
@@ -346,7 +350,9 @@ export function Dashboard() {
 
           {/* Center Column - Main Content */}
           <div className="lg:col-span-6">
-            {renderContent()}
+            <ErrorBoundary>
+              {renderContent()}
+            </ErrorBoundary>
           </div>
 
           {/* Right Column - Gamification & Social */}

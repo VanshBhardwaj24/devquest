@@ -20,7 +20,12 @@ import {
   Heart,
   BookOpen,
   Shield,
-  Target
+  Target,
+  BarChart3,
+  Brain,
+  Folder,
+  Calendar,
+  Globe
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
@@ -56,9 +61,11 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
 
   const mainTabs = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, color: 'lime', desc: 'Home' },
+    { id: 'internships', label: 'Internship Quest', icon: Briefcase, color: 'lime', desc: 'Job Hunt' },
     { id: 'tasks', label: 'Quests', icon: CheckSquare, color: 'cyan', desc: `${pendingTasks} pending` },
     { id: 'coding', label: 'Arena', icon: Swords, color: 'orange', desc: 'Challenges' },
     { id: 'gamification', label: 'Power-Ups', icon: Gamepad2, color: 'magenta', desc: 'Boosts' },
+    { id: 'rewards', label: 'Shop', icon: Gift, color: 'lime', desc: 'Rewards' },
   ];
 
   const lifeCategories = [
@@ -68,15 +75,16 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: 'learning', label: 'Learning', icon: BookOpen, color: 'orange', desc: 'Skills & Books' },
     { id: 'accountability', label: 'Accountability', icon: Shield, color: 'lime', desc: 'Punishments' },
     { id: 'lifemap', label: 'Life Map', icon: Map, color: 'cyan', desc: 'Progress View' },
-    { id: 'internship', label: 'Internship', icon: Briefcase, color: 'cyan', desc: 'Internship Quest' },
+    { id: 'mindfulness', label: 'Mindfulness', icon: Brain, color: 'lime', desc: 'Meditation' },
+    { id: 'networking', label: 'Networking', icon: Users, color: 'cyan', desc: 'Contacts' },
+    { id: 'bucketlist', label: 'Bucket List', icon: Globe, color: 'magenta', desc: 'Dreams' },
   ];
 
   const progressTabs = [
-    { id: 'achievements', label: 'Achievements', icon: Trophy, color: 'lime', desc: 'Badges' },
-    { id: 'questline', label: 'Roadmap', icon: Target, color: 'cyan', desc: 'Career path' },
-    { id: 'integrations', label: 'Integrations', icon: Plug, color: 'orange', desc: 'Connect apps' },
-    { id: 'leaderboard', label: 'Leaderboard', icon: Users, color: 'magenta', desc: 'Rankings' },
-    { id: 'rewards', label: 'Shop', icon: Gift, color: 'lime', desc: 'Rewards' },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'lime', desc: 'Stats' },
+    { id: 'skills', label: 'Skill Tree', icon: Brain, color: 'cyan', desc: 'Mastery' },
+    { id: 'projects', label: 'Projects', icon: Folder, color: 'orange', desc: 'Showcase' },
+    { id: 'activity', label: 'Activity', icon: Calendar, color: 'magenta', desc: 'Log' },
   ];
 
   const settingsTabs = [

@@ -7,7 +7,7 @@ import {
   RotateCw, Star, Clock, Timer, Zap, Tag
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
-import { Reward } from '../../types';
+import { Reward, ShopItem } from '../../types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -57,17 +57,10 @@ const DEFAULT_REWARDS: Reward[] = [
 export function RewardsShop() {
   const { state, dispatch } = useApp();
   const { darkMode, user } = state;
-  const [rewards, setRewards] = useState<Reward[]>(() => {
-    try {
-      const saved = localStorage.getItem('shop_rewards');
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch (e) {
-      console.error("Failed to parse shop rewards", e);
-    }
-    return DEFAULT_REWARDS;
-  });
+  const rewards: ShopItem[] = (state.shopItems && state.shopItems.length > 0)
+    ? state.shopItems
+    : DEFAULT_REWARDS.map(r => ({ ...r, purchased: false }));
+  const [customRewards, setCustomRewards] = useState<ShopItem[]>([]);
 
   const [lastSpinTime, setLastSpinTime] = useState<number>(() => {
     try {
@@ -81,7 +74,7 @@ export function RewardsShop() {
   const [freeSpinsAvailable, setFreeSpinsAvailable] = useState<number>(1);
   const [isSpinning, setIsSpinning] = useState<boolean>(false);
   const [spinResult, setSpinResult] = useState<any>(null);
-  const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
+  const [selectedReward, setSelectedReward] = useState<ShopItem | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'break' | 'entertainment' | 'food' | 'gaming' | 'social' | 'custom'>('all');
   const [showRedeemModal, setShowRedeemModal] = useState<boolean>(false);
   const [recentlyRedeemed, setRecentlyRedeemed] = useState<string[]>([]);
@@ -95,10 +88,7 @@ export function RewardsShop() {
     rarity: 'common'
   });
 
-  // Save rewards to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('shop_rewards', JSON.stringify(rewards));
-  }, [rewards]);
+  // Local persistence removed in favor of AppContext state
 
   // Cooldown timer effect
   useEffect(() => {
@@ -136,9 +126,10 @@ export function RewardsShop() {
     { id: 'custom', name: 'Special', icon: Crown },
   ];
 
+  const displayRewards = [...rewards, ...customRewards];
   const filteredRewards = selectedCategory === 'all' 
-    ? rewards 
-    : rewards.filter(r => r.category === selectedCategory);
+    ? displayRewards 
+    : displayRewards.filter(r => r.category === selectedCategory);
 
   const getRarityColor = (rarity: Reward['rarity']) => {
     switch (rarity) {
@@ -153,7 +144,7 @@ export function RewardsShop() {
   const canAfford = (cost: number) => currentGold >= cost;
   const isLocked = (reward: Reward): boolean => !!(reward.unlockLevel && userLevel < reward.unlockLevel);
 
-  const handleRedeem = (reward: Reward) => {
+  const handleRedeem = (reward: ShopItem) => {
     if (!canAfford(reward.cost) || isLocked(reward)) return;
     setSelectedReward(reward);
     setShowRedeemModal(true);
@@ -161,24 +152,12 @@ export function RewardsShop() {
 
   const confirmRedeem = () => {
     if (!selectedReward || !user) return;
-
-    // Deduct Gold
-    dispatch({
-      type: 'SPEND_GOLD',
-      payload: { amount: selectedReward.cost, item: selectedReward.name }
-    });
-
-    // Update reward stats
-    setRewards(prev => prev.map(r => 
-      r.id === selectedReward.id 
-        ? { ...r, timesRedeemed: r.timesRedeemed + 1, lastRedeemed: new Date() }
-        : r
-    ));
-
-    // Add to recently redeemed
+    if (selectedReward.id.startsWith('custom-')) {
+      dispatch({ type: 'SPEND_GOLD', payload: { amount: selectedReward.cost, item: selectedReward.name } });
+    } else {
+      dispatch({ type: 'BUY_SHOP_ITEM', payload: { itemId: selectedReward.id, cost: selectedReward.cost } });
+    }
     setRecentlyRedeemed(prev => [selectedReward.id, ...prev.slice(0, 4)]);
-
-    // Show notification
     dispatch({
       type: 'ADD_NOTIFICATION',
       payload: {
@@ -189,11 +168,8 @@ export function RewardsShop() {
         timestamp: new Date(),
       }
     });
-
-    // Show confetti
     dispatch({ type: 'SHOW_CONFETTI', payload: true });
     setTimeout(() => dispatch({ type: 'SHOW_CONFETTI', payload: false }), 3000);
-
     setShowRedeemModal(false);
     setSelectedReward(null);
   };
@@ -201,7 +177,7 @@ export function RewardsShop() {
   const addCustomReward = () => {
     if (!customReward.name.trim()) return;
 
-    const newReward: Reward = {
+    const newReward: ShopItem = {
       id: `custom-${Date.now()}`,
       name: customReward.name,
       description: customReward.description || 'Custom reward',
@@ -209,15 +185,11 @@ export function RewardsShop() {
       category: 'custom',
       icon: customReward.icon,
       rarity: 'common',
-      timesRedeemed: 0
+      timesRedeemed: 0,
+      purchased: false
     };
 
-    const updatedRewards = [newReward, ...rewards];
-    setRewards(updatedRewards);
-    
-    // Save custom rewards to localStorage
-    const customRewards = updatedRewards.filter(r => r.id.startsWith('custom-'));
-    localStorage.setItem('custom_rewards', JSON.stringify(customRewards));
+    setCustomRewards(prev => [newReward, ...prev]);
 
     setShowAddCustom(false);
     setCustomReward({
@@ -403,16 +375,18 @@ export function RewardsShop() {
 
                     <CardFooter className="pt-0">
                       <Button 
-                        variant={affordable && !locked ? "default" : "secondary"}
+                        variant={affordable && !locked && !reward.purchased ? "default" : "secondary"}
                         className={cn(
                           "w-full font-bold",
-                          affordable && !locked ? "bg-gradient-to-r from-neon-blue to-neon-purple border-0" : ""
+                          affordable && !locked && !reward.purchased ? "bg-gradient-to-r from-neon-blue to-neon-purple border-0" : ""
                         )}
-                        disabled={!affordable || locked}
+                        disabled={!affordable || locked || !!reward.purchased}
                         onClick={() => handleRedeem(reward)}
                       >
                         {locked ? (
                           <span className="flex items-center gap-2"><Lock className="w-4 h-4" /> LOCKED</span>
+                        ) : reward.purchased ? (
+                          <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4" /> PURCHASED</span>
                         ) : (
                           <span className="flex items-center gap-2">
                             {reward.cost} Gold

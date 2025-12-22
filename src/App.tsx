@@ -17,19 +17,24 @@ import { Finance } from './components/Life/Finance';
 import { Relationships } from './components/Life/Relationships';
 import { Learning } from './components/Life/Learning';
 import { LifeMap } from './components/Life/LifeMap';
-import { InternshipTracker as InternshipTrackerLife } from './components/Life/InternshipTracker';
-import { AchievementWall } from './components/Achievements/AchievementWall';
+import { Mindfulness } from './components/Life/Mindfulness';
+import { Networking } from './components/Life/Networking';
+import { BucketList } from './components/Life/BucketList';
 import { LevelUpModal } from './components/Gamification/LevelUpModal';
 import { ConfettiProvider } from './components/Gamification/ConfettiProvider';
 import { BadgeUnlockModal } from './components/Gamification/BadgeUnlockModal';
 import { BonusXPIndicator } from './components/Gamification/BonusXPIndicator';
-import { CareerRoadmap } from './components/Questline/CareerRoadmap';
-import { IntegrationsHub } from './components/Integrations/IntegrationsHub';
-import { LeaderBoard } from './components/Social/LeaderBoard';
 import { ProfileCard } from './components/Profile/ProfileCard';
 import { MobileBottomNav } from './components/Layout/MobileBottomNav';
 import { Help } from './components/Support/Help';
 import { Toaster } from 'react-hot-toast';
+import { AnalyticsDashboard } from './components/Progress/AnalyticsDashboard';
+import { SkillTree } from './components/Progress/SkillTree';
+import { ProjectShowcase } from './components/Progress/ProjectShowcase';
+import { ActivityHeatmap } from './components/Progress/ActivityHeatmap';
+import ErrorBoundary from './components/ErrorBoundary';
+import { Life } from './components/Life/Life';
+import { InternshipQuest } from './components/InternshipQuest';
 
 // Loading Component
 function LoadingScreen() {
@@ -132,7 +137,7 @@ function AppContent() {
         setShowLevelUpModal(true);
       }
     }
-  }, [user?.xp, user?.level]);
+  }, [user, user?.xp, user?.level]);
 
   // Handle retry for auth errors
   const handleRetry = () => {
@@ -173,27 +178,25 @@ function AppContent() {
       case 'rewards':
         return <RewardsShop />;
       case 'fitness':
-        return <Fitness />;
       case 'accountability':
-        return <Accountability />;
       case 'finance':
-        return <Finance />;
       case 'relationships':
-        return <Relationships />;
       case 'learning':
-        return <Learning />;
       case 'lifemap':
-        return <LifeMap />;
+      case 'mindfulness':
+      case 'networking':
+      case 'bucketlist':
+        return <Life section={activeTab} />;
       case 'internships':
-        return <InternshipTrackerLife />;
-      case 'achievements':
-        return <AchievementWall />;
-      case 'questline':
-        return <CareerRoadmap />;
-      case 'integrations':
-        return <IntegrationsHub />;
-      case 'leaderboard':
-        return <LeaderBoard />;
+        return <InternshipQuest />;
+      case 'analytics':
+        return <AnalyticsDashboard />;
+      case 'skills':
+        return <SkillTree />;
+      case 'projects':
+        return <ProjectShowcase />;
+      case 'activity':
+        return <ActivityHeatmap />;
       case 'profile':
         return (
           <div className={`p-6 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} min-h-screen`}>
@@ -247,7 +250,9 @@ function AppContent() {
         <div className="flex h-screen overflow-hidden">
           {/* Sidebar - Desktop */}
           <div className="hidden lg:block w-64 h-full border-r-4 border-gray-800 bg-[#111] overflow-y-auto custom-scrollbar">
-            <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+            <ErrorBoundary fallback={<div className="p-4 text-red-500">Sidebar failed to load.</div>}>
+              <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+            </ErrorBoundary>
           </div>
 
           {/* Mobile Sidebar Overlay */}
@@ -268,10 +273,12 @@ function AppContent() {
                   transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                   className="fixed inset-y-0 left-0 w-64 bg-[#111] z-50 border-r-4 border-gray-800 overflow-y-auto lg:hidden"
                 >
-                  <Sidebar activeTab={activeTab} onTabChange={(tab) => {
-                    setActiveTab(tab);
-                    setSidebarOpen(false);
-                  }} />
+                  <ErrorBoundary fallback={<div className="p-4 text-red-500">Sidebar failed to load.</div>}>
+                    <Sidebar activeTab={activeTab} onTabChange={(tab) => {
+                      setActiveTab(tab);
+                      setSidebarOpen(false);
+                    }} />
+                  </ErrorBoundary>
                 </motion.div>
               </>
             )}
@@ -283,7 +290,9 @@ function AppContent() {
             
             <main className="flex-1 overflow-y-auto p-4 pb-20 lg:p-6 custom-scrollbar scroll-smooth">
               <div className="max-w-7xl mx-auto pb-20 lg:pb-0">
-                {renderContent()}
+                <ErrorBoundary fallback={<div className="p-4 text-red-500">Content failed to render.</div>}>
+                  {renderContent()}
+                </ErrorBoundary>
               </div>
             </main>
             
