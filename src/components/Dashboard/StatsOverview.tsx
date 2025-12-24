@@ -3,39 +3,47 @@ import { motion } from 'framer-motion';
 import { TrendingUp, Target, Calendar, Zap } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { Card } from '../ui/card';
+import { DashboardStats } from '../../services/dashboardService';
 
-export function StatsOverview() {
+interface StatsOverviewProps {
+  stats?: DashboardStats;
+}
+
+export function StatsOverview({ stats: externalStats }: StatsOverviewProps) {
   const { state } = useApp();
   const { user, tasks, darkMode } = state;
 
-  const stats = [
+  // Use external stats if provided, otherwise fallback to basic calculation
+  // Note: The parent Dashboard component calculates comprehensive stats, so we prioritize those.
+  
+  const displayStats = [
     {
       title: 'Total XP',
-      value: user?.xp.toLocaleString() || '0',
+      value: (externalStats?.xp ?? user?.xp ?? 0).toLocaleString(),
       icon: Zap,
       bg: 'bg-purple-500',
       text: 'text-white',
-      change: '+150 this week',
+      change: externalStats ? `Level ${externalStats.level}` : '+150 this week',
     },
     {
       title: 'Current Level',
-      value: user?.level || 1,
+      value: externalStats?.level ?? user?.level ?? 1,
       icon: TrendingUp,
       bg: 'bg-green-500',
       text: 'text-black',
-      change: `${user?.tier || 'Novice'} tier`,
+      change: user?.tier || 'Novice',
     },
     {
       title: 'Active Tasks',
-      value: tasks.filter(t => !t.completed).length,
+      value: externalStats?.pendingTasks ?? tasks.filter(t => !t.completed).length,
       icon: Target,
       bg: 'bg-orange-500',
       text: 'text-black',
-      change: '+3 this week',
+      change: externalStats ? `${externalStats.completedTasks} done` : '+3 this week',
     },
     {
       title: 'Streak Days',
-      value: user?.streak || 0,
+      value: externalStats?.streak ?? user?.streak ?? 0,
       icon: Calendar,
       bg: 'bg-blue-500',
       text: 'text-white',
@@ -51,7 +59,7 @@ export function StatsOverview() {
       </h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => {
+        {displayStats.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <motion.div

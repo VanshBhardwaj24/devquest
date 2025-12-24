@@ -8,6 +8,8 @@ import { Sidebar } from './components/Layout/Sidebar';
 import { Dashboard } from './components/Dashboard/Dashboard';
 import { TaskBoard } from './components/Tasks/TaskBoard';
 import { CodingArena } from './components/Coding/CodingArena';
+import { DailyChallenge } from './components/Coding/DailyChallenge';
+import { ChallengesManager } from './components/Coding/ChallengesManager';
 import { GamificationHub } from './components/Gamification/GamificationHub';
 import { ProfileSetup } from './components/Profile/ProfileSetup';
 import { RewardsShop } from './components/Rewards/RewardsShop';
@@ -173,6 +175,17 @@ function AppContent() {
         return <TaskBoard />;
       case 'coding':
         return <CodingArena />;
+      case 'challenges-daily':
+        return (
+          <div className="space-y-6">
+            <DailyChallenge />
+            <ChallengesManager frequency="Daily" />
+          </div>
+        );
+      case 'challenges-weekly':
+        return <ChallengesManager frequency="Weekly" />;
+      case 'challenges-monthly':
+        return <ChallengesManager frequency="Monthly" />;
       case 'gamification':
         return <GamificationHub />;
       case 'rewards':

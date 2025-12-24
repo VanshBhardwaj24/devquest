@@ -1,51 +1,49 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, Clock, Target, Trophy } from 'lucide-react';
+import { CheckCircle, Clock, Target, Trophy, Info, AlertCircle } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { Card } from '../ui/card';
+import { ActivityItem } from '../../services/dashboardService';
 
-export function RecentActivity() {
+interface RecentActivityProps {
+  activities?: ActivityItem[];
+}
+
+export function RecentActivity({ activities: externalActivities }: RecentActivityProps) {
   const { state } = useApp();
   const { darkMode } = state;
 
-  const activities = [
+  const defaultActivities = [
     {
-      id: 1,
+      id: '1',
       type: 'task',
       title: 'Completed Leetcode Easy Problem',
       time: '2 hours ago',
-      icon: CheckCircle,
-      color: 'text-green-500',
+      icon: 'check',
       xp: 50,
     },
-    {
-      id: 2,
-      type: 'milestone',
-      title: 'Updated LinkedIn Profile',
-      time: '1 day ago',
-      icon: Target,
-      color: 'text-blue-500',
-      xp: 100,
-    },
-    {
-      id: 3,
-      type: 'achievement',
-      title: 'Unlocked "First Resume Upload" badge',
-      time: '2 days ago',
-      icon: Trophy,
-      color: 'text-yellow-500',
-      xp: 200,
-    },
-    {
-      id: 4,
-      type: 'task',
-      title: 'Started Mock Interview Practice',
-      time: '3 days ago',
-      icon: Clock,
-      color: 'text-purple-500',
-      xp: 75,
-    },
+    // ... potentially other defaults or just empty
   ];
+
+  const activities = externalActivities || []; // Use external or empty (could use defaults but external is preferred)
+
+  const getIcon = (type: string, iconName?: string) => {
+    if (iconName === 'check') return CheckCircle;
+    if (type === 'milestone') return Target;
+    if (type === 'achievement') return Trophy;
+    if (type === 'error') return AlertCircle;
+    return Clock; // default
+  };
+
+  const getColor = (type: string) => {
+      switch (type) {
+          case 'task': return 'text-green-500';
+          case 'milestone': return 'text-blue-500';
+          case 'achievement': return 'text-yellow-500';
+          case 'error': return 'text-red-500';
+          default: return 'text-purple-500';
+      }
+  };
 
   return (
     <Card variant="brutal" className={`p-6 rounded-none ${
@@ -56,9 +54,14 @@ export function RecentActivity() {
         Recent Activity
       </h2>
       
+      {activities.length === 0 ? (
+          <div className="text-center py-8 font-mono opacity-60">NO RECENT ACTIVITY DETECTED</div>
+      ) : (
       <div className="space-y-4">
         {activities.map((activity, index) => {
-          const Icon = activity.icon;
+          const Icon = getIcon(activity.type, activity.icon);
+          const colorClass = getColor(activity.type);
+          
           return (
             <motion.div
               key={activity.id}
@@ -72,7 +75,7 @@ export function RecentActivity() {
                   : 'bg-gray-50 border-black hover:bg-white'
               } hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`}
             >
-              <div className={`${activity.color} mr-4 p-2 border-2 border-black bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]`}>
+              <div className={`${colorClass} mr-4 p-2 border-2 border-black bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]`}>
                 <Icon className="h-5 w-5" />
               </div>
               <div className="flex-1 min-w-0">
@@ -80,18 +83,21 @@ export function RecentActivity() {
                   {activity.title}
                 </div>
                 <div className={`text-xs font-mono uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {activity.time}
+                  {typeof activity.time === 'string' ? activity.time : 'Just now'}
                 </div>
               </div>
+              {activity.xp && (
               <div className={`text-sm font-black font-mono border-2 border-black px-2 py-1 ${
                 darkMode ? 'bg-zinc-700 text-white' : 'bg-yellow-300 text-black'
               } shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]`}>
                 +{activity.xp}XP
               </div>
+              )}
             </motion.div>
           );
         })}
       </div>
+      )}
     </Card>
   );
 }

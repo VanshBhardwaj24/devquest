@@ -25,6 +25,7 @@ import {
   Globe
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { Clock } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -83,6 +84,12 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: 'skills', label: 'Skill Tree', icon: Brain, color: 'cyan', desc: 'Mastery' },
     { id: 'projects', label: 'Projects', icon: Folder, color: 'orange', desc: 'Showcase' },
     { id: 'activity', label: 'Activity', icon: Calendar, color: 'magenta', desc: 'Log' },
+  ];
+
+  const challengeTabs = [
+    { id: 'challenges-daily', label: 'Daily Challenges', icon: Calendar, color: 'orange', desc: 'Today\'s goal' },
+    { id: 'challenges-weekly', label: 'Weekly Challenges', icon: Clock, color: 'cyan', desc: 'This week' },
+    { id: 'challenges-monthly', label: 'Monthly Challenges', icon: Calendar, color: 'magenta', desc: 'This month' },
   ];
 
   const settingsTabs = [
@@ -199,6 +206,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       <nav className="flex-1 overflow-y-auto py-2 sm:py-3 scrollbar-hide">
         {renderTabGroup(mainTabs, 'Main')}
         {renderTabGroup(lifeCategories, 'Life')}
+        {renderTabGroup(challengeTabs, 'Challenges')}
         {renderTabGroup(progressTabs, 'Progress')}
         {renderTabGroup(settingsTabs, 'Settings')}
       </nav>

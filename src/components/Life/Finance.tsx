@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   DollarSign, TrendingUp, TrendingDown, PiggyBank, Target, 
   Plus, Wallet, CreditCard, ArrowUpRight, ArrowDownRight,
-  CheckCircle, Trophy, Coins
+  CheckCircle, Trophy, Coins, RefreshCw, AlertTriangle
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { LifeService, Transaction as ServiceTransaction, SavingsGoal as ServiceGoal } from '../../services/lifeService';
 
+// Local interfaces extending/adapting Service interfaces for UI (Dates as objects)
 interface Transaction {
   id: string;
   type: 'income' | 'expense' | 'savings' | 'investment';
@@ -59,12 +61,16 @@ const savingsCategories: CategoryType[] = [
 
 export function Finance() {
   const { dispatch } = useApp();
+  
+  // Data State
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([
-    { id: '1', name: 'Emergency Fund', target: 100000, current: 25000, icon: '🆘' },
-    { id: '2', name: 'Investment Portfolio', target: 500000, current: 75000, icon: '📊' },
-    { id: '3', name: 'Dream Vacation', target: 50000, current: 15000, icon: '✈️' },
-  ]);
+  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
+  
+  // UI State
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const [showAddModal, setShowAddModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [transactionType, setTransactionType] = useState<'income' | 'expense' | 'savings'>('income');
@@ -77,6 +83,38 @@ export function Finance() {
   const [newGoalName, setNewGoalName] = useState('');
   const [newGoalTarget, setNewGoalTarget] = useState('');
   const [newGoalIcon, setNewGoalIcon] = useState('🎯');
+
+  // Initial Fetch
+  useEffect(() => {
+    fetchFinanceData();
+  }, []);
+
+  const fetchFinanceData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await LifeService.getFinanceData();
+      
+      // Convert ISO strings to Date objects
+      const loadedTransactions: Transaction[] = data.transactions.map(t => ({
+        ...t,
+        date: new Date(t.date)
+      }));
+      
+      const loadedGoals: SavingsGoal[] = data.goals.map(g => ({
+        ...g,
+        deadline: g.deadline ? new Date(g.deadline) : undefined
+      }));
+
+      setTransactions(loadedTransactions);
+      setSavingsGoals(loadedGoals);
+    } catch (err) {
+      setError('Failed to load financial data. Please try again.');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const calculateXP = (type: string, category: CategoryType, amt: number) => {
     if (type === 'income') {
@@ -93,11 +131,13 @@ export function Finance() {
     return 0;
   };
 
-  const addTransaction = () => {
+  const addTransaction = async () => {
     const amt = parseFloat(amount);
     if (isNaN(amt) || amt <= 0) return;
 
+    setIsSubmitting(true);
     const xpEarned = calculateXP(transactionType, selectedCategory, amt);
+    const now = new Date();
     
     const newTransaction: Transaction = {
       id: Date.now().toString(),
@@ -105,46 +145,60 @@ export function Finance() {
       category: selectedCategory.name,
       amount: amt,
       description: description || selectedCategory.name,
-      date: new Date(),
+      date: now,
       xpEarned,
     };
 
-    setTransactions(prev => [newTransaction, ...prev]);
+    // Prepare for Service (convert Date to string)
+    const serviceTransaction: ServiceTransaction = {
+      ...newTransaction,
+      date: now.toISOString()
+    };
 
-    if (xpEarned !== 0) {
-      dispatch({ 
-        type: 'ADD_XP', 
-        payload: { 
-          amount: xpEarned, 
-          source: `Finance: ${transactionType === 'expense' && xpEarned < 0 ? 'Spent on' : transactionType === 'savings' ? 'Saved for' : 'Earned from'} ${selectedCategory.name}` 
-        } 
-      });
+    try {
+      await LifeService.saveTransaction(serviceTransaction);
+      setTransactions(prev => [newTransaction, ...prev]);
 
-      dispatch({ 
-        type: 'ADD_NOTIFICATION', 
-        payload: {
-          id: Date.now().toString(),
-          type: xpEarned > 0 ? 'achievement' : 'streak',
-          title: xpEarned > 0 ? 'Financial Win! 💰' : 'Spending Alert ⚠️',
-          message: xpEarned > 0 
-            ? `+${xpEarned} XP for ${transactionType === 'savings' ? 'saving' : 'earning'} ₹${amt.toLocaleString()}`
-            : `${xpEarned} XP - Consider your spending habits`,
-          timestamp: new Date(),
-          read: false,
-          priority: 'medium',
-        }
-      });
+      if (xpEarned !== 0) {
+        dispatch({ 
+          type: 'ADD_XP', 
+          payload: { 
+            amount: xpEarned, 
+            source: `Finance: ${transactionType === 'expense' && xpEarned < 0 ? 'Spent on' : transactionType === 'savings' ? 'Saved for' : 'Earned from'} ${selectedCategory.name}` 
+          } 
+        });
+
+        dispatch({ 
+          type: 'ADD_NOTIFICATION', 
+          payload: {
+            id: Date.now().toString(),
+            type: xpEarned > 0 ? 'achievement' : 'streak',
+            title: xpEarned > 0 ? 'Financial Win! 💰' : 'Spending Alert ⚠️',
+            message: xpEarned > 0 
+              ? `+${xpEarned} XP for ${transactionType === 'savings' ? 'saving' : 'earning'} ₹${amt.toLocaleString()}`
+              : `${xpEarned} XP - Consider your spending habits`,
+            timestamp: new Date(),
+            read: false,
+            priority: 'medium',
+          }
+        });
+      }
+
+      setShowAddModal(false);
+      setAmount('');
+      setDescription('');
+    } catch (err) {
+      alert('Failed to save transaction. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setShowAddModal(false);
-    setAmount('');
-    setDescription('');
   };
 
-  const addSavingsGoal = () => {
+  const addSavingsGoal = async () => {
     const target = parseFloat(newGoalTarget);
     if (!newGoalName || isNaN(target) || target <= 0) return;
 
+    setIsSubmitting(true);
     const newGoal: SavingsGoal = {
       id: Date.now().toString(),
       name: newGoalName,
@@ -153,47 +207,74 @@ export function Finance() {
       icon: newGoalIcon,
     };
 
-    setSavingsGoals(prev => [...prev, newGoal]);
-    setShowGoalModal(false);
-    setNewGoalName('');
-    setNewGoalTarget('');
-    setNewGoalIcon('🎯');
+    // Service object
+    const serviceGoal: ServiceGoal = {
+      ...newGoal,
+      deadline: undefined // Explicitly undefined if not set
+    };
 
-    dispatch({ 
-      type: 'ADD_XP', 
-      payload: { amount: 25, source: `Created savings goal: ${newGoalName}` } 
-    });
+    try {
+      await LifeService.saveGoal(serviceGoal);
+      setSavingsGoals(prev => [...prev, newGoal]);
+      setShowGoalModal(false);
+      setNewGoalName('');
+      setNewGoalTarget('');
+      setNewGoalIcon('🎯');
+
+      dispatch({ 
+        type: 'ADD_XP', 
+        payload: { amount: 25, source: `Created savings goal: ${newGoalName}` } 
+      });
+    } catch (err) {
+      alert('Failed to create goal.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const contributeToGoal = (goalId: string, amount: number) => {
-    setSavingsGoals(prev => prev.map(goal => {
-      if (goal.id === goalId) {
-        const newCurrent = Math.min(goal.current + amount, goal.target);
-        const completed = newCurrent >= goal.target;
-        
-        if (completed && goal.current < goal.target) {
-          dispatch({ 
-            type: 'ADD_XP', 
-            payload: { amount: 500, source: `Completed savings goal: ${goal.name}!` } 
-          });
-          dispatch({ 
-            type: 'ADD_NOTIFICATION', 
-            payload: {
-              id: Date.now().toString(),
-              type: 'achievement',
-              title: 'Goal Achieved! 🎉',
-              message: `You completed your "${goal.name}" savings goal! +500 XP`,
-              timestamp: new Date(),
-              read: false,
-              priority: 'high',
-            }
-          });
-        }
-        
-        return { ...goal, current: newCurrent };
+  const contributeToGoal = async (goalId: string, amount: number) => {
+    const goal = savingsGoals.find(g => g.id === goalId);
+    if (!goal) return;
+
+    // Optimistic calculation
+    const newCurrent = Math.min(goal.current + amount, goal.target);
+    const updatedGoal: SavingsGoal = { ...goal, current: newCurrent };
+    
+    // Service object
+    const serviceGoal: ServiceGoal = {
+        ...updatedGoal,
+        deadline: updatedGoal.deadline?.toISOString()
+    };
+
+    try {
+      await LifeService.updateGoal(serviceGoal);
+      
+      // Update local state
+      setSavingsGoals(prev => prev.map(g => g.id === goalId ? updatedGoal : g));
+
+      const completed = newCurrent >= goal.target;
+      // Only award XP if it wasn't already completed (check old state)
+      if (completed && goal.current < goal.target) {
+        dispatch({ 
+          type: 'ADD_XP', 
+          payload: { amount: 500, source: `Completed savings goal: ${goal.name}!` } 
+        });
+        dispatch({ 
+          type: 'ADD_NOTIFICATION', 
+          payload: {
+            id: Date.now().toString(),
+            type: 'achievement',
+            title: 'Goal Achieved! 🎉',
+            message: `You completed your "${goal.name}" savings goal! +500 XP`,
+            timestamp: new Date(),
+            read: false,
+            priority: 'high',
+          }
+        });
       }
-      return goal;
-    }));
+    } catch (err) {
+      alert('Failed to update goal contribution.');
+    }
   };
 
   // Stats
@@ -212,6 +293,35 @@ export function Finance() {
       default: return incomeCategories;
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh] bg-[#0a0a0a]">
+        <motion.div 
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        >
+          <RefreshCw className="text-green-500" size={48} />
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] bg-[#0a0a0a] text-center p-4">
+        <AlertTriangle className="text-red-500 mb-4" size={48} />
+        <h3 className="text-xl font-black text-white mb-2">Failed to Load Finance Data</h3>
+        <p className="text-gray-400 mb-4">{error}</p>
+        <button 
+          onClick={fetchFinanceData}
+          className="px-6 py-2 bg-green-500 text-black font-bold brutal-shadow hover:bg-green-400 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="p-3 sm:p-4 lg:p-6 bg-[#0a0a0a] min-h-screen pb-20 lg:pb-6">
@@ -483,60 +593,72 @@ export function Finance() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {savingsGoals.map((goal, index) => {
-                const progress = (goal.current / goal.target) * 100;
-                const isComplete = goal.current >= goal.target;
-                
-                return (
-                  <motion.div
-                    key={goal.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className={`brutal-card p-4 ${
-                      isComplete ? 'bg-green-900/30 border-green-500' : 'bg-gray-900 border-gray-700'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 mb-4">
-                      <span className="text-4xl">{goal.icon}</span>
-                      <div className="flex-1">
-                        <h3 className="text-white font-bold flex items-center gap-2">
-                          {goal.name}
-                          {isComplete && <CheckCircle className="text-green-400" size={16} />}
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          ₹{goal.current.toLocaleString()} / ₹{goal.target.toLocaleString()}
-                        </p>
-                      </div>
+              {savingsGoals.map((goal, index) => (
+                <motion.div
+                  key={goal.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="brutal-card bg-gray-900 border-gray-700 p-6 relative overflow-hidden group"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="text-4xl">{goal.icon}</span>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-500 font-mono">Target</p>
+                      <p className="text-xl font-bold text-white">₹{goal.target.toLocaleString()}</p>
                     </div>
-
-                    <div className="h-4 bg-gray-800 border border-gray-700 rounded-full overflow-hidden mb-4">
-                      <motion.div
+                  </div>
+                  
+                  <h3 className="text-xl font-black text-white mb-4">{goal.name}</h3>
+                  
+                  <div className="mb-4">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-400 font-mono">Progress</span>
+                      <span className="text-cyan-400 font-bold font-mono">{Math.round((goal.current / goal.target) * 100)}%</span>
+                    </div>
+                    <div className="h-3 bg-gray-800 rounded-none border border-gray-700 overflow-hidden">
+                      <motion.div 
+                        className="h-full bg-cyan-500"
                         initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(progress, 100)}%` }}
+                        animate={{ width: `${Math.min((goal.current / goal.target) * 100, 100)}%` }}
                         transition={{ duration: 1 }}
-                        className={`h-full ${isComplete ? 'bg-green-500' : 'bg-gradient-to-r from-cyan-500 to-green-500'}`}
                       />
                     </div>
+                    <p className="text-sm text-gray-500 mt-1 font-mono">
+                      ₹{goal.current.toLocaleString()} saved
+                    </p>
+                  </div>
 
-                    <div className="flex justify-between items-center">
-                      <span className={`text-lg font-black ${isComplete ? 'text-green-400' : 'text-cyan-400'}`}>
-                        {Math.round(progress)}%
-                      </span>
-                      {!isComplete && (
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => contributeToGoal(goal.id, 1000)}
-                          className="px-3 py-1 bg-cyan-500 text-black font-bold text-sm border-2 border-cyan-400"
-                        >
-                          + ₹1,000
-                        </motion.button>
-                      )}
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => contributeToGoal(goal.id, 1000)}
+                      className="flex-1 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white font-bold text-sm transition-colors"
+                    >
+                      +₹1k
+                    </button>
+                    <button 
+                      onClick={() => contributeToGoal(goal.id, 5000)}
+                      className="flex-1 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white font-bold text-sm transition-colors"
+                    >
+                      +₹5k
+                    </button>
+                    <button 
+                      onClick={() => contributeToGoal(goal.id, 10000)}
+                      className="flex-1 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white font-bold text-sm transition-colors"
+                    >
+                      +₹10k
+                    </button>
+                  </div>
+                  
+                  {goal.current >= goal.target && (
+                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center p-4 text-center backdrop-blur-sm">
+                      <CheckCircle className="text-green-500 mb-2" size={48} />
+                      <h3 className="text-2xl font-black text-white mb-1">GOAL REACHED!</h3>
+                      <p className="text-green-400 font-mono">Great job! +500 XP</p>
                     </div>
-                  </motion.div>
-                );
-              })}
+                  )}
+                </motion.div>
+              ))}
             </div>
           </motion.div>
         )}
@@ -544,185 +666,128 @@ export function Finance() {
         {/* Add Transaction Modal */}
         <AnimatePresence>
           {showAddModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-              onClick={() => setShowAddModal(false)}
-            >
-              <motion.div
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <motion.div 
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                onClick={e => e.stopPropagation()}
-                className="brutal-card bg-gray-900 border-green-500 p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
+                className="bg-[#0a0a0a] border-2 border-gray-700 brutal-shadow w-full max-w-md p-6 max-h-[90vh] overflow-y-auto"
               >
-                <h2 className="text-2xl font-black text-white mb-4 font-mono">
+                <h2 className="text-2xl font-black text-white mb-6 font-mono">
                   ADD {transactionType.toUpperCase()}
                 </h2>
-
-                {/* Type Selection */}
-                <div className="grid grid-cols-3 gap-2 mb-4">
-                  {[
-                    { type: 'income', label: 'Income', color: 'green', icon: ArrowUpRight },
-                    { type: 'expense', label: 'Expense', color: 'red', icon: ArrowDownRight },
-                    { type: 'savings', label: 'Savings', color: 'cyan', icon: PiggyBank },
-                  ].map(t => (
-                        <button
-                          key={t.type}
-                          onClick={() => {
-                            setTransactionType(t.type as 'income' | 'expense' | 'savings');
-                            setSelectedCategory(
-                              t.type === 'income' ? incomeCategories[0] :
-                              t.type === 'savings' ? savingsCategories[0] :
-                              expenseCategories[0]
-                            );
-                      }}
-                      className={`p-2 font-bold border-2 text-xs sm:text-sm transition-colors flex flex-col items-center gap-1 ${
-                        transactionType === t.type
-                          ? t.color === 'green' ? 'bg-green-500 text-black border-green-400' :
-                            t.color === 'red' ? 'bg-red-500 text-black border-red-400' :
-                            'bg-cyan-500 text-black border-cyan-400'
-                          : 'bg-gray-800 text-gray-400 border-gray-700'
-                      }`}
-                    >
-                      <t.icon size={20} />
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-
+                
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm text-gray-400 font-mono block mb-2">CATEGORY</label>
-                    <select
-                      value={selectedCategory.name}
-                      onChange={e => setSelectedCategory(getCategoryList().find(c => c.name === e.target.value)!)}
-                      className="w-full bg-gray-800 border-2 border-gray-700 text-white p-3 font-mono focus:border-green-500 outline-none"
-                    >
+                    <label className="block text-gray-500 text-sm font-mono mb-2">Category</label>
+                    <div className="grid grid-cols-3 gap-2">
                       {getCategoryList().map(cat => (
-                        <option key={cat.name} value={cat.name}>
-                          {cat.icon} {cat.name}
-                        </option>
+                        <button
+                          key={cat.name}
+                          onClick={() => setSelectedCategory(cat)}
+                          className={`p-2 border-2 text-center transition-all ${
+                            selectedCategory.name === cat.name
+                              ? 'border-green-500 bg-green-500/20 text-white'
+                              : 'border-gray-700 text-gray-500 hover:border-gray-500'
+                          }`}
+                        >
+                          <div className="text-2xl mb-1">{cat.icon}</div>
+                          <div className="text-[10px] uppercase font-bold truncate">{cat.name}</div>
+                        </button>
                       ))}
-                    </select>
+                    </div>
                   </div>
 
                   <div>
-                    <label className="text-sm text-gray-400 font-mono block mb-2">AMOUNT (₹)</label>
+                    <label className="block text-gray-500 text-sm font-mono mb-2">Amount (₹)</label>
                     <input
                       type="number"
                       value={amount}
-                      onChange={e => setAmount(e.target.value)}
-                      placeholder="Enter amount"
-                      className="w-full bg-gray-800 border-2 border-gray-700 text-white p-3 font-mono focus:border-green-500 outline-none"
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="w-full bg-gray-900 border-2 border-gray-700 p-3 text-white font-mono focus:border-green-500 focus:outline-none"
+                      placeholder="0.00"
                     />
                   </div>
 
                   <div>
-                    <label className="text-sm text-gray-400 font-mono block mb-2">DESCRIPTION (Optional)</label>
+                    <label className="block text-gray-500 text-sm font-mono mb-2">Description</label>
                     <input
                       type="text"
                       value={description}
-                      onChange={e => setDescription(e.target.value)}
-                      placeholder="What was it for?"
-                      className="w-full bg-gray-800 border-2 border-gray-700 text-white p-3 font-mono focus:border-green-500 outline-none"
+                      onChange={(e) => setDescription(e.target.value)}
+                      className="w-full bg-gray-900 border-2 border-gray-700 p-3 text-white font-mono focus:border-green-500 focus:outline-none"
+                      placeholder="What was this for?"
                     />
                   </div>
 
-                  {amount && !isNaN(parseFloat(amount)) && (
-                    <div className={`brutal-card p-4 ${
-                      calculateXP(transactionType, selectedCategory, parseFloat(amount)) >= 0 
-                        ? 'bg-green-900/30 border-green-500/50' 
-                        : 'bg-red-900/30 border-red-500/50'
-                    }`}>
-                      <p className={`font-mono text-sm ${
-                        calculateXP(transactionType, selectedCategory, parseFloat(amount)) >= 0 ? 'text-green-400' : 'text-red-400'
-                      }`}>
-                        ⚡ {calculateXP(transactionType, selectedCategory, parseFloat(amount)) >= 0 ? 'You will earn' : 'You will lose'} 
-                        <span className="font-black text-lg ml-2">
-                          {calculateXP(transactionType, selectedCategory, parseFloat(amount)) >= 0 ? '+' : ''}
-                          {calculateXP(transactionType, selectedCategory, parseFloat(amount))} XP
-                        </span>
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={addTransaction}
-                      className="flex-1 bg-green-500 hover:bg-green-600 text-black font-black py-3 px-4 border-2 border-green-400 brutal-shadow"
-                    >
-                      <CheckCircle className="inline mr-2" size={16} />
-                      SAVE
-                    </button>
+                  <div className="pt-4 flex gap-3">
                     <button
                       onClick={() => setShowAddModal(false)}
-                      className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-black py-3 px-4 border-2 border-gray-600 brutal-shadow"
+                      className="flex-1 py-3 border-2 border-gray-700 text-gray-400 font-bold hover:bg-gray-900"
+                      disabled={isSubmitting}
                     >
                       CANCEL
+                    </button>
+                    <button
+                      onClick={addTransaction}
+                      disabled={isSubmitting}
+                      className="flex-1 py-3 bg-green-500 border-2 border-green-400 text-black font-black hover:bg-green-400 disabled:opacity-50"
+                    >
+                      {isSubmitting ? 'SAVING...' : 'CONFIRM'}
                     </button>
                   </div>
                 </div>
               </motion.div>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>
 
         {/* Add Goal Modal */}
         <AnimatePresence>
           {showGoalModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-              onClick={() => setShowGoalModal(false)}
-            >
-              <motion.div
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <motion.div 
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                onClick={e => e.stopPropagation()}
-                className="brutal-card bg-gray-900 border-cyan-500 p-6 max-w-md w-full"
+                className="bg-[#0a0a0a] border-2 border-gray-700 brutal-shadow w-full max-w-md p-6"
               >
-                <h2 className="text-2xl font-black text-white mb-4 font-mono flex items-center gap-2">
-                  <Target className="text-cyan-500" /> NEW SAVINGS GOAL
-                </h2>
-
+                <h2 className="text-2xl font-black text-white mb-6 font-mono">NEW SAVINGS GOAL</h2>
+                
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm text-gray-400 font-mono block mb-2">GOAL NAME</label>
+                    <label className="block text-gray-500 text-sm font-mono mb-2">Goal Name</label>
                     <input
                       type="text"
                       value={newGoalName}
-                      onChange={e => setNewGoalName(e.target.value)}
-                      placeholder="e.g., New Laptop"
-                      className="w-full bg-gray-800 border-2 border-gray-700 text-white p-3 font-mono focus:border-cyan-500 outline-none"
+                      onChange={(e) => setNewGoalName(e.target.value)}
+                      className="w-full bg-gray-900 border-2 border-gray-700 p-3 text-white font-mono focus:border-cyan-500 focus:outline-none"
+                      placeholder="e.g. New Car"
                     />
                   </div>
 
                   <div>
-                    <label className="text-sm text-gray-400 font-mono block mb-2">TARGET AMOUNT (₹)</label>
+                    <label className="block text-gray-500 text-sm font-mono mb-2">Target Amount (₹)</label>
                     <input
                       type="number"
                       value={newGoalTarget}
-                      onChange={e => setNewGoalTarget(e.target.value)}
-                      placeholder="Enter target amount"
-                      className="w-full bg-gray-800 border-2 border-gray-700 text-white p-3 font-mono focus:border-cyan-500 outline-none"
+                      onChange={(e) => setNewGoalTarget(e.target.value)}
+                      className="w-full bg-gray-900 border-2 border-gray-700 p-3 text-white font-mono focus:border-cyan-500 focus:outline-none"
+                      placeholder="0.00"
                     />
                   </div>
 
                   <div>
-                    <label className="text-sm text-gray-400 font-mono block mb-2">ICON</label>
-                    <div className="flex flex-wrap gap-2">
-                      {['🎯', '🏠', '🚗', '✈️', '💻', '📱', '💍', '🎓', '🏖️', '💰'].map(icon => (
+                    <label className="block text-gray-500 text-sm font-mono mb-2">Icon</label>
+                    <div className="flex gap-2">
+                      {['🎯', '🏠', '🚗', '✈️', '💻', '🎓', '💍'].map(icon => (
                         <button
                           key={icon}
                           onClick={() => setNewGoalIcon(icon)}
-                          className={`text-2xl p-2 border-2 transition-colors ${
-                            newGoalIcon === icon ? 'border-cyan-500 bg-cyan-500/20' : 'border-gray-700 hover:border-cyan-500/50'
+                          className={`w-10 h-10 flex items-center justify-center border-2 transition-all ${
+                            newGoalIcon === icon
+                              ? 'border-cyan-500 bg-cyan-500/20'
+                              : 'border-gray-700 hover:border-gray-500'
                           }`}
                         >
                           {icon}
@@ -731,23 +796,25 @@ export function Finance() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3">
-                    <button
-                      onClick={addSavingsGoal}
-                      className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-black font-black py-3 px-4 border-2 border-cyan-400 brutal-shadow"
-                    >
-                      CREATE GOAL
-                    </button>
+                  <div className="pt-4 flex gap-3">
                     <button
                       onClick={() => setShowGoalModal(false)}
-                      className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-black py-3 px-4 border-2 border-gray-600 brutal-shadow"
+                      className="flex-1 py-3 border-2 border-gray-700 text-gray-400 font-bold hover:bg-gray-900"
+                      disabled={isSubmitting}
                     >
                       CANCEL
+                    </button>
+                    <button
+                      onClick={addSavingsGoal}
+                      disabled={isSubmitting}
+                      className="flex-1 py-3 bg-cyan-500 border-2 border-cyan-400 text-black font-black hover:bg-cyan-400 disabled:opacity-50"
+                    >
+                      {isSubmitting ? 'CREATING...' : 'CREATE GOAL'}
                     </button>
                   </div>
                 </div>
               </motion.div>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </div>
