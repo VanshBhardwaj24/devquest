@@ -206,7 +206,7 @@ export function Relationships() {
           ].map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as 'interactions' | 'people' | 'stats')}
               className={`flex items-center gap-2 px-4 py-2 font-bold border-2 brutal-shadow whitespace-nowrap transition-all ${
                 activeTab === tab.id
                   ? 'bg-pink-500 text-black border-pink-400'

@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../contexts/AppContext';
 import { Button } from '../ui/button';
-import { Card, CardContent } from '../ui/card';
-import { Progress } from '../ui/progress';
-import { Plane, MapPin, CheckSquare, Plus, Globe, Camera } from 'lucide-react';
+import { MapPin, CheckSquare, Plus, Globe, Camera } from 'lucide-react';
 import { BucketItem } from '../../types';
 
 export function BucketList() {

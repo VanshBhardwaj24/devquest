@@ -1,53 +1,71 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Battery, Zap, Coffee, Clock, Activity, Brain } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Battery, Zap, Coffee, Clock, Brain } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
+import { getStreakMultiplier, clamp } from '../../lib/utils';
 
 export function EnergySystem() {
   const { state, dispatch } = useApp();
   const { darkMode } = state;
-  const energyState = state.vitality?.energy || { current: 100, max: 100, lastUpdated: new Date().toISOString() };
-  const moodState = state.vitality?.mood || { value: 100, label: 'Energized' };
+  const energyState = useMemo(
+    () => state.vitality?.energy || { current: 100, max: 100, lastUpdated: new Date().toISOString() },
+    [state.vitality?.energy]
+  );
+  const moodState = useMemo(
+    () => state.vitality?.mood || { value: 100, label: 'Energized' },
+    [state.vitality?.mood]
+  );
   
   const [rechargeTime, setRechargeTime] = useState(0);
+  const mountedRef = useRef(false);
 
   // Passive recharge on mount (catch up logic)
   useEffect(() => {
+    if (mountedRef.current) return;
+    mountedRef.current = true;
     const lastUpdate = new Date(energyState.lastUpdated);
     const now = new Date();
     const diffSeconds = (now.getTime() - lastUpdate.getTime()) / 1000;
-    
-    // Recharge 1 energy every 30 seconds
-    const rechargeAmount = Math.floor(diffSeconds / 30);
-    
+    const baseInterval = 30;
+    const streakBoost = getStreakMultiplier(state.globalStreak.currentStreak || 0);
+    const moodBoost = moodState.label === 'Energized' ? 1.25 : moodState.label === 'Motivated' ? 1.1 : 1;
+    const effectiveInterval = Math.max(10, Math.floor(baseInterval / (streakBoost * moodBoost)));
+    const rechargeAmount = Math.floor(diffSeconds / effectiveInterval);
     if (rechargeAmount > 0 && energyState.current < energyState.max) {
       dispatch({ type: 'RESTORE_ENERGY', payload: rechargeAmount });
     }
-  }, []);
+  }, [dispatch, energyState.lastUpdated, energyState.current, energyState.max, state.globalStreak.currentStreak, moodState.label]);
 
   // Active recharge interval
   useEffect(() => {
+    const baseInterval = 30000;
+    const streakBoost = getStreakMultiplier(state.globalStreak.currentStreak || 0);
+    const moodBoost = moodState.label === 'Energized' ? 1.25 : moodState.label === 'Motivated' ? 1.1 : 1;
+    const effectiveMs = clamp(Math.floor(baseInterval / (streakBoost * moodBoost)), 10000, 60000);
     const interval = setInterval(() => {
       if (energyState.current < energyState.max) {
         dispatch({ type: 'RESTORE_ENERGY', payload: 1 });
       }
-    }, 30000); // Recharge 1 energy every 30 seconds
+    }, effectiveMs);
 
     return () => clearInterval(interval);
-  }, [energyState.current, energyState.max, dispatch]);
+  }, [energyState, dispatch, state.globalStreak.currentStreak, moodState.label]);
 
   // Calculate recharge time text
   useEffect(() => {
     if (energyState.current < energyState.max) {
       const missing = energyState.max - energyState.current;
-      const minutes = missing * 0.5; // 30 seconds per energy = 0.5 minutes
+      const baseMinutesPerEnergy = 0.5;
+      const streakBoost = getStreakMultiplier(state.globalStreak.currentStreak || 0);
+      const moodBoost = moodState.label === 'Energized' ? 1.25 : moodState.label === 'Motivated' ? 1.1 : 1;
+      const minutes = Math.ceil(missing * (baseMinutesPerEnergy / (streakBoost * moodBoost)));
       setRechargeTime(Math.ceil(minutes));
     } else {
       setRechargeTime(0);
     }
-  }, [energyState.current, energyState.max]);
+  }, [energyState, state.globalStreak.currentStreak, moodState.label]);
 
   const getEnergyColor = () => {
     if (energyState.current >= 75) return 'bg-green-500';

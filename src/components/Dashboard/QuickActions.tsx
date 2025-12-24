@@ -1,16 +1,25 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Target, BookOpen, Users, Calendar, Code, Zap, Trophy, Brain, Rocket } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../hooks/useAuth';
 import { taskService } from '../../services/taskService';
 
+type TaskTemplate = {
+  title: string;
+  description: string;
+  priority: 'Elite' | 'Core' | 'Bonus';
+  xp: number;
+  category: string;
+  relatedSkillId?: string;
+};
+
 export function QuickActions() {
   const { state, dispatch } = useApp();
   const { user: authUser } = useAuth();
   const { darkMode } = state;
 
-  const createQuickTask = async (taskData: any) => {
+  const createQuickTask = async (taskData: TaskTemplate) => {
     if (!authUser) return;
 
     try {
@@ -40,13 +49,22 @@ export function QuickActions() {
         timestamp: new Date(),
       }});
 
-    } catch (error: any) {
+    } catch (error) {
       // Log error safely (stringify to avoid React conversion issues)
-      console.error('Error creating task:', error?.message || JSON.stringify(error));
+      const msg = (error as unknown as { message?: string })?.message || JSON.stringify(error);
+      console.error('Error creating task:', msg);
     }
   };
 
-  const actions = [
+  const recommendedXP = useMemo(() => {
+    const level = state.user?.level ?? 1;
+    if (level >= 50) return 250;
+    if (level >= 25) return 175;
+    if (level >= 10) return 125;
+    return 75;
+  }, [state.user?.level]);
+
+  const actions: TaskTemplate[] = [
     {
       title: 'Solve LeetCode Problem',
       description: 'Practice algorithmic thinking',
@@ -56,7 +74,7 @@ export function QuickActions() {
         title: 'Solve 2 LeetCode Problems',
         description: 'Practice data structures and algorithms',
         priority: 'Core',
-        xp: 100,
+        xp: recommendedXP,
         category: 'DSA',
         relatedSkillId: 'dsa'
       }),
@@ -70,7 +88,7 @@ export function QuickActions() {
         title: 'Update Resume with Latest Projects',
         description: 'Add recent work and skills to resume',
         priority: 'Elite',
-        xp: 150,
+        xp: recommendedXP + 50,
         category: 'Profile',
         relatedSkillId: 'communication'
       }),
@@ -84,7 +102,7 @@ export function QuickActions() {
         title: 'Read 2 Tech Articles',
         description: 'Stay updated with latest technology trends',
         priority: 'Bonus',
-        xp: 50,
+        xp: Math.max(50, recommendedXP - 25),
         category: 'Learning',
         relatedSkillId: 'javascript'
       }),
@@ -98,7 +116,7 @@ export function QuickActions() {
         title: 'Complete Mock Interview',
         description: 'Practice technical and behavioral questions',
         priority: 'Elite',
-        xp: 200,
+        xp: recommendedXP + 100,
         category: 'Interview',
         relatedSkillId: 'communication'
       }),
@@ -112,7 +130,7 @@ export function QuickActions() {
         title: 'Work on Side Project',
         description: 'Spend 2 hours building your portfolio project',
         priority: 'Core',
-        xp: 175,
+        xp: recommendedXP + 75,
         category: 'Portfolio',
         relatedSkillId: 'react'
       }),
@@ -126,7 +144,7 @@ export function QuickActions() {
         title: 'Connect with 5 Professionals',
         description: 'Expand your professional network on LinkedIn',
         priority: 'Core',
-        xp: 75,
+        xp: Math.max(75, recommendedXP - 10),
         category: 'Networking',
         relatedSkillId: 'communication'
       }),
@@ -140,7 +158,7 @@ export function QuickActions() {
         title: 'Learn New Framework/Library',
         description: 'Spend time learning a new technology',
         priority: 'Bonus',
-        xp: 125,
+        xp: recommendedXP,
         category: 'Learning',
         relatedSkillId: 'problem-solving'
       }),
@@ -154,7 +172,7 @@ export function QuickActions() {
         title: 'Make Open Source Contribution',
         description: 'Contribute to an open source project',
         priority: 'Elite',
-        xp: 250,
+        xp: recommendedXP + 125,
         category: 'Open Source',
         relatedSkillId: 'typescript'
       }),

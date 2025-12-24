@@ -134,28 +134,28 @@ export function Accountability() {
       if (savedGoals) {
         try {
           setBusinessGoals(JSON.parse(savedGoals));
-        } catch {}
+        } catch { void 0; }
       }
       
       const savedApps = localStorage.getItem('internshipApplications');
       if (savedApps) {
         try {
           setApplications(JSON.parse(savedApps));
-        } catch {}
+        } catch { void 0; }
       }
       
       const savedNetworking = localStorage.getItem('networkingEvents');
       if (savedNetworking) {
         try {
           setNetworkingEvents(JSON.parse(savedNetworking));
-        } catch {}
+        } catch { void 0; }
       }
       
       const savedCommitments = localStorage.getItem('publicCommitments');
       if (savedCommitments) {
         try {
           setCommitments(JSON.parse(savedCommitments));
-        } catch {}
+        } catch { void 0; }
       }
     };
     loadData();
@@ -569,7 +569,7 @@ export function Accountability() {
     setEditMode({ type, id });
     
     switch (type) {
-      case 'business':
+      case 'business': {
         const goal = businessGoals.find(g => g.id === id);
         if (goal) {
           setBusinessForm({
@@ -584,7 +584,8 @@ export function Accountability() {
           setShowModal('business');
         }
         break;
-      case 'application':
+      }
+      case 'application': {
         const app = applications.find(a => a.id === id);
         if (app) {
           setApplicationForm({
@@ -601,7 +602,8 @@ export function Accountability() {
           setShowModal('application');
         }
         break;
-      case 'networking':
+      }
+      case 'networking': {
         const event = networkingEvents.find(e => e.id === id);
         if (event) {
           setNetworkingForm({
@@ -615,7 +617,8 @@ export function Accountability() {
           setShowModal('networking');
         }
         break;
-      case 'commitment':
+      }
+      case 'commitment': {
         const commitment = commitments.find(c => c.id === id);
         if (commitment) {
           setCommitmentForm({
@@ -631,6 +634,7 @@ export function Accountability() {
           setShowModal('commitment');
         }
         break;
+      }
     }
   };
 

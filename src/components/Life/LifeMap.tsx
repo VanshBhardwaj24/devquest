@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Map, Lock, Unlock, Star, Trophy, Target, Zap, Crown,
   CheckCircle, ChevronRight, Flame, Sparkles, Battery, Smile,
-  Activity, ZapOff
+  // Activity, ZapOff
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
@@ -185,9 +185,8 @@ export function LifeMap() {
   
   // Life Stats State
   const [energy, setEnergy] = useState(100);
-  const [maxEnergy, setMaxEnergy] = useState(100);
+  const [maxEnergy] = useState(100);
   const [mood, setMood] = useState(75);
-  const [showStats, setShowStats] = useState(true);
 
   const currentLevel = state.xpSystem?.currentLevel || 1;
   const unlockedCount = zones.filter(z => z.unlocked).length;

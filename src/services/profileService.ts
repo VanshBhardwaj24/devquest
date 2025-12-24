@@ -106,7 +106,7 @@ export const profileService = {
 
     try {
       // Build update object with only provided fields
-      const updateData: Record<string, any> = {
+      const updateData: Record<string, unknown> = {
         last_activity: new Date().toISOString(),
       };
 

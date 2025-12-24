@@ -27,7 +27,7 @@ export function ProfileSetup() {
     if (authUser?.email && !formData.email) {
       setFormData(prev => ({ ...prev, email: authUser.email || '' }));
     }
-  }, [authUser?.email]);
+  }, [authUser?.email, formData.email]);
 
   const degrees = [
     'B.Tech',
@@ -138,13 +138,11 @@ export function ProfileSetup() {
       try {
         await achievementService.unlockAchievement(authUser.id, 'profile-complete');
         dispatch({ type: 'UNLOCK_ACHIEVEMENT', payload: 'profile-complete' });
-      } catch (error: any) {
-        // Log error safely (stringify to avoid React conversion issues)
-        console.error('Error unlocking achievement:', error?.message || JSON.stringify(error));
+      } catch (error: unknown) {
+        console.error('Error unlocking achievement:', (error as Error)?.message || JSON.stringify(error));
       }
-    } catch (error: any) {
-      // Log error safely (stringify to avoid React conversion issues)
-      console.error('Error creating profile:', error?.message || JSON.stringify(error));
+    } catch (error: unknown) {
+      console.error('Error creating profile:', (error as Error)?.message || JSON.stringify(error));
     } finally {
       setLoading(false);
     }

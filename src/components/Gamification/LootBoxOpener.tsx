@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Sparkles, Zap, Coins, Gift, Crown } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import confetti from 'canvas-confetti';
 import { Card } from '../ui/card';
@@ -148,19 +148,6 @@ export function LootBoxOpener() {
         },
       });
     }, 3000);
-  };
-
-  const getRarityStyles = (rarity: string) => {
-    switch (rarity) {
-      case 'legendary':
-        return 'bg-yellow-400 border-black text-black';
-      case 'epic':
-        return 'bg-purple-400 border-black text-white';
-      case 'rare':
-        return 'bg-blue-400 border-black text-black';
-      default:
-        return 'bg-gray-200 border-black text-black';
-    }
   };
 
   return (

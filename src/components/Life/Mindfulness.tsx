@@ -1,26 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { useApp } from '../../contexts/AppContext';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Badge } from '../ui/badge';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Brain, Wind, CloudRain, Sun, Timer, Focus, Play, CheckCircle2 } from 'lucide-react';
+import { Brain, Wind, CloudRain, Sun, Focus, Play } from 'lucide-react';
+import { getLocalStorage, setLocalStorage, clamp } from '../../lib/utils';
 
 export function Mindfulness() {
   const { state, dispatch } = useApp();
   const { user, darkMode } = state;
   const [activeSession, setActiveSession] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
-  const [selectedDuration, setSelectedDuration] = useState(5); // Minutes
+  const [selectedDuration, setSelectedDuration] = useState(5);
   const [stats, setStats] = useState({ currentStreak: 0, totalMinutes: 0, averageMood: 0 });
+  const [selectedType, setSelectedType] = useState<'focus' | 'calm' | 'anxiety' | 'morning'>('focus');
+  const [error, setError] = useState('');
+  const [paused, setPaused] = useState(false);
+  const [moodScore, setMoodScore] = useState<number | null>(null);
+  const [history, setHistory] = useState<{ id: string; type: string; duration: number; mood: number; date: string }[]>([]);
 
   useEffect(() => {
     if (user?.mindfulness) {
       setStats(user.mindfulness);
     }
   }, [user]);
+  
+  useEffect(() => {
+    const saved = getLocalStorage('mindfulness_sessions', [] as typeof history);
+    setHistory(Array.isArray(saved) ? saved.slice(0, 50) : []);
+  }, []);
 
   const sessions = [
     { id: 'focus', name: 'Deep Focus', icon: Focus, color: 'text-cyan-500', bg: 'bg-cyan-500/10' },
@@ -30,18 +37,30 @@ export function Mindfulness() {
   ];
 
   const startSession = () => {
+    setError('');
+    if (!user) {
+      setError('Sign in to track sessions');
+      return;
+    }
+    if (activeSession) return;
+    const dur = clamp(selectedDuration, 1, 120);
+    if (dur <= 0) {
+      setError('Invalid duration');
+      return;
+    }
     setActiveSession(true);
-    setTimeLeft(selectedDuration * 60);
-    // In a real app, this would use a proper timer interval
+    setPaused(false);
+    setMoodScore(null);
+    setTimeLeft(dur * 60);
   };
   
   useEffect(() => {
-    if (!activeSession || timeLeft <= 0) return;
+    if (!activeSession || timeLeft <= 0 || paused) return;
     const timer = setInterval(() => {
       setTimeLeft(t => Math.max(0, t - 1));
     }, 1000);
     return () => clearInterval(timer);
-  }, [activeSession, timeLeft]);
+  }, [activeSession, timeLeft, paused]);
   
   useEffect(() => {
     if (activeSession && timeLeft === 0) {
@@ -55,16 +74,21 @@ export function Mindfulness() {
         payload: { 
           date: iso, 
           activity: { 
-            activeMinutes: (existing.activeMinutes || 0) + selectedDuration, 
+            activeMinutes: (existing.activeMinutes || 0) + clamp(selectedDuration, 1, 120), 
             lastActivityTime: now.toISOString() 
           } 
         } 
       });
-      
-      dispatch({ type: 'COMPLETE_MINDFULNESS_SESSION', payload: { durationMinutes: selectedDuration, timestamp: now, moodScore: 7 } });
+      const finalMood = typeof moodScore === 'number' ? moodScore : 7;
+      const dur = clamp(selectedDuration, 1, 120);
+      dispatch({ type: 'COMPLETE_MINDFULNESS_SESSION', payload: { durationMinutes: dur, timestamp: now, moodScore: finalMood } });
+      const entry = { id: Date.now().toString(), type: selectedType, duration: dur, mood: finalMood, date: now.toISOString() };
+      const updated = [entry, ...history].slice(0, 50);
+      setHistory(updated);
+      setLocalStorage('mindfulness_sessions', updated);
       setActiveSession(false);
     }
-  }, [activeSession, timeLeft, selectedDuration, state.timeBasedStreak.dailyActivity, dispatch]);
+  }, [activeSession, timeLeft, selectedDuration, selectedType, moodScore, history, state.timeBasedStreak.dailyActivity, dispatch]);
 
   return (
     <div className={`p-4 md:p-8 ${darkMode ? 'text-white' : 'text-gray-900'} min-h-screen`}>
@@ -109,6 +133,7 @@ export function Mindfulness() {
                 <button
                   key={s.id}
                   className={`p-4 border-2 border-dashed ${darkMode ? 'border-gray-700 hover:border-white' : 'border-gray-300 hover:border-black'} flex flex-col items-center gap-2 transition-all hover:scale-105`}
+                  onClick={() => setSelectedType(s.id as typeof selectedType)}
                 >
                   <s.icon className={`w-8 h-8 ${s.color}`} />
                   <span className="font-bold font-mono text-sm uppercase">{s.name}</span>
@@ -125,6 +150,25 @@ export function Mindfulness() {
                   <span className="text-4xl font-black font-mono">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
                 </div>
                 <h3 className="text-xl font-bold font-mono uppercase">Breathe In...</h3>
+                <div className="flex items-center justify-center gap-2">
+                  <Button variant="outline" onClick={() => setPaused(p => !p)} className="border-2 border-yellow-500 text-yellow-500 hover:bg-yellow-500 hover:text-black font-mono uppercase">
+                    {paused ? 'Resume' : 'Pause'}
+                  </Button>
+                  <Button variant="outline" onClick={() => setActiveSession(false)} className="border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-mono uppercase">
+                    End
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-xs font-mono uppercase">Mood</div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={10}
+                    value={moodScore ?? 7}
+                    onChange={(e) => setMoodScore(parseInt(e.target.value))}
+                    className="w-48"
+                  />
+                </div>
                 <Button variant="outline" onClick={() => setActiveSession(false)} className="border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-mono uppercase">
                   End Session
                 </Button>
@@ -152,10 +196,38 @@ export function Mindfulness() {
                 >
                   <Play className="w-4 h-4 mr-2" /> Start {selectedDuration} Min
                 </Button>
+                {error && <div className="text-xs font-mono text-red-500">{error}</div>}
               </div>
             )}
           </Card>
         </div>
+        
+        <Card className={`border-4 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-black'} brutal-shadow`}>
+          <CardHeader>
+            <CardTitle className="font-mono uppercase">Session History</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-4 gap-2 text-xs font-mono">
+              <div className="font-bold uppercase">Date</div>
+              <div className="font-bold uppercase">Type</div>
+              <div className="font-bold uppercase">Duration</div>
+              <div className="font-bold uppercase">Mood</div>
+              {history.map(h => (
+                <>
+                  <div>{new Date(h.date).toLocaleString()}</div>
+                  <div className="uppercase">{h.type}</div>
+                  <div>{h.duration}m</div>
+                  <div>{h.mood}/10</div>
+                </>
+              ))}
+              {history.length === 0 && (
+                <>
+                  <div className="col-span-4 text-gray-500">No sessions recorded</div>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Gift, Sparkles, Zap, Coins, Trophy, Crown } from 'lucide-react';
+import { Gift, Sparkles } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { Card } from '@/components/ui/card';
 import confetti from 'canvas-confetti';
@@ -27,7 +27,7 @@ const SPIN_REWARDS: SpinReward[] = [
 ];
 
 export function DailySpinWheel() {
-  const { state, dispatch } = useApp();
+  const { dispatch } = useApp();
   const [isSpinning, setIsSpinning] = useState(false);
   const [wonReward, setWonReward] = useState<SpinReward | null>(null);
   const [showResult, setShowResult] = useState(false);

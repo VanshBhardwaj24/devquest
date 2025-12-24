@@ -56,7 +56,7 @@ const calculateCriticalHit = () => {
 export function TaskBoard() {
   const { state, dispatch } = useApp();
   const { user: authUser } = useAuth();
-  const { tasks, darkMode, user } = state;
+  const { tasks, user, overduePenaltiesEnabled } = state;
   
   const [filter, setFilter] = useState<'all' | 'Elite' | 'Core' | 'Bonus' | 'in-progress'>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -65,6 +65,7 @@ export function TaskBoard() {
   const [dailyHP, setDailyHP] = useState(100);
   const [dailyGold, setDailyGold] = useState(500);
   const [goblinAlert, setGoblinAlert] = useState(false);
+  const [penalizedTasks, setPenalizedTasks] = useState<Set<string>>(new Set());
   const [newTask, setNewTask] = useState({ 
     title: '', 
     description: '', 
@@ -72,7 +73,8 @@ export function TaskBoard() {
     category: '', 
     xp: 100, 
     relatedSkillId: '',
-    difficulty: 'medium' as 'easy' | 'medium' | 'hard'
+    difficulty: 'medium' as 'easy' | 'medium' | 'hard',
+    dueDateISO: ''
   });
 
   // Difficulty Multipliers
@@ -104,6 +106,48 @@ export function TaskBoard() {
       });
     }
   }, [authUser, tasks.length, dispatch]);
+
+  useEffect(() => {
+    if (!overduePenaltiesEnabled) return;
+    const interval = setInterval(() => {
+      try {
+        const now = new Date();
+        const newlyOverdue = tasks.filter(t => !t.completed && t.dueDate < now && !penalizedTasks.has(t.id));
+        if (newlyOverdue.length > 0) {
+          const totalPenalty = newlyOverdue.reduce((sum, t) => sum + Math.round(Math.min(50, t.xp * 0.1)), 0);
+          newlyOverdue.forEach(t => {
+            const p = Math.round(Math.min(50, t.xp * 0.1));
+            dispatch({ type: 'ADD_XP', payload: { amount: -p, source: `Overdue: ${t.title}` } });
+          });
+          setPenalizedTasks(prev => {
+            const next = new Set(prev);
+            newlyOverdue.forEach(t => next.add(t.id));
+            return next;
+          });
+          setDailyHP(prev => Math.max(0, prev - 5));
+          setDailyGold(prev => Math.max(0, prev - 10));
+          dispatch({ type: 'ADD_NOTIFICATION', payload: {
+            id: Date.now().toString(),
+            type: 'system',
+            title: 'Overdue Penalties Applied',
+            message: `-${totalPenalty} XP deducted for overdue quests`,
+            timestamp: new Date(),
+          }});
+        }
+      } catch {
+        dispatch({ type: 'ADD_NOTIFICATION', payload: {
+          id: Date.now().toString(),
+          type: 'system',
+          title: 'Penalty Error',
+          message: 'Failed to apply overdue penalties',
+          timestamp: new Date(),
+          read: false,
+          priority: 'low',
+        }});
+      }
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [tasks, penalizedTasks, dispatch, overduePenaltiesEnabled]);
 
   const filteredTasks = tasks.filter(task => {
     const matchesFilter = filter === 'all' || (filter === 'in-progress' ? !task.completed : task.priority === filter);
@@ -195,9 +239,8 @@ export function TaskBoard() {
           dispatch({ type: 'UNLOCK_ACHIEVEMENT', payload: 'first-task' });
         }
       }
-    } catch (error: any) {
-      // Log error safely (stringify to avoid React conversion issues)
-      console.error('Error:', error?.message || JSON.stringify(error));
+    } catch (error: unknown) {
+      console.error('Error:', (error as Error)?.message || JSON.stringify(error));
     }
   };
 
@@ -206,9 +249,10 @@ export function TaskBoard() {
     try {
       await taskService.deleteTask(authUser.id, task.id);
       dispatch({ type: 'DELETE_TASK', payload: task.id });
-    } catch (error: any) {
-      // Log error safely (stringify to avoid React conversion issues)
-      console.error('Error:', error?.message || JSON.stringify(error));
+      const penalty = Math.min(50, Math.round(task.xp * 0.2));
+      dispatch({ type: 'ADD_XP', payload: { amount: -penalty, source: 'Quest Abandoned' } });
+    } catch (error: unknown) {
+      console.error('Error:', (error as Error)?.message || JSON.stringify(error));
     }
   };
 
@@ -219,7 +263,7 @@ export function TaskBoard() {
         ...newTask,
         completed: false,
         category: newTask.category || 'General',
-        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        dueDate: newTask.dueDateISO ? new Date(newTask.dueDateISO) : new Date(Date.now() + 24 * 60 * 60 * 1000),
         createdAt: new Date(),
         streak: 0,
         // Include relatedSkillId from state
@@ -227,15 +271,19 @@ export function TaskBoard() {
       };
       await taskService.createTask(authUser.id, taskData);
       dispatch({ type: 'ADD_TASK', payload: { ...taskData, id: Date.now().toString() } });
-      setNewTask({ title: '', description: '', priority: 'Core', category: '', xp: 100, relatedSkillId: '' });
+      setNewTask({ title: '', description: '', priority: 'Core', category: '', xp: 100, relatedSkillId: '', difficulty: 'medium', dueDateISO: '' });
       setShowAddTask(false);
-    } catch (error: any) {
-      // Log error safely (stringify to avoid React conversion issues)
-      console.error('Error:', error?.message || JSON.stringify(error));
+    } catch (error: unknown) {
+      console.error('Error:', (error as Error)?.message || JSON.stringify(error));
     }
   };
 
-  const formatDate = (d: Date) => new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(d);
+  const formatDate = (d: Date) => {
+    if (!(d instanceof Date) || isNaN(d.getTime())) return 'Invalid Date';
+    const dateStr = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(d);
+    const timeStr = new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit' }).format(d);
+    return `${dateStr} ${timeStr}`;
+  };
   
   const priorityConfig = {
     Elite: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-l-red-500', icon: '🔥' },
@@ -413,6 +461,14 @@ export function TaskBoard() {
               <span className="hidden sm:inline">New Quest</span>
               <span className="sm:hidden">New</span>
             </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => dispatch({ type: 'SET_OVERDUE_PENALTIES', payload: !overduePenaltiesEnabled })}
+              className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border text-xs sm:text-sm ${overduePenaltiesEnabled ? 'bg-red-500/20 border-red-500/40 text-red-300' : 'bg-gray-800 border-gray-700 text-gray-300'}`}
+            >
+              {overduePenaltiesEnabled ? 'Penalties: On' : 'Penalties: Off'}
+            </motion.button>
           </div>
         </div>
 
@@ -423,6 +479,7 @@ export function TaskBoard() {
               const cfg = priorityConfig[task.priority];
               const isOverdue = new Date() > task.dueDate && !task.completed;
               const isDueToday = task.dueDate.toDateString() === new Date().toDateString();
+              const isDueSoon = !task.completed && !isOverdue && (task.dueDate.getTime() - Date.now() <= 12 * 60 * 60 * 1000);
               
               return (
                 <motion.div
@@ -456,8 +513,9 @@ export function TaskBoard() {
 
                     <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-3 flex-shrink-0">
                       <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                        {isOverdue && <span className="flex items-center gap-1 text-red-400 text-[10px] sm:text-xs"><AlertTriangle size={10} className="sm:w-3 sm:h-3" />Overdue</span>}
+                        {isOverdue && <span className="flex items-center gap-1 text-red-400 text-[10px] sm:text-xs"><AlertTriangle size={10} className="sm:w-3 sm:h-3" />Overdue (-{Math.round(Math.min(50, task.xp * 0.1))} XP)</span>}
                         {isDueToday && !isOverdue && <span className="flex items-center gap-1 text-yellow-400 text-[10px] sm:text-xs"><Clock size={10} className="sm:w-3 sm:h-3" />Today</span>}
+                        {isDueSoon && !isOverdue && !isDueToday && <span className="flex items-center gap-1 text-orange-400 text-[10px] sm:text-xs"><Clock size={10} className="sm:w-3 sm:h-3" />Soon</span>}
                         <span className="text-[10px] sm:text-xs text-gray-500">{formatDate(task.dueDate)}</span>
                       </div>
                       
@@ -570,6 +628,19 @@ export function TaskBoard() {
                     className="w-full px-3 py-2 rounded-lg border text-sm bg-gray-700 border-gray-600 text-white placeholder-gray-500"
                     placeholder="Category (DSA, Learning...)"
                   />
+                  
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-yellow-400" />
+                      <span className="text-xs text-gray-400">Due date & time:</span>
+                    </div>
+                    <input
+                      type="datetime-local"
+                      value={newTask.dueDateISO}
+                      onChange={(e) => setNewTask(prev => ({ ...prev, dueDateISO: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border text-sm bg-gray-700 border-gray-600 text-white placeholder-gray-500"
+                    />
+                  </div>
                   
                   {user?.skills && user.skills.length > 0 && (
                     <select

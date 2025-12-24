@@ -11,10 +11,8 @@ import {
   Clock, 
   Plus, 
   Search,
-  Building2,
   DollarSign,
   ExternalLink,
-  MoreVertical,
   Trash2,
   Edit2,
   Trophy
@@ -23,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
@@ -35,6 +33,12 @@ export function InternshipQuest() {
   const [applications, setApplications] = useState<InternshipApplication[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [locationFilter, setLocationFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('date_desc');
   
   // Form state
   const [newApp, setNewApp] = useState<Partial<InternshipApplication>>({
@@ -42,15 +46,37 @@ export function InternshipQuest() {
     dateApplied: new Date(),
   });
 
-  // Load applications from user state
   useEffect(() => {
-    if (user?.internships) {
-      setApplications(user.internships);
-    } else {
-      // Initialize with empty array if undefined
-      setApplications([]);
+    setLoading(true);
+    try {
+      const local = typeof window !== 'undefined' ? window.localStorage.getItem('internshipApps') : null;
+      if (local) {
+        const parsed = JSON.parse(local) as InternshipApplication[];
+        const normalized = parsed.map(a => ({ ...a, dateApplied: new Date(a.dateApplied) }));
+        setApplications(normalized);
+      } else if (user?.internships) {
+        setApplications(user.internships);
+      } else {
+        setApplications([]);
+      }
+    } catch {
+      toast.error('Failed to load applications');
+      setApplications(user?.internships || []);
+    } finally {
+      setLoading(false);
     }
   }, [user]);
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const serializable = applications.map(a => ({ ...a, dateApplied: a.dateApplied instanceof Date ? a.dateApplied.toISOString() : a.dateApplied }));
+        window.localStorage.setItem('internshipApps', JSON.stringify(serializable));
+      }
+    } catch {
+      toast.error('Could not persist applications');
+    }
+  }, [applications]);
 
   // Dynamic Stats
   const stats = useMemo(() => {
@@ -67,41 +93,100 @@ export function InternshipQuest() {
       toast.error('Company and Role are required');
       return;
     }
-
+    const duplicate = applications.find(a => a.company?.toLowerCase() === (newApp.company || '').toLowerCase() && a.role?.toLowerCase() === (newApp.role || '').toLowerCase());
+    if (duplicate) {
+      toast.error('Duplicate application detected');
+      return;
+    }
     const application: InternshipApplication = {
-      id: Math.random().toString(36).substr(2, 9),
-      company: newApp.company,
-      role: newApp.role,
-      status: newApp.status as any || 'Applied',
-      dateApplied: new Date(newApp.dateApplied || new Date()),
+      id: Math.random().toString(36).slice(2),
+      company: newApp.company || '',
+      role: newApp.role || '',
+      status: (newApp.status as string) || 'Applied',
+      dateApplied: newApp.dateApplied ? new Date(newApp.dateApplied) : new Date(),
       location: newApp.location,
       salary: newApp.salary,
       notes: newApp.notes,
       link: newApp.link,
-      ...newApp
     } as InternshipApplication;
-
     const updatedApplications = [...applications, application];
     setApplications(updatedApplications);
-    
-    // Update global state
     if (user) {
       const updatedUser = { ...user, internships: updatedApplications };
       dispatch({ type: 'SET_USER', payload: updatedUser });
-      
-      // Persist to localStorage for demo purposes since we don't have a real backend
-      // In a real app, this would be an API call
-      try {
-        // We can't easily persist just this part without a proper service, 
-        // but AppContext might handle some persistence or we can rely on appDataService
-      } catch (e) {
-        console.error('Failed to persist', e);
-      }
     }
-    
     setIsAddModalOpen(false);
     setNewApp({ status: 'Applied', dateApplied: new Date() });
-    toast.success('Application added!');
+    toast.success('Application added');
+  };
+
+  const startEdit = (id: string) => {
+    const target = applications.find(a => a.id === id);
+    if (!target) return;
+    setEditId(id);
+    setNewApp({
+      company: target.company,
+      role: target.role,
+      status: target.status,
+      dateApplied: target.dateApplied,
+      location: target.location,
+      salary: target.salary,
+      notes: target.notes,
+      link: target.link,
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editId) return;
+    if (!newApp.company || !newApp.role) {
+      toast.error('Company and Role are required');
+      return;
+    }
+    const updated = applications.map(a => a.id === editId ? {
+      ...a,
+      company: newApp.company || '',
+      role: newApp.role || '',
+      status: (newApp.status as string) || a.status,
+      dateApplied: newApp.dateApplied ? new Date(newApp.dateApplied) : a.dateApplied,
+      location: newApp.location,
+      salary: newApp.salary,
+      notes: newApp.notes,
+      link: newApp.link,
+    } : a);
+    setApplications(updated);
+    if (user) {
+      const updatedUser = { ...user, internships: updated };
+      dispatch({ type: 'SET_USER', payload: updatedUser });
+    }
+    setIsEditModalOpen(false);
+    setEditId(null);
+    setNewApp({ status: 'Applied', dateApplied: new Date() });
+    toast.success('Application updated');
+  };
+
+  const handleDelete = (id: string) => {
+    const updated = applications.filter(a => a.id !== id);
+    setApplications(updated);
+    if (user) {
+      dispatch({ type: 'SET_USER', payload: { ...user, internships: updated } });
+    }
+    toast.success('Application deleted');
+  };
+
+  const cycleStatus = (id: string) => {
+    const order = ['Applied', 'Screening', 'Interviewing', 'Offer', 'Accepted', 'Rejected'];
+    const updated = applications.map(a => {
+      if (a.id !== id) return a;
+      const idx = order.indexOf(a.status || 'Applied');
+      const next = order[(idx + 1) % order.length];
+      return { ...a, status: next };
+    });
+    setApplications(updated);
+    if (user) {
+      dispatch({ type: 'SET_USER', payload: { ...user, internships: updated } });
+    }
+    toast.success('Status changed');
   };
 
   const getStatusColor = (status: string) => {
@@ -116,14 +201,22 @@ export function InternshipQuest() {
     }
   };
 
-  const filteredApplications = applications.filter(app => 
-    app.company.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    app.role.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredApplications = applications
+    .filter(app => app.company.toLowerCase().includes(searchTerm.toLowerCase()) || app.role.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter(app => statusFilter === 'all' ? true : app.status === statusFilter)
+    .filter(app => locationFilter === 'all' ? true : (app.location || '').toLowerCase().includes(locationFilter.toLowerCase()));
+
+  const sortedApplications = useMemo(() => {
+    const list = [...filteredApplications];
+    if (sortBy === 'date_desc') list.sort((a, b) => new Date(b.dateApplied).getTime() - new Date(a.dateApplied).getTime());
+    if (sortBy === 'date_asc') list.sort((a, b) => new Date(a.dateApplied).getTime() - new Date(b.dateApplied).getTime());
+    if (sortBy === 'company_asc') list.sort((a, b) => a.company.localeCompare(b.company));
+    if (sortBy === 'company_desc') list.sort((a, b) => b.company.localeCompare(a.company));
+    return list;
+  }, [filteredApplications, sortBy]);
 
   return (
     <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-      {/* Header & Stats */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black font-mono uppercase tracking-tight flex items-center gap-3">
@@ -143,7 +236,6 @@ export function InternshipQuest() {
         </div>
       </div>
 
-      {/* Dynamic Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: 'Total Applied', value: stats.total, icon: Briefcase, color: 'text-blue-500', bg: 'bg-blue-500/10' },
@@ -165,7 +257,6 @@ export function InternshipQuest() {
         ))}
       </div>
 
-      {/* Search & Filters */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
@@ -176,13 +267,48 @@ export function InternshipQuest() {
             className={`pl-10 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-black'}`}
           />
         </div>
+        <div className="w-40">
+          <Select value={statusFilter} onValueChange={(val: string) => setStatusFilter(val)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="Applied">Applied</SelectItem>
+              <SelectItem value="Screening">Screening</SelectItem>
+              <SelectItem value="Interviewing">Interviewing</SelectItem>
+              <SelectItem value="Offer">Offer</SelectItem>
+              <SelectItem value="Accepted">Accepted</SelectItem>
+              <SelectItem value="Rejected">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="w-40">
+          <Input placeholder="Location filter" value={locationFilter === 'all' ? '' : locationFilter} onChange={(e) => setLocationFilter(e.target.value || 'all')} />
+        </div>
+        <div className="w-44">
+          <Select value={sortBy} onValueChange={(val: string) => setSortBy(val)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Sort" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="date_desc">Newest</SelectItem>
+              <SelectItem value="date_asc">Oldest</SelectItem>
+              <SelectItem value="company_asc">Company A-Z</SelectItem>
+              <SelectItem value="company_desc">Company Z-A</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* Applications List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <AnimatePresence>
-          {filteredApplications.length > 0 ? (
-            filteredApplications.map((app) => (
+          {loading ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-black'} border-2 brutal-shadow h-40 animate-pulse`} />
+            ))
+          ) : sortedApplications.length > 0 ? (
+            sortedApplications.map((app) => (
               <motion.div
                 key={app.id}
                 layout
@@ -237,6 +363,19 @@ export function InternshipQuest() {
                         <ExternalLink className="h-3 w-3" /> View Job Post
                       </a>
                     )}
+                    <div className="flex items-center justify-between pt-3">
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" className={`${darkMode ? 'border-gray-700 text-white' : 'border-black text-black'} px-3`} onClick={() => cycleStatus(app.id)}>
+                          <CheckCircle2 className="h-4 w-4 mr-2" /> Next Status
+                        </Button>
+                        <Button variant="outline" className={`${darkMode ? 'border-gray-700 text-white' : 'border-black text-black'} px-3`} onClick={() => startEdit(app.id)}>
+                          <Edit2 className="h-4 w-4 mr-2" /> Edit
+                        </Button>
+                      </div>
+                      <Button variant="destructive" className="px-3" onClick={() => handleDelete(app.id)}>
+                        <Trash2 className="h-4 w-4 mr-2" /> Delete
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -247,13 +386,12 @@ export function InternshipQuest() {
                 <Briefcase className="h-8 w-8 text-gray-600" />
               </div>
               <h3 className="text-xl font-bold text-gray-500">No applications found</h3>
-              <p className="text-gray-600">Start applying to fill up your quest log!</p>
+              <p className="text-gray-600">Start applying to fill up your quest log</p>
             </div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Add Application Modal */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
         <DialogContent className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-black'} sm:max-w-[425px]`}>
           <DialogHeader>
@@ -271,7 +409,7 @@ export function InternshipQuest() {
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="status">Status</Label>
-                <Select value={newApp.status} onValueChange={(val: any) => setNewApp({...newApp, status: val})}>
+                <Select value={newApp.status} onValueChange={(val: string) => setNewApp({...newApp, status: val})}>
                   <SelectTrigger>
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
@@ -280,6 +418,7 @@ export function InternshipQuest() {
                     <SelectItem value="Screening">Screening</SelectItem>
                     <SelectItem value="Interviewing">Interviewing</SelectItem>
                     <SelectItem value="Offer">Offer</SelectItem>
+                    <SelectItem value="Accepted">Accepted</SelectItem>
                     <SelectItem value="Rejected">Rejected</SelectItem>
                   </SelectContent>
                 </Select>
@@ -305,6 +444,63 @@ export function InternshipQuest() {
           <DialogFooter>
             <Button onClick={handleAddApplication} className="w-full bg-lime-500 text-black hover:bg-lime-400 font-bold">
               Save Application
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-black'} sm:max-w-[425px]`}>
+          <DialogHeader>
+            <DialogTitle className="font-mono">Edit Application</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="company-edit">Company *</Label>
+              <Input id="company-edit" value={newApp.company || ''} onChange={(e) => setNewApp({...newApp, company: e.target.value})} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="role-edit">Role *</Label>
+              <Input id="role-edit" value={newApp.role || ''} onChange={(e) => setNewApp({...newApp, role: e.target.value})} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="status-edit">Status</Label>
+                <Select value={newApp.status} onValueChange={(val: string) => setNewApp({...newApp, status: val})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Applied">Applied</SelectItem>
+                    <SelectItem value="Screening">Screening</SelectItem>
+                    <SelectItem value="Interviewing">Interviewing</SelectItem>
+                    <SelectItem value="Offer">Offer</SelectItem>
+                    <SelectItem value="Accepted">Accepted</SelectItem>
+                    <SelectItem value="Rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="location-edit">Location</Label>
+                <Input id="location-edit" value={newApp.location || ''} onChange={(e) => setNewApp({...newApp, location: e.target.value})} />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="salary-edit">Salary / Stipend</Label>
+              <Input id="salary-edit" value={newApp.salary || ''} onChange={(e) => setNewApp({...newApp, salary: e.target.value})} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="link-edit">Job Link</Label>
+              <Input id="link-edit" value={newApp.link || ''} onChange={(e) => setNewApp({...newApp, link: e.target.value})} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="notes-edit">Notes</Label>
+              <Textarea id="notes-edit" value={newApp.notes || ''} onChange={(e) => setNewApp({...newApp, notes: e.target.value})} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSaveEdit} className="w-full bg-lime-500 text-black hover:bg-lime-400 font-bold">
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>

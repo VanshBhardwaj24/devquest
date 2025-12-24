@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Target, Clock, CheckCircle, Zap, Trophy, Flame } from 'lucide-react';
+import { Target, Clock, CheckCircle, Zap } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
@@ -25,7 +25,6 @@ export function DailyMissions() {
   const { tasks, codingStats, user, darkMode } = state;
   
   const completedTasks = tasks?.filter(t => t.completed).length || 0;
-  const totalTasks = tasks?.length || 0;
   const streak = codingStats?.currentStreak || user?.streak || 0;
   const codingProblems = (codingStats?.easyCount || 0) + (codingStats?.mediumCount || 0) + (codingStats?.hardCount || 0);
 
@@ -148,14 +147,6 @@ export function DailyMissions() {
         priority: mission.rarity === 'epic' ? 'high' : 'medium',
       },
     });
-  };
-
-  const getRarityColor = (rarity: string) => {
-    switch (rarity) {
-      case 'epic': return 'bg-purple-500 text-white';
-      case 'rare': return 'bg-blue-500 text-white';
-      default: return 'bg-gray-200 text-black dark:bg-gray-700 dark:text-white';
-    }
   };
 
   return (

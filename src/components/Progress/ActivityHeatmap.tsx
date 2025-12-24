@@ -7,33 +7,33 @@ import { Button } from '../ui/button';
 
 export function ActivityHeatmap() {
   const { state } = useApp();
-  const { darkMode } = state;
+  const { darkMode, user, timeBasedStreak } = state;
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Generate mock data for the last 365 days
   const activityData = useMemo(() => {
-    const data = [];
+    const data: { date: Date; count: number }[] = [];
     const today = new Date();
     const oneYearAgo = new Date();
     oneYearAgo.setDate(today.getDate() - 364);
-
+    const toIso = (date: Date) => date.toISOString().split('T')[0];
+    const daily = timeBasedStreak.dailyActivity;
+    const logs = user?.activityLog || [];
     for (let d = new Date(oneYearAgo); d <= today; d.setDate(d.getDate() + 1)) {
-      // Random activity level 0-4
-      // skewed towards 0 and 1, with occasional high activity
-      const rand = Math.random();
+      const iso = toIso(d);
+      const streakEntry = daily[iso];
+      const logEntry = logs.find(e => e.date === iso);
+      const actions = (streakEntry?.tasksCompleted || 0) + (streakEntry?.problemsSolved || 0) + (logEntry?.tasksCompleted || 0);
+      const xp = (streakEntry?.xpEarned || 0) + (logEntry?.xpEarned || 0);
+      const minutes = (streakEntry?.activeMinutes || 0) + (logEntry?.minutesActive || 0);
       let count = 0;
-      if (rand > 0.9) count = 4;
-      else if (rand > 0.7) count = 3;
-      else if (rand > 0.4) count = 2;
-      else if (rand > 0.2) count = 1;
-
-      data.push({
-        date: new Date(d),
-        count: count,
-      });
+      if (actions >= 7 || xp >= 500 || minutes >= 120) count = 4;
+      else if (actions >= 4 || xp >= 200 || minutes >= 60) count = 3;
+      else if (actions >= 2 || xp >= 50 || minutes >= 30) count = 2;
+      else if (actions >= 1 || xp > 0 || minutes >= 10) count = 1;
+      data.push({ date: new Date(d), count });
     }
     return data;
-  }, [refreshKey]);
+  }, [refreshKey, timeBasedStreak.dailyActivity, user?.activityLog]);
 
   const stats = useMemo(() => {
     const total = activityData.reduce((acc, curr) => acc + curr.count, 0);
@@ -81,8 +81,6 @@ export function ActivityHeatmap() {
     if (count === 3) return 'bg-lime-500';
     return 'bg-lime-300';
   };
-
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   return (
     <div className={`p-6 rounded-none border-4 ${darkMode ? 'bg-[#111] border-gray-800' : 'bg-white border-black'} brutal-shadow`}>

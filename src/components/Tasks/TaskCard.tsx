@@ -1,11 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, Zap, CheckCircle, Circle, Trash2, Edit, Star } from 'lucide-react';
+import { Calendar, Zap, CheckCircle, Circle, Trash2, Star } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../hooks/useAuth';
 import { taskService } from '../../services/taskService';
 import { achievementService } from '../../services/achievementService';
-import { Task } from '../../types';
+import { Task, CareerStats } from '../../types';
 
 interface TaskCardProps {
   task: Task;
@@ -43,22 +43,22 @@ export function TaskCard({ task, index }: TaskCardProps) {
         dispatch({ type: 'ADD_XP', payload: { amount: task.xp, source: `Completed "${task.title}"` } });
         
         // Update career stats based on category
-        const statUpdates: any = {};
+        const statUpdates: Partial<CareerStats> = {};
         switch (task.category.toLowerCase()) {
           case 'dsa':
           case 'learning':
-            statUpdates.knowledge = Math.min(100, state.careerStats.knowledge + 2);
+            statUpdates.skillsMastered = Math.min(100, state.careerStats.skillsMastered + 1);
             break;
           case 'interview':
           case 'networking':
-            statUpdates.communication = Math.min(100, state.careerStats.communication + 2);
+            statUpdates.interviews = state.careerStats.interviews + 1;
             break;
           case 'portfolio':
           case 'profile':
-            statUpdates.portfolio = Math.min(100, state.careerStats.portfolio + 2);
+            statUpdates.projectsCompleted = state.careerStats.projectsCompleted + 1;
             break;
           default:
-            statUpdates.mindset = Math.min(100, state.careerStats.mindset + 1);
+            statUpdates.skillsMastered = Math.min(100, state.careerStats.skillsMastered + 1);
         }
         dispatch({ type: 'UPDATE_STATS', payload: statUpdates });
 
@@ -81,9 +81,8 @@ export function TaskCard({ task, index }: TaskCardProps) {
           dispatch({ type: 'UNLOCK_ACHIEVEMENT', payload: 'task-master' });
         }
       }
-    } catch (error: any) {
-      // Log error safely (stringify to avoid React conversion issues)
-      console.error('Error updating task:', error?.message || JSON.stringify(error));
+    } catch (error: unknown) {
+      console.error('Error updating task:', (error as Error)?.message || JSON.stringify(error));
     }
   };
 
@@ -101,9 +100,8 @@ export function TaskCard({ task, index }: TaskCardProps) {
         message: `"${task.title}" has been removed from your board.`,
         timestamp: new Date(),
       }});
-    } catch (error: any) {
-      // Log error safely (stringify to avoid React conversion issues)
-      console.error('Error deleting task:', error?.message || JSON.stringify(error));
+    } catch (error: unknown) {
+      console.error('Error deleting task:', (error as Error)?.message || JSON.stringify(error));
     }
   };
 

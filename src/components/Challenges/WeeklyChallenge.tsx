@@ -8,9 +8,9 @@ export function WeeklyChallenge() {
   const { state, dispatch } = useApp();
   const { user: authUser } = useAuth();
   const { darkMode, challenges } = state;
-  const [selectedChallenge, setSelectedChallenge] = useState<any>(null);
+  const [selectedChallenge, setSelectedChallenge] = useState<(typeof challenges)[number] | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editingMilestone, setEditingMilestone] = useState<any>(null);
+  const [editingMilestone, setEditingMilestone] = useState<(typeof challenges)[number]['milestones'][number] | null>(null);
 
   // Enhanced challenge management functions
   const startChallenge = async (challengeId: string) => {
@@ -39,9 +39,9 @@ export function WeeklyChallenge() {
         profileViews: state.socialStats.profileViews + Math.floor(Math.random() * 3) + 1 
       }});
 
-    } catch (error: any) {
-      // Log error safely (stringify to avoid React conversion issues)
-      console.error('Error starting challenge:', error?.message || JSON.stringify(error));
+    } catch (error) {
+      const msg = (error as { message?: string })?.message || JSON.stringify(error);
+      console.error('Error starting challenge:', msg);
     }
   };
 
@@ -122,7 +122,7 @@ export function WeeklyChallenge() {
     const challenge = challenges.find(c => c.id === challengeId);
     if (!challenge) return;
 
-    const updatedMilestones = challenge.milestones.map((milestone: any) => {
+    const updatedMilestones = challenge.milestones.map((milestone) => {
       if (milestone.id === milestoneId) {
         const completed = newProgress >= milestone.target;
         if (completed && !milestone.completed) {
@@ -144,7 +144,7 @@ export function WeeklyChallenge() {
       return milestone;
     });
 
-    const totalProgress = updatedMilestones.reduce((sum: number, m: any) => sum + (m.completed ? 1 : 0), 0);
+    const totalProgress = updatedMilestones.reduce((sum: number, m) => sum + (m.completed ? 1 : 0), 0);
     const updatedChallenge = {
       ...challenge,
       milestones: updatedMilestones,

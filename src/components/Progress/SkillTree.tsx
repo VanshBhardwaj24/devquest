@@ -187,13 +187,11 @@ export function SkillTree() {
       }
     });
     
-    // Simulate XP gain
-    dispatch({ 
-        type: 'UPDATE_USER', 
-        payload: { 
-            xp: (user?.xp || 0) + 10 
-        } 
-    });
+    const now = new Date();
+    const iso = now.toISOString().split('T')[0];
+    dispatch({ type: 'ADD_SKILL_XP', payload: { skillId: selectedSkill.id, amount: 10, source: 'Practice' } });
+    dispatch({ type: 'ADD_XP', payload: { amount: 10, source: `Practice ${selectedSkill.name}` } });
+    dispatch({ type: 'RECORD_DAILY_ACTIVITY', payload: { date: iso, activity: { xpEarned: 10, activeMinutes: 1, lastActivityTime: now.toISOString() } } });
   };
 
   const handleCreateTask = (skillId: string, skillName: string) => {

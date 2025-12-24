@@ -127,10 +127,9 @@ export function useAuth() {
 
       console.log('Sign up successful:', data.user?.email);
       return { data, error: null };
-    } catch (error) {
-      // Log error safely (stringify to avoid React conversion issues)
-      console.error('Sign up exception:', (error as any)?.message || JSON.stringify(error));
-      const errorMessage = (error as any).message || 'An unexpected error occurred during sign up';
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : JSON.stringify(err);
+      console.error('Sign up exception:', errorMessage);
       setError(errorMessage);
       return { data: null, error: { message: errorMessage } };
     } finally {
@@ -172,10 +171,9 @@ export function useAuth() {
 
       console.log('Sign in successful:', data.user?.email);
       return { data, error: null };
-    } catch (error) {
-      // Log error safely (stringify to avoid React conversion issues)
-      console.error('Sign in exception:', (error as any)?.message || JSON.stringify(error));
-      const errorMessage = (error as any).message || 'An unexpected error occurred during sign in';
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : JSON.stringify(err);
+      console.error('Sign in exception:', errorMessage);
       setError(errorMessage);
       return { data: null, error: { message: errorMessage } };
     } finally {
@@ -205,10 +203,9 @@ export function useAuth() {
       console.log('Sign out successful');
       setUser(null);
       return { error: null };
-    } catch (error) {
-      // Log error safely (stringify to avoid React conversion issues)
-      console.error('Sign out exception:', (error as any)?.message || JSON.stringify(error));
-      const errorMessage = (error as any).message || 'An unexpected error occurred during sign out';
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : JSON.stringify(err);
+      console.error('Sign out exception:', errorMessage);
       setError(errorMessage);
       return { error: { message: errorMessage } };
     } finally {

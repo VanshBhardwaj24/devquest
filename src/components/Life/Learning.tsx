@@ -96,7 +96,7 @@ export function Learning() {
     
     const newSession: LearningSession = {
       id: Date.now().toString(),
-      type: selectedType.id as any,
+      type: selectedType.id as LearningSession['type'],
       title,
       category: selectedCategory.name,
       duration,
@@ -228,7 +228,7 @@ export function Learning() {
           ].map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as 'sessions' | 'goals' | 'skills')}
               className={`flex items-center gap-2 px-4 py-2 font-bold border-2 brutal-shadow whitespace-nowrap transition-all ${
                 activeTab === tab.id
                   ? 'bg-purple-500 text-black border-purple-400'
@@ -690,7 +690,7 @@ export function Learning() {
                         <button
                           key={type.id}
                           onClick={() => {
-                            setNewGoalType(type.id as any);
+                            setNewGoalType(type.id as 'book' | 'course' | 'skill');
                             setNewGoalIcon(type.icon);
                           }}
                           className={`p-3 border-2 transition-colors flex flex-col items-center gap-1 ${

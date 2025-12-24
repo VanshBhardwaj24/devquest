@@ -1,12 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Star, Clock, ExternalLink, CheckCircle } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { isValidUrl } from '../../lib/utils';
+
+interface DailyChallengeData {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  platform: string;
+  url: string;
+  xp: number;
+  bonusXp: number;
+  tags: string[];
+}
 
 export function DailyChallenge() {
   const { state } = useApp();
   const { darkMode } = state;
-  const [dailyChallenge, setDailyChallenge] = useState<any>(null);
+  const [dailyChallenge, setDailyChallenge] = useState<DailyChallengeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [completed, setCompleted] = useState(false);
   const { dispatch } = useApp();
@@ -23,9 +36,8 @@ export function DailyChallenge() {
 
   const loadDailyChallenge = async () => {
     try {
-      // Simulate loading daily challenge
       setTimeout(() => {
-        setDailyChallenge({
+        const data: DailyChallengeData = {
           id: `daily-${new Date().toISOString().split('T')[0]}`,
           title: 'Two Sum',
           description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
@@ -35,12 +47,13 @@ export function DailyChallenge() {
           xp: 75,
           bonusXp: 25,
           tags: ['Array', 'Hash Table'],
-        });
+        };
+        setDailyChallenge(data);
         setLoading(false);
       }, 500);
-    } catch (error: any) {
-      // Log error safely (stringify to avoid React conversion issues)
-      console.error('Error loading daily challenge:', error?.message || JSON.stringify(error));
+    } catch (error) {
+      const msg = (error as { message?: string })?.message || JSON.stringify(error);
+      console.error('Error loading daily challenge:', msg);
       setLoading(false);
     }
   };
@@ -78,7 +91,7 @@ export function DailyChallenge() {
         difficulty: dailyChallenge.difficulty,
         platform: dailyChallenge.platform,
         topic: dailyChallenge.tags[0] || 'General'
-      }
+      } 
     });
   };
 
@@ -161,7 +174,13 @@ export function DailyChallenge() {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => window.open(dailyChallenge.url, '_blank')}
+          onClick={() => {
+            try {
+              window.open(dailyChallenge.url, '_blank');
+            } catch {
+              // noop
+            }
+          }}
           className="flex-1 py-2 px-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 flex items-center justify-center space-x-2"
         >
           <ExternalLink size={16} />

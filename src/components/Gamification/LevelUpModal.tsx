@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Star, Zap, X, Cpu, ChevronRight, Terminal } from 'lucide-react';
-import { useApp } from '../../contexts/AppContext';
+import { X, Cpu, ChevronRight, Terminal } from 'lucide-react';
 import { useConfetti } from './ConfettiProvider';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
@@ -14,8 +13,6 @@ interface LevelUpModalProps {
 }
 
 export function LevelUpModal({ isOpen, onClose, newLevel, xpGained }: LevelUpModalProps) {
-  const { state } = useApp();
-  const { darkMode } = state;
   const { celebrate } = useConfetti();
 
   useEffect(() => {

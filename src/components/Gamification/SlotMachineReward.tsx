@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Zap, Coins, Gift, Trophy } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import confetti from 'canvas-confetti';
 
@@ -16,7 +16,7 @@ interface SlotResult {
 }
 
 export function SlotMachineReward({ onComplete }: { onComplete?: () => void }) {
-  const { state, dispatch } = useApp();
+  const { dispatch } = useApp();
   const [isSpinning, setIsSpinning] = useState(false);
   const [reels, setReels] = useState(['⚡', '💰', '🎁']);
   const [result, setResult] = useState<SlotResult | null>(null);

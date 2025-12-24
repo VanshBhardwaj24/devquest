@@ -236,7 +236,7 @@ export function Finance() {
           ].map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as 'overview' | 'transactions' | 'goals')}
               className={`flex items-center gap-2 px-4 py-2 font-bold border-2 brutal-shadow whitespace-nowrap transition-all ${
                 activeTab === tab.id
                   ? 'bg-green-500 text-black border-green-400'
@@ -569,15 +569,15 @@ export function Finance() {
                     { type: 'expense', label: 'Expense', color: 'red', icon: ArrowDownRight },
                     { type: 'savings', label: 'Savings', color: 'cyan', icon: PiggyBank },
                   ].map(t => (
-                    <button
-                      key={t.type}
-                      onClick={() => {
-                        setTransactionType(t.type as any);
-                        setSelectedCategory(
-                          t.type === 'income' ? incomeCategories[0] :
-                          t.type === 'savings' ? savingsCategories[0] :
-                          expenseCategories[0]
-                        );
+                        <button
+                          key={t.type}
+                          onClick={() => {
+                            setTransactionType(t.type as 'income' | 'expense' | 'savings');
+                            setSelectedCategory(
+                              t.type === 'income' ? incomeCategories[0] :
+                              t.type === 'savings' ? savingsCategories[0] :
+                              expenseCategories[0]
+                            );
                       }}
                       className={`p-2 font-bold border-2 text-xs sm:text-sm transition-colors flex flex-col items-center gap-1 ${
                         transactionType === t.type

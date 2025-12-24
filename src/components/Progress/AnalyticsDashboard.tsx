@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { PerformanceChart } from '../Analytics/PerformanceChart';
 import { useApp } from '../../contexts/AppContext';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 export function AnalyticsDashboard() {
   const { state } = useApp();

@@ -8,7 +8,7 @@ export function BadgeUnlockModal() {
   const { state } = useApp();
   const { darkMode, badges } = state;
   const { celebrate } = useConfetti();
-  const [unlockedBadges, setUnlockedBadges] = useState<any[]>([]);
+  const [unlockedBadges, setUnlockedBadges] = useState<typeof state.badges>([]);
   const [currentBadgeIndex, setCurrentBadgeIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
 

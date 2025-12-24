@@ -2,7 +2,6 @@ import { motion } from 'framer-motion';
 import { useMemo } from 'react';
 import {
   LayoutDashboard,
-  Trophy,
   Briefcase,
   Swords,
   Users,
@@ -14,13 +13,11 @@ import {
   Sparkles,
   Gift,
   Gamepad2,
-  Plug,
   Dumbbell,
   DollarSign,
   Heart,
   BookOpen,
   Shield,
-  Target,
   BarChart3,
   Brain,
   Folder,
@@ -37,6 +34,7 @@ interface SidebarProps {
 export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const { state } = useApp();
   const { user, xpSystem, tasks, codingStats } = state;
+  const unreadNotifications = (state.notifications || []).filter(n => !n.read).length || 0;
 
   // Simple dynamic values
   const currentXP = xpSystem?.currentXP || user?.xp || 0;
@@ -88,8 +86,8 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   ];
 
   const settingsTabs = [
-    { id: 'profile', label: 'Profile', icon: Settings, color: 'lime', desc: 'Settings' },
-    { id: 'help', label: 'Help', icon: HelpCircle, color: 'cyan', desc: 'Guide' },
+    { id: 'profile', label: 'Profile', icon: Settings, color: 'lime', desc: unreadNotifications > 0 ? `${unreadNotifications} alerts` : 'Settings' },
+    { id: 'help', label: 'Help', icon: HelpCircle, color: 'cyan', desc: unreadNotifications > 0 ? `${unreadNotifications} unread` : 'Guide' },
   ];
 
   const getColorClasses = (color: string, isActive: boolean) => {

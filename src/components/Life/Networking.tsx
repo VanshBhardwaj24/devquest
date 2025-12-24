@@ -1,17 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../contexts/AppContext';
 import { Button } from '../ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Users, Linkedin, Mail, Twitter, Plus, ExternalLink, Briefcase } from 'lucide-react';
+import { Linkedin, Mail, Plus, Briefcase } from 'lucide-react';
 import { Contact } from '../../types';
 import { Progress } from '../ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import toast from 'react-hot-toast';
 
 export function Networking() {
   const { state } = useApp();
   const { user, darkMode } = state;
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [search, setSearch] = useState('');
+  const [warmth, setWarmth] = useState('all');
+  const [companyFilter, setCompanyFilter] = useState('');
+  const [sortBy, setSortBy] = useState('last_desc');
+  const [loading, setLoading] = useState(true);
+  const [newContact, setNewContact] = useState<Partial<Contact>>({
+    name: '',
+    role: '',
+    company: '',
+    relationshipScore: 50,
+    lastContactedDate: new Date(),
+    notes: '',
+  });
 
   useEffect(() => {
     if (user?.contacts) {
@@ -20,9 +34,36 @@ export function Networking() {
         new Date(b.lastContactedDate).getTime() - new Date(a.lastContactedDate).getTime()
       );
       setContacts(sorted);
+      setLoading(false);
     }
   }, [user]);
 
+  useEffect(() => {
+    setLoading(true);
+    try {
+      const local = typeof window !== 'undefined' ? window.localStorage.getItem('networkContacts') : null;
+      if (local) {
+        const parsed = JSON.parse(local) as Contact[];
+        const normalized = parsed.map(c => ({ ...c, lastContactedDate: new Date(c.lastContactedDate) }));
+        setContacts(normalized);
+      }
+    } catch {
+      // Ignore local load error
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const serializable = contacts.map(c => ({ ...c, lastContactedDate: c.lastContactedDate instanceof Date ? c.lastContactedDate.toISOString() : c.lastContactedDate }));
+        window.localStorage.setItem('networkContacts', JSON.stringify(serializable));
+      }
+    } catch {
+      toast.error('Could not persist contacts');
+    }
+  }, [contacts]);
   // Calculate stats
   const totalContacts = contacts.length;
   const thisMonth = contacts.filter(c => {
@@ -35,6 +76,75 @@ export function Networking() {
     ? Math.round(contacts.reduce((acc, c) => acc + c.relationshipScore, 0) / contacts.length) 
     : 0;
 
+  const filtered = contacts
+    .filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.company.toLowerCase().includes(search.toLowerCase()) || c.role.toLowerCase().includes(search.toLowerCase()))
+    .filter(c => warmth === 'all' ? true : warmth === 'hot' ? c.relationshipScore >= 80 : warmth === 'warm' ? c.relationshipScore >= 50 && c.relationshipScore < 80 : c.relationshipScore < 50)
+    .filter(c => companyFilter ? c.company.toLowerCase().includes(companyFilter.toLowerCase()) : true);
+
+  const sorted = useMemo(() => {
+    const list = [...filtered];
+    if (sortBy === 'last_desc') list.sort((a, b) => new Date(b.lastContactedDate).getTime() - new Date(a.lastContactedDate).getTime());
+    if (sortBy === 'last_asc') list.sort((a, b) => new Date(a.lastContactedDate).getTime() - new Date(b.lastContactedDate).getTime());
+    if (sortBy === 'name_asc') list.sort((a, b) => a.name.localeCompare(b.name));
+    if (sortBy === 'name_desc') list.sort((a, b) => b.name.localeCompare(a.name));
+    return list;
+  }, [filtered, sortBy]);
+
+  const addContact = () => {
+    if (!newContact.name || !newContact.company) {
+      toast.error('Name and company are required');
+      return;
+    }
+    const contact: Contact = {
+      id: Math.random().toString(36).slice(2),
+      name: newContact.name || '',
+      role: newContact.role || '',
+      company: newContact.company || '',
+      relationshipScore: newContact.relationshipScore || 50,
+      lastContactedDate: newContact.lastContactedDate ? new Date(newContact.lastContactedDate) : new Date(),
+      notes: newContact.notes || '',
+      avatar: newContact.avatar,
+      linkedin: newContact.linkedin,
+      twitter: newContact.twitter,
+      email: newContact.email,
+    } as Contact;
+    setContacts(prev => [contact, ...prev]);
+    setNewContact({ relationshipScore: 50, lastContactedDate: new Date() });
+    toast.success('Contact added');
+  };
+
+  const startEdit = (id: string) => {
+    const c = contacts.find(x => x.id === id);
+    if (!c) return;
+    setNewContact({
+      name: c.name,
+      role: c.role,
+      company: c.company,
+      relationshipScore: c.relationshipScore,
+      lastContactedDate: c.lastContactedDate,
+      notes: c.notes,
+      avatar: c.avatar,
+      linkedin: c.linkedin,
+      twitter: c.twitter,
+      email: c.email,
+    });
+  };
+
+  // Saving edits UI not implemented
+
+  const removeContact = (id: string) => {
+    setContacts(prev => prev.filter(c => c.id !== id));
+    toast.success('Contact removed');
+  };
+
+  const markContactedNow = (id: string) => {
+    setContacts(prev => prev.map(c => c.id === id ? { ...c, lastContactedDate: new Date(), relationshipScore: Math.min(100, c.relationshipScore + 5) } : c));
+    toast.success('Contacted updated');
+  };
+
+  const nudgeScore = (id: string, delta: number) => {
+    setContacts(prev => prev.map(c => c.id === id ? { ...c, relationshipScore: Math.max(0, Math.min(100, c.relationshipScore + delta)) } : c));
+  };
   return (
     <div className={`p-4 md:p-8 ${darkMode ? 'text-white' : 'text-gray-900'} min-h-screen`}>
       <div className="max-w-6xl mx-auto space-y-8">
@@ -45,7 +155,7 @@ export function Networking() {
             </h1>
             <p className="text-gray-500 font-mono">Manage professional relationships and opportunities.</p>
           </div>
-          <Button className="bg-fuchsia-500 text-black font-bold font-mono border-2 border-black brutal-shadow">
+          <Button onClick={addContact} className="bg-fuchsia-500 text-black font-bold font-mono border-2 border-black brutal-shadow">
             <Plus className="w-4 h-4 mr-2" /> Add Contact
           </Button>
         </div>
@@ -75,7 +185,45 @@ export function Networking() {
 
            {/* Contact List */}
            <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
-             {contacts.map((contact) => (
+             <div className="md:col-span-2 flex items-center gap-3 mb-2">
+               <div className="relative flex-1">
+                 <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name, company, role" className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-black'}`} />
+               </div>
+               <div className="w-40">
+                 <Select value={warmth} onValueChange={(v: string) => setWarmth(v)}>
+                   <SelectTrigger>
+                     <SelectValue placeholder="Warmth" />
+                   </SelectTrigger>
+                   <SelectContent>
+                     <SelectItem value="all">All</SelectItem>
+                     <SelectItem value="hot">Hot</SelectItem>
+                     <SelectItem value="warm">Warm</SelectItem>
+                     <SelectItem value="cold">Cold</SelectItem>
+                   </SelectContent>
+                 </Select>
+               </div>
+               <div className="w-40">
+                 <Input placeholder="Company filter" value={companyFilter} onChange={(e) => setCompanyFilter(e.target.value)} />
+               </div>
+               <div className="w-44">
+                 <Select value={sortBy} onValueChange={(v: string) => setSortBy(v)}>
+                   <SelectTrigger>
+                     <SelectValue placeholder="Sort" />
+                   </SelectTrigger>
+                   <SelectContent>
+                     <SelectItem value="last_desc">Recent</SelectItem>
+                     <SelectItem value="last_asc">Oldest</SelectItem>
+                     <SelectItem value="name_asc">Name A-Z</SelectItem>
+                     <SelectItem value="name_desc">Name Z-A</SelectItem>
+                   </SelectContent>
+                 </Select>
+               </div>
+             </div>
+             {loading ? (
+               Array.from({ length: 6 }).map((_, i) => (
+                 <div key={i} className={`p-6 border-4 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-black'} brutal-shadow h-40 animate-pulse`} />
+               ))
+             ) : sorted.map((contact) => (
                <div key={contact.id} className={`p-6 border-4 relative group ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-black'} brutal-shadow hover:border-fuchsia-500 transition-colors`}>
                  <div className="flex justify-between items-start mb-4">
                    <div className="flex items-center gap-3">
@@ -118,10 +266,22 @@ export function Networking() {
                  <div className="flex justify-between items-center text-xs font-mono text-gray-400">
                     <span>Last: {new Date(contact.lastContactedDate).toLocaleDateString()}</span>
                     <div className="flex gap-2">
-                       <button className="p-2 hover:bg-black hover:text-white transition-colors border border-transparent hover:border-gray-700">
-                          {contact.linkedin && <Linkedin className="w-4 h-4" />}
-                          {!contact.linkedin && <Mail className="w-4 h-4" />}
+                       <button className="p-2 hover:bg-black hover:text-white transition-colors border border-transparent hover:border-gray-700" onClick={() => markContactedNow(contact.id)}>
+                         {contact.linkedin && <Linkedin className="w-4 h-4" />}
+                         {!contact.linkedin && <Mail className="w-4 h-4" />}
                        </button>
+                       <Button variant="outline" className={`${darkMode ? 'border-gray-700 text-white' : 'border-black text-black'} px-3`} onClick={() => nudgeScore(contact.id, 5)}>
+                         +5
+                       </Button>
+                       <Button variant="outline" className={`${darkMode ? 'border-gray-700 text-white' : 'border-black text-black'} px-3`} onClick={() => nudgeScore(contact.id, -5)}>
+                         -5
+                       </Button>
+                       <Button variant="outline" className={`${darkMode ? 'border-gray-700 text-white' : 'border-black text-black'} px-3`} onClick={() => startEdit(contact.id)}>
+                         Edit
+                       </Button>
+                       <Button variant="destructive" className="px-3" onClick={() => removeContact(contact.id)}>
+                         Remove
+                       </Button>
                     </div>
                  </div>
                </div>

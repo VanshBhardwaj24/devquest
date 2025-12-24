@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { TrendingUp, Calendar, BarChart3, Activity } from 'lucide-react';
@@ -21,6 +21,7 @@ export function PerformanceChart({ data: externalData }: PerformanceChartProps) 
   const { darkMode } = state;
   const [timeframe, setTimeframe] = useState<'7d' | '30d' | '90d'>('30d');
   const [chartType, setChartType] = useState<'line' | 'area'>('area');
+  const [error, setError] = useState('');
 
   // Generate mock performance data
   const generateData = (days: number) => {
@@ -44,7 +45,18 @@ export function PerformanceChart({ data: externalData }: PerformanceChartProps) 
   };
 
   const windowSize = timeframe === '7d' ? 7 : timeframe === '30d' ? 30 : 90;
-  const data = externalData ? externalData.slice(-windowSize) : generateData(windowSize);
+  const data = useMemo(() => {
+    try {
+      if (!externalData) return generateData(windowSize);
+      if (!Array.isArray(externalData)) throw new Error('Invalid data');
+      const sanitized = externalData
+        .filter(d => typeof d?.date === 'string' && typeof d?.xp === 'number' && typeof d?.tasks === 'number' && typeof d?.streak === 'number' && typeof d?.productivity === 'number');
+      return sanitized.slice(-windowSize);
+    } catch (e) {
+      setError('Data error');
+      return generateData(windowSize);
+    }
+  }, [externalData, windowSize]);
 
   const metrics = [
     {
@@ -108,7 +120,10 @@ export function PerformanceChart({ data: externalData }: PerformanceChartProps) 
           {/* Timeframe Selector */}
           <select
             value={timeframe}
-            onChange={(e) => setTimeframe(e.target.value as any)}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === '7d' || v === '30d' || v === '90d') setTimeframe(v);
+            }}
             className={`px-3 py-2 rounded-lg border ${
               darkMode
                 ? 'bg-gray-700 border-gray-600 text-white'
@@ -121,6 +136,12 @@ export function PerformanceChart({ data: externalData }: PerformanceChartProps) 
           </select>
         </div>
       </div>
+
+      {error && (
+        <div className={`mb-4 text-xs ${darkMode ? 'text-red-400' : 'text-red-600'}`}>
+          {error}
+        </div>
+      )}
 
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

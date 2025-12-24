@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Gift, Coffee, Gamepad2, Users, ShoppingBag, 
-  Sparkles, Crown, Lock, TrendingUp, Heart,
-  CheckCircle, Plus, Coins, Diamond, AlertTriangle,
-  RotateCw, Star, Clock, Timer, Zap, Tag
+  Gift, Coffee, Gamepad2, Users, 
+  Sparkles, Crown, Lock,
+  CheckCircle, Plus,
+  RotateCw, Tag
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { Reward, ShopItem } from '../../types';
@@ -73,11 +73,10 @@ export function RewardsShop() {
   const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
   const [freeSpinsAvailable, setFreeSpinsAvailable] = useState<number>(1);
   const [isSpinning, setIsSpinning] = useState<boolean>(false);
-  const [spinResult, setSpinResult] = useState<any>(null);
+  const [spinResult, setSpinResult] = useState<{ prize: string; xp: number } | null>(null);
   const [selectedReward, setSelectedReward] = useState<ShopItem | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'break' | 'entertainment' | 'food' | 'gaming' | 'social' | 'custom'>('all');
   const [showRedeemModal, setShowRedeemModal] = useState<boolean>(false);
-  const [recentlyRedeemed, setRecentlyRedeemed] = useState<string[]>([]);
   const [showAddCustom, setShowAddCustom] = useState<boolean>(false);
   const [customReward, setCustomReward] = useState<Partial<Reward>>({
     name: '',
@@ -157,7 +156,6 @@ export function RewardsShop() {
     } else {
       dispatch({ type: 'BUY_SHOP_ITEM', payload: { itemId: selectedReward.id, cost: selectedReward.cost } });
     }
-    setRecentlyRedeemed(prev => [selectedReward.id, ...prev.slice(0, 4)]);
     dispatch({
       type: 'ADD_NOTIFICATION',
       payload: {
@@ -314,7 +312,7 @@ export function RewardsShop() {
             <Button
               key={category.id}
               variant={selectedCategory === category.id ? "neon" : "ghost"}
-              onClick={() => setSelectedCategory(category.id as any)}
+              onClick={() => setSelectedCategory(category.id as 'all' | 'break' | 'entertainment' | 'food' | 'gaming' | 'social' | 'custom')}
               className="capitalize whitespace-nowrap"
             >
               <category.icon className="w-4 h-4 mr-2" />

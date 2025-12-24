@@ -16,7 +16,6 @@ import { ALL_POWER_UPS, getUnlockedPowerUps, type PowerUp as PowerUpType } from 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Using PowerUp type from powerUps.ts
 
@@ -412,6 +411,16 @@ export function GamificationHub() {
               <span className="flex items-center gap-1 text-brutal-pink">
                 <Gem size={14} /> {coins.toLocaleString()} Coins
               </span>
+            </div>
+            <div className="flex items-center justify-between text-xs font-mono mt-2">
+              <span className="flex items-center gap-1 text-lime-400">
+                <Zap size={12} /> {xpSystem.xpMultiplier.toFixed(2)}x Multiplier
+              </span>
+              {xpSystem.bonusXPActive && xpSystem.bonusXPExpiry && (
+                <span className="text-fuchsia-400">
+                  Expires in {Math.max(0, Math.ceil((xpSystem.bonusXPExpiry.getTime() - Date.now()) / 60000))}m
+                </span>
+              )}
             </div>
           </div>
         </Card>
