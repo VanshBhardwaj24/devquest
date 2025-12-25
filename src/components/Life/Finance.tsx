@@ -187,7 +187,7 @@ export function Finance() {
       setShowAddModal(false);
       setAmount('');
       setDescription('');
-    } catch (err) {
+    } catch {
       alert('Failed to save transaction. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -225,7 +225,7 @@ export function Finance() {
         type: 'ADD_XP', 
         payload: { amount: 25, source: `Created savings goal: ${newGoalName}` } 
       });
-    } catch (err) {
+    } catch {
       alert('Failed to create goal.');
     } finally {
       setIsSubmitting(false);
@@ -272,7 +272,7 @@ export function Finance() {
           }
         });
       }
-    } catch (err) {
+    } catch {
       alert('Failed to update goal contribution.');
     }
   };

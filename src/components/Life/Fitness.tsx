@@ -58,7 +58,6 @@ export function Fitness() {
   }, []);
 
   const calculateXP = () => {
-    // @ts-ignore
     const multiplier = selectedWorkout.intensityMultiplier[intensity];
     const durationBonus = Math.floor(duration / 15) * 10; // Bonus for longer sessions
     return Math.floor(selectedWorkout.baseXP * multiplier + durationBonus);
@@ -106,7 +105,7 @@ export function Fitness() {
         setShowAddModal(false);
         setDuration(30);
         setNotes('');
-    } catch (err) {
+    } catch {
         alert('Failed to save workout. Please try again.');
     }
   };
@@ -124,7 +123,7 @@ export function Fitness() {
                 source: `Removed: ${session.type}` 
                 } 
             });
-        } catch (err) {
+        } catch {
             alert('Failed to delete workout.');
         }
     }
@@ -312,7 +311,7 @@ export function Fitness() {
                   <label className="block font-bold font-mono mb-2 text-sm uppercase">Intensity</label>
                   <select
                     value={intensity}
-                    onChange={(e) => setIntensity(e.target.value as any)}
+                    onChange={(e) => setIntensity(e.target.value as 'Light' | 'Moderate' | 'Intense')}
                     className={`w-full p-2 border-2 font-mono ${
                       darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-black'
                     }`}
