@@ -1,11 +1,22 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Dumbbell, TrendingUp, Flame, Trophy, Plus, CheckCircle, X, Zap, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Dumbbell, Flame, Plus, X, Zap, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { LifeService, WorkoutSession } from '../../services/lifeService';
 import { Button } from '../ui/button';
 
-const workoutTypes = [
+interface WorkoutType {
+  name: string;
+  icon: string;
+  baseXP: number;
+  intensityMultiplier: {
+    Light: number;
+    Moderate: number;
+    Intense: number;
+  };
+}
+
+const workoutTypes: WorkoutType[] = [
   { name: 'Gym Workout', icon: '💪', baseXP: 100, intensityMultiplier: { Light: 1, Moderate: 1.5, Intense: 2 } },
   { name: 'Running/Cardio', icon: '🏃', baseXP: 80, intensityMultiplier: { Light: 1, Moderate: 1.5, Intense: 2 } },
   { name: 'Yoga/Stretching', icon: '🧘', baseXP: 60, intensityMultiplier: { Light: 1, Moderate: 1.3, Intense: 1.5 } },
@@ -15,6 +26,7 @@ const workoutTypes = [
   { name: 'Home Workout', icon: '🏠', baseXP: 70, intensityMultiplier: { Light: 1, Moderate: 1.5, Intense: 2 } },
   { name: 'Martial Arts', icon: '🥋', baseXP: 95, intensityMultiplier: { Light: 1, Moderate: 1.6, Intense: 2.2 } },
 ];
+
 
 export function Fitness() {
   const { dispatch, state } = useApp();
