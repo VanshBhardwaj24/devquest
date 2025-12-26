@@ -74,41 +74,35 @@ export function Fitness() {
     };
 
     try {
-        const updatedSessions = await LifeService.saveWorkout(newSession);
-        setSessions(updatedSessions);
-        
-        // Add XP
-        dispatch({ 
+      const updatedSessions = await LifeService.saveWorkout(newSession);
+      setSessions(updatedSessions);
+      
+      dispatch({ 
         type: 'ADD_XP', 
         payload: { 
-            amount: xpEarned, 
-            source: `Fitness: ${selectedWorkout.name} (${duration}min)` 
+          amount: xpEarned, 
+          source: `Fitness: ${selectedWorkout.name} (${duration}min)` 
         } 
-        });
+      });
 
-        // Add notification
-        dispatch({ 
-    } catch (err) {
+      dispatch({ 
+        type: 'ADD_NOTIFICATION', 
         payload: {
-            id: Date.now().toString(),
-            type: 'achievement',
-            title: 'Workout Complete! 💪',
-            message: `Earned ${xpEarned} XP from ${selectedWorkout.name}. Keep grinding!`,
-            timestamp: new Date(),
-            read: false,
-            priority: 'medium',
+          id: Date.now().toString(),
+          type: 'achievement',
+          title: 'Workout Complete! 💪',
+          message: `Earned ${xpEarned} XP from ${selectedWorkout.name}. Keep grinding!`,
+          timestamp: new Date(),
+          read: false,
+          priority: 'medium',
         }
-        });
+      });
 
-        setShowAddModal(false);
-        setDuration(30);
-        setNotes('');
-<<<<<<< HEAD
+      setShowAddModal(false);
+      setDuration(30);
+      setNotes('');
     } catch {
-=======
-        } catch (err) {
->>>>>>> origin/main
-        alert('Failed to save workout. Please try again.');
+      alert('Failed to save workout. Please try again.');
     }
   };
 
@@ -125,11 +119,7 @@ export function Fitness() {
                 source: `Removed: ${session.type}` 
                 } 
             });
-<<<<<<< HEAD
         } catch {
-=======
-        } catch (err) {
->>>>>>> origin/main
             alert('Failed to delete workout.');
         }
     }
@@ -294,7 +284,6 @@ export function Fitness() {
                           : 'bg-white text-black border-black hover:bg-gray-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                       }`}
                     >
-                    onChange={(e) => setIntensity(e.target.value as any)}
                       {type.name}
                     </button>
                   ))}
@@ -317,11 +306,7 @@ export function Fitness() {
                   <label className="block font-bold font-mono mb-2 text-sm uppercase">Intensity</label>
                   <select
                     value={intensity}
-<<<<<<< HEAD
                     onChange={(e) => setIntensity(e.target.value as 'Light' | 'Moderate' | 'Intense')}
-=======
-                    onChange={(e) => setIntensity(e.target.value as any)}
->>>>>>> origin/main
                     className={`w-full p-2 border-2 font-mono ${
                       darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-black'
                     }`}

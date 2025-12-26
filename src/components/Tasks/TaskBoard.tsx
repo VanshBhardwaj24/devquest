@@ -65,7 +65,7 @@ export function TaskBoard() {
   const [dailyHP, setDailyHP] = useState(100);
   const [dailyGold, setDailyGold] = useState(500);
   const [goblinAlert, setGoblinAlert] = useState(false);
-  const [penalizedTasks, setPenalizedTasks] = useState<Set<string>>(new Set());
+  const [penalizedTasks, setPenalizedTasks] = useState<Record<string, string>>({}); // Track task ID -> last penalty date
   const [newTask, setNewTask] = useState({ 
     title: '', 
     description: '', 
@@ -112,23 +112,36 @@ export function TaskBoard() {
     const interval = setInterval(() => {
       try {
         const now = new Date();
-        const newlyOverdue = tasks.filter(t => !t.completed && t.dueDate < now && !penalizedTasks.has(t.id));
+        const today = now.toDateString();
+        
+        // Find tasks that are overdue and haven't been penalized today
+        const newlyOverdue = tasks.filter(t => {
+          if (t.completed) return false;
+          if (t.dueDate >= now) return false;
+          
+          const lastPenaltyDate = penalizedTasks[t.id];
+          return !lastPenaltyDate || new Date(lastPenaltyDate).toDateString() !== today;
+        });
+        
         if (newlyOverdue.length > 0) {
           const totalPenalty = newlyOverdue.reduce((sum, t) => sum + Math.round(Math.min(50, t.xp * 0.1)), 0);
           newlyOverdue.forEach(t => {
             const p = Math.round(Math.min(50, t.xp * 0.1));
             dispatch({ type: 'ADD_XP', payload: { amount: -p, source: `Overdue: ${t.title}` } });
           });
-          setPenalizedTasks(prev => {
-            const next = new Set(prev);
-            newlyOverdue.forEach(t => next.add(t.id));
-            return next;
+          
+          // Update penalized tasks with today's date
+          const updatedPenalties: Record<string, string> = { ...penalizedTasks };
+          newlyOverdue.forEach(t => {
+            updatedPenalties[t.id] = now.toISOString();
           });
+          setPenalizedTasks(updatedPenalties);
+          
           setDailyHP(prev => Math.max(0, prev - 5));
           setDailyGold(prev => Math.max(0, prev - 10));
           dispatch({ type: 'ADD_NOTIFICATION', payload: {
             id: Date.now().toString(),
-            type: 'system',
+            type: 'task-completed',
             title: 'Overdue Penalties Applied',
             message: `-${totalPenalty} XP deducted for overdue quests`,
             timestamp: new Date(),
@@ -137,7 +150,7 @@ export function TaskBoard() {
       } catch {
         dispatch({ type: 'ADD_NOTIFICATION', payload: {
           id: Date.now().toString(),
-          type: 'system',
+          type: 'task-completed',
           title: 'Penalty Error',
           message: 'Failed to apply overdue penalties',
           timestamp: new Date(),
@@ -175,6 +188,15 @@ export function TaskBoard() {
     try {
       await taskService.updateTask(authUser.id, task.id, updated);
       dispatch({ type: 'UPDATE_TASK', payload: updated });
+      
+      // Clear penalty when task is completed
+      if (task.completed && penalizedTasks[task.id]) {
+        setPenalizedTasks(prev => {
+          const next = { ...prev };
+          delete next[task.id];
+          return next;
+        });
+      }
       
       if (!task.completed) {
         // Update time-based streak for task completion
@@ -249,6 +271,16 @@ export function TaskBoard() {
     try {
       await taskService.deleteTask(authUser.id, task.id);
       dispatch({ type: 'DELETE_TASK', payload: task.id });
+      
+      // Clear penalty when task is deleted
+      if (penalizedTasks[task.id]) {
+        setPenalizedTasks(prev => {
+          const next = { ...prev };
+          delete next[task.id];
+          return next;
+        });
+      }
+      
       const penalty = Math.min(50, Math.round(task.xp * 0.2));
       dispatch({ type: 'ADD_XP', payload: { amount: -penalty, source: 'Quest Abandoned' } });
     } catch (error: unknown) {

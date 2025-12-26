@@ -1,29 +1,18 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../contexts/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Calendar, Clock, Activity, Flame, Medal, Star, Zap, Lock, Filter, Target, Brain, Rocket } from 'lucide-react';
+import { Trophy, Activity, Zap, Lock } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 
 export function Achievements() {
   const { state, dispatch } = useApp();
-  const { badges, codingStats, timeBasedStreak, darkMode, xpSystem, challenges } = state;
+  const { badges, timeBasedStreak, darkMode, xpSystem, challenges } = state;
   const [filter, setFilter] = useState<'all' | 'unlocked' | 'locked'>('all');
 
   // Analytics Calculation
   const activityData = timeBasedStreak.dailyActivity || {};
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   
-  // Most active day calculation
-  const dayCounts = Object.entries(activityData).reduce((acc, [date, data]) => {
-    const dayIndex = new Date(date).getDay();
-    acc[dayIndex] = (acc[dayIndex] || 0) + (data.tasksCompleted || 0) + (data.problemsSolved || 0);
-    return acc;
-  }, {} as Record<number, number>);
-
-  const mostActiveDayIndex = Object.keys(dayCounts).reduce((a, b) => dayCounts[Number(a)] > dayCounts[Number(b)] ? a : b, '0');
-  const mostActiveDay = days[Number(mostActiveDayIndex)];
-
   // Detailed Stats
   const totalTasks = Object.values(activityData).reduce((acc, curr) => acc + (curr.tasksCompleted || 0), 0);
   const totalCoding = Object.values(activityData).reduce((acc, curr) => acc + (curr.problemsSolved || 0), 0);

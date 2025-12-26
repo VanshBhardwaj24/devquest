@@ -3,11 +3,11 @@ import { useApp } from '../../contexts/AppContext';
 import { Card } from '../ui/card';
 
 export function StatBasedRealityEngine() {
-  const { state, dispatch } = useApp();
-  const { user, darkMode } = state;
+  const { state } = useApp();
+  const { darkMode } = state;
   
   // Mock stats data based on the provided information
-  const [stats, setStats] = useState([
+  const [stats] = useState([
     { name: 'Money', current: 4.0, target: 8.0, icon: '💸' },
     { name: 'Relationships', current: 3.0, target: 8.0, icon: '❤️' },
     { name: 'Health', current: 6.0, target: 8.0, icon: '💪' },

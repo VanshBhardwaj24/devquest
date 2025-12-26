@@ -47,6 +47,11 @@ export interface Skill {
   maxXp: number;
   category: 'technical' | 'soft' | 'life';
   icon: string;
+  maxLevel?: number;
+  prerequisites?: string[];
+  synergies?: string[];
+  isUnlocked?: boolean;
+  description?: string;
 }
 
 export interface SystemLog {
@@ -114,6 +119,7 @@ export interface BucketItem {
   targetDate?: Date;
   description?: string;
   image?: string;
+  location?: string;
 }
 
 export interface Contact {

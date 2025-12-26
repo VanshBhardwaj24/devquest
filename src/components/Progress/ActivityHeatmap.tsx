@@ -32,6 +32,8 @@ export function ActivityHeatmap() {
       else if (actions >= 1 || xp > 0 || minutes >= 10) count = 1;
       data.push({ date: new Date(d), count });
     }
+    // Using refreshKey to force re-calculation when requested
+    if (refreshKey) { /* no-op */ }
     return data;
   }, [refreshKey, timeBasedStreak.dailyActivity, user?.activityLog]);
 

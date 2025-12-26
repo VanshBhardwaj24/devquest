@@ -1,10 +1,9 @@
-import React, { useEffect, useMemo, useState, useReducer, useCallback, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useReducer } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar, Clock, Edit2, Trash2, Plus, ExternalLink, CheckCircle, 
   Search, RefreshCw, AlertTriangle, FileText, BarChart2, Filter,
-  ArrowUp, ArrowDown, ChevronLeft, ChevronRight, MoreHorizontal,
-  Download, Upload, CheckSquare, Square, X
+  ArrowUp, ArrowDown, ChevronLeft, ChevronRight, CheckSquare, X
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { Input } from '../ui/input';
@@ -12,7 +11,6 @@ import { Textarea } from '../ui/textarea';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { isValidUrl } from '../../lib/utils';
-import { Progress } from '../ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import {
   DropdownMenu,
@@ -29,16 +27,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "../ui/dialog";
-import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
+
 import toast from 'react-hot-toast';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts';
-<<<<<<< HEAD
 import { appDataService } from '../../services/appDataService';
-=======
->>>>>>> origin/main
 
 // --- Types & Interfaces ---
 
@@ -265,7 +259,7 @@ function reducer(state: State, action: Action): State {
         items: state.items.filter(i => !action.payload.includes(i.id)),
         selectedIds: new Set()
       };
-    case 'TOGGLE_SELECT':
+    case 'TOGGLE_SELECT': {
       const newSelected = new Set(state.selectedIds);
       if (newSelected.has(action.payload)) {
         newSelected.delete(action.payload);
@@ -273,6 +267,7 @@ function reducer(state: State, action: Action): State {
         newSelected.add(action.payload);
       }
       return { ...state, selectedIds: newSelected };
+    }
     case 'SELECT_ALL':
       return {
         ...state,
@@ -311,34 +306,30 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
 
   // Initial Fetch
   useEffect(() => {
-    fetchData();
-  }, [frequency]);
-
-  const fetchData = async () => {
-    dispatch({ type: 'FETCH_START' });
-    try {
-<<<<<<< HEAD
-      let data: ChallengeItem[] = [];
-      if (user?.id) {
-        const appData = await appDataService.getAppData(user.id);
-        const challenges = appData?.challenges as any;
-        if (challenges) {
-          const key = frequency.toLowerCase() as 'daily' | 'weekly' | 'monthly';
-          data = (challenges[key] as ChallengeItem[]) || [];
+    const fetchData = async () => {
+      dispatch({ type: 'FETCH_START' });
+      try {
+        let data: ChallengeItem[] = [];
+        if (user?.id) {
+          const appData = await appDataService.getAppData(user.id);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const challenges = (appData?.challenges as any);
+          if (challenges) {
+            const key = frequency.toLowerCase() as 'daily' | 'weekly' | 'monthly';
+            data = (challenges[key] as ChallengeItem[]) || [];
+          }
         }
+        if (!data || data.length === 0) {
+          data = await ChallengeService.fetchChallenges(frequency);
+        }
+        dispatch({ type: 'FETCH_SUCCESS', payload: data });
+      } catch (err) {
+        dispatch({ type: 'FETCH_ERROR', payload: (err as Error).message });
+        toast.error('Failed to load challenges');
       }
-      if (!data || data.length === 0) {
-        data = await ChallengeService.fetchChallenges(frequency);
-      }
-=======
-      const data = await ChallengeService.fetchChallenges(frequency);
->>>>>>> origin/main
-      dispatch({ type: 'FETCH_SUCCESS', payload: data });
-    } catch (err) {
-      dispatch({ type: 'FETCH_ERROR', payload: (err as Error).message });
-      toast.error('Failed to load challenges');
-    }
-  };
+    };
+    fetchData();
+  }, [frequency, user?.id]);
 
   // --- Derived State (Filtering & Sorting) ---
 
@@ -475,19 +466,18 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
         dispatch({ type: 'ADD_ITEM', payload: newItem });
         toast.success('New challenge added');
       }
-<<<<<<< HEAD
       if (user?.id) {
         const key = frequency.toLowerCase() as 'daily' | 'weekly' | 'monthly';
         const current = state.items;
         const exists = current.find(c => c.id === newItem.id);
         const updatedList = exists ? current.map(c => c.id === newItem.id ? newItem : c) : [newItem, ...current];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const payload: any = {};
         payload[key] = updatedList;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const appPayload = { challenges: { ...(appState as any).data?.challenges, ...payload } };
         appDataService.saveAppData(user.id, appPayload).catch(() => {});
       }
-=======
->>>>>>> origin/main
       setIsDialogOpen(false);
       setEditingItem(null);
     } catch (err) {
@@ -502,7 +492,6 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
       await ChallengeService.deleteChallenge(frequency, id);
       dispatch({ type: 'DELETE_ITEM', payload: id });
       toast.success('Challenge deleted');
-<<<<<<< HEAD
       if (user?.id) {
         const key = frequency.toLowerCase() as 'daily' | 'weekly' | 'monthly';
         const updatedList = state.items.filter(i => i.id !== id);
@@ -511,8 +500,6 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
         const appPayload = { challenges: { ...(appState as any).data?.challenges, ...payload } };
         appDataService.saveAppData(user.id, appPayload).catch(() => {});
       }
-=======
->>>>>>> origin/main
     } catch (err) {
       toast.error('Failed to delete');
     }
@@ -527,7 +514,6 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
       await ChallengeService.bulkDelete(frequency, ids);
       dispatch({ type: 'BULK_DELETE', payload: ids });
       toast.success(`${ids.length} challenges deleted`);
-<<<<<<< HEAD
       if (user?.id) {
         const key = frequency.toLowerCase() as 'daily' | 'weekly' | 'monthly';
         const updatedList = state.items.filter(i => !ids.includes(i.id));
@@ -536,8 +522,6 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
         const appPayload = { challenges: { ...(appState as any).data?.challenges, ...payload } };
         appDataService.saveAppData(user.id, appPayload).catch(() => {});
       }
-=======
->>>>>>> origin/main
     } catch (err) {
       toast.error('Bulk delete failed');
     }
@@ -567,7 +551,6 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
           } 
         });
       }
-<<<<<<< HEAD
       if (user?.id) {
         const key = frequency.toLowerCase() as 'daily' | 'weekly' | 'monthly';
         const updatedList = state.items.map(i => i.id === updated.id ? updated : i);
@@ -576,8 +559,6 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
         const appPayload = { challenges: { ...(appState as any).data?.challenges, ...payload } };
         appDataService.saveAppData(user.id, appPayload).catch(() => {});
       }
-=======
->>>>>>> origin/main
     } catch (err) {
       toast.error('Failed to update status');
     }

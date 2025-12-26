@@ -12,10 +12,8 @@ import { DailySpinWheel } from './DailySpinWheel';
 import { LootBoxOpener } from './LootBoxOpener';
 import { EnergySystem } from './EnergySystem';
 import { SlotMachineReward } from './SlotMachineReward';
-import { ALL_POWER_UPS, getUnlockedPowerUps, type PowerUp as PowerUpType } from '../../data/powerUps';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { getUnlockedPowerUps, type PowerUp as PowerUpType } from '../../data/powerUps';
+import { Card } from '@/components/ui/card';
 
 // Using PowerUp type from powerUps.ts
 

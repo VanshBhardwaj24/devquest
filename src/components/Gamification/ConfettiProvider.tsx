@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useCallback } from 'react';
+/* eslint-disable react-refresh/only-export-components */
 import confetti from 'canvas-confetti';
 
 interface ConfettiContextType {

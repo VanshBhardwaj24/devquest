@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Star, Clock, ExternalLink, CheckCircle } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
@@ -24,8 +24,9 @@ export function DailyChallenge() {
   const [completed, setCompleted] = useState(false);
   const { dispatch } = useApp();
   const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
+  const retryCountRef = useRef(0);
   const timeoutRef = useRef<number | null>(null);
+  const retryCount = retryCountRef.current;
   const [activeTag, setActiveTag] = useState<string | null>(null);
 
   const isDailyChallengeData = (data: unknown): data is DailyChallengeData => {
@@ -58,21 +59,7 @@ export function DailyChallenge() {
     return darkMode ? 'bg-gray-900 text-gray-200' : 'bg-gray-100 text-gray-800';
   }, [dailyChallenge, darkMode]);
 
-  useEffect(() => {
-    loadDailyChallenge();
-    const today = new Date().toISOString().split('T')[0];
-    const completedDate = localStorage.getItem('daily_challenge_completed_date');
-    if (completedDate === today) {
-      setCompleted(true);
-    }
-    return () => {
-      if (timeoutRef.current) {
-        window.clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-
-  const loadDailyChallenge = async () => {
+  const loadDailyChallenge = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -107,14 +94,28 @@ export function DailyChallenge() {
       const msg = (error as { message?: string })?.message || JSON.stringify(error);
       setError(typeof msg === 'string' ? msg : 'Unexpected error');
       setLoading(false);
-      const next = retryCount + 1;
-      setRetryCount(next);
+      const next = retryCountRef.current + 1;
+      retryCountRef.current = next;
       if (next <= 3) {
         const backoff = Math.min(1000 * next, 3000);
         setTimeout(() => loadDailyChallenge(), backoff);
       }
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadDailyChallenge();
+    const today = new Date().toISOString().split('T')[0];
+    const completedDate = localStorage.getItem('daily_challenge_completed_date');
+    if (completedDate === today) {
+      setCompleted(true);
+    }
+    return () => {
+      if (timeoutRef.current) {
+        window.clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [loadDailyChallenge]);
 
   const markCompleted = () => {
     if (!dailyChallenge) return;
@@ -190,6 +191,8 @@ export function DailyChallenge() {
     );
   }
 
+
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -262,6 +265,7 @@ export function DailyChallenge() {
               if (!isValidUrl(dailyChallenge.url)) return;
               window.open(dailyChallenge.url, '_blank');
             } catch {
+              // ignore
             }
           }}
           className="flex-1 py-2 px-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 flex items-center justify-center space-x-2"

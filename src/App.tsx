@@ -37,6 +37,8 @@ import { ActivityHeatmap } from './components/Progress/ActivityHeatmap';
 import ErrorBoundary from './components/ErrorBoundary';
 import { Life } from './components/Life/Life';
 import { InternshipQuest } from './components/InternshipQuest';
+import { PlacementPrep } from './components/Career/PlacementPrep';
+import PlacementQuests from './components/Career/PlacementQuests';
 
 // Loading Component
 function LoadingScreen() {
@@ -202,6 +204,10 @@ function AppContent() {
         return <Life section={activeTab} />;
       case 'internships':
         return <InternshipQuest />;
+      case 'placement':
+        return <PlacementPrep />;
+      case 'placement-quests':
+        return <PlacementQuests />;
       case 'analytics':
         return <AnalyticsDashboard />;
       case 'skills':

@@ -116,8 +116,8 @@ export class LifeService {
 
   private static async simulateNetwork(): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 600)); // 600ms delay
-    if (Math.random() < 0.05) {
-      throw new Error('Sync failed. Please try again.');
-    }
+    // if (Math.random() < 0.05) {
+    //   throw new Error('Sync failed. Please try again.');
+    // }
   }
 }

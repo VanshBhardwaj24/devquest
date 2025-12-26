@@ -56,9 +56,9 @@ class DashboardService {
     await new Promise(resolve => setTimeout(resolve, 800));
 
     // Simulate random error (5% chance)
-    if (Math.random() < 0.05) {
-      throw new Error('Network fluctuation detected. Dashboard sync failed.');
-    }
+    // if (Math.random() < 0.05) {
+    //   throw new Error('Network fluctuation detected. Dashboard sync failed.');
+    // }
 
     // Fetch Life Data for integration
     let lifeData: { fitness: WorkoutSession[]; finance: { transactions: Transaction[]; goals: SavingsGoal[] } };

@@ -28,7 +28,7 @@ export const initialDashboardState: DashboardState = {
   activeTab: 'overview',
   isRefreshing: false,
   lastUpdated: null,
-  viewMode: 'grid',
+  viewMode: 'list',
   widgetLayout: ['stats', 'activity', 'system'],
 };
 

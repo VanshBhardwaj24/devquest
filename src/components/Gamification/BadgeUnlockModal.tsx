@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Award, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useConfetti } from './ConfettiProvider';
 

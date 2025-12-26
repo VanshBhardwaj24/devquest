@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import {
   LayoutDashboard,
   Briefcase,
+  GraduationCap,
   Swords,
   Users,
   Map,
@@ -61,6 +62,8 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const mainTabs = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, color: 'lime', desc: 'Home' },
     { id: 'internships', label: 'Internship Quest', icon: Briefcase, color: 'lime', desc: 'Job Hunt' },
+    { id: 'placement', label: 'Placement Prep', icon: GraduationCap, color: 'orange', desc: 'Roadmap' },
+    { id: 'placement-quests', label: 'Placement Quests', icon: CheckSquare, color: 'cyan', desc: 'Daily / Weekly / Monthly' },
     { id: 'tasks', label: 'Quests', icon: CheckSquare, color: 'cyan', desc: `${pendingTasks} pending` },
     { id: 'coding', label: 'Arena', icon: Swords, color: 'orange', desc: 'Challenges' },
     { id: 'gamification', label: 'Power-Ups', icon: Gamepad2, color: 'magenta', desc: 'Boosts' },

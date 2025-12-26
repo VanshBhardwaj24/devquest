@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../contexts/AppContext';
-<<<<<<< HEAD
 import { useAuth } from '../../hooks/useAuth';
-=======
->>>>>>> origin/main
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
@@ -12,17 +9,11 @@ import { Contact } from '../../types';
 import { Progress } from '../ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import toast from 'react-hot-toast';
-<<<<<<< HEAD
 import { appDataService } from '../../services/appDataService';
 
 export function Networking() {
   const { state, dispatch } = useApp();
   const { user: authUser } = useAuth();
-=======
-
-export function Networking() {
-  const { state } = useApp();
->>>>>>> origin/main
   const { user, darkMode } = state;
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [search, setSearch] = useState('');
@@ -51,7 +42,6 @@ export function Networking() {
   }, [user]);
 
   useEffect(() => {
-<<<<<<< HEAD
     const loadBackend = async () => {
       if (!authUser?.id) return;
       setLoading(true);
@@ -62,7 +52,8 @@ export function Networking() {
         if (normalized.length > 0) {
           setContacts(normalized as Contact[]);
         }
-      } catch {
+      } catch (e) {
+        void e;
         toast.error('Failed to load contacts');
       } finally {
         setLoading(false);
@@ -77,39 +68,13 @@ export function Networking() {
       try {
         const serializable = contacts.map(c => ({ ...c, lastContactedDate: c.lastContactedDate instanceof Date ? c.lastContactedDate.toISOString() : c.lastContactedDate }));
         await appDataService.updateAppDataField(authUser.id, 'contacts', serializable);
-      } catch {
+      } catch (e) {
+        void e;
         toast.error('Could not persist contacts');
       }
     };
     sync();
   }, [contacts, authUser?.id]);
-=======
-    setLoading(true);
-    try {
-      const local = typeof window !== 'undefined' ? window.localStorage.getItem('networkContacts') : null;
-      if (local) {
-        const parsed = JSON.parse(local) as Contact[];
-        const normalized = parsed.map(c => ({ ...c, lastContactedDate: new Date(c.lastContactedDate) }));
-        setContacts(normalized);
-      }
-    } catch {
-      // Ignore local load error
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        const serializable = contacts.map(c => ({ ...c, lastContactedDate: c.lastContactedDate instanceof Date ? c.lastContactedDate.toISOString() : c.lastContactedDate }));
-        window.localStorage.setItem('networkContacts', JSON.stringify(serializable));
-      }
-    } catch {
-      toast.error('Could not persist contacts');
-    }
-  }, [contacts]);
->>>>>>> origin/main
   // Calculate stats
   const totalContacts = contacts.length;
   const thisMonth = contacts.filter(c => {
@@ -136,7 +101,7 @@ export function Networking() {
     return list;
   }, [filtered, sortBy]);
 
-  const addContact = () => {
+  const addContact = async () => {
     if (!newContact.name || !newContact.company) {
       toast.error('Name and company are required');
       return;
@@ -154,15 +119,21 @@ export function Networking() {
       twitter: newContact.twitter,
       email: newContact.email,
     } as Contact;
-<<<<<<< HEAD
     const updated = [contact, ...contacts];
     setContacts(updated);
+    
+    // Save to appDataService
+    if (authUser) {
+      try {
+        await appDataService.updateAppDataField(authUser.id, 'contacts', updated);
+      } catch (error) {
+        console.error('Error saving contact:', error);
+      }
+    }
+    
     if (user) {
       dispatch({ type: 'SET_USER', payload: { ...user, contacts: updated } });
     }
-=======
-    setContacts(prev => [contact, ...prev]);
->>>>>>> origin/main
     setNewContact({ relationshipScore: 50, lastContactedDate: new Date() });
     toast.success('Contact added');
   };
@@ -182,46 +153,67 @@ export function Networking() {
       twitter: c.twitter,
       email: c.email,
     });
+    setEditingId(id);
   };
 
-  // Saving edits UI not implemented
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const saveEdit = () => {
+    if (!editingId || !newContact.name || !newContact.company) {
+      toast.error('Name and company are required');
+      return;
+    }
+    const updated = contacts.map(c => c.id === editingId ? {
+      ...c,
+      name: newContact.name || c.name,
+      role: newContact.role || c.role,
+      company: newContact.company || c.company,
+      relationshipScore: newContact.relationshipScore || c.relationshipScore,
+      lastContactedDate: newContact.lastContactedDate ? new Date(newContact.lastContactedDate) : c.lastContactedDate,
+      notes: newContact.notes || c.notes,
+      avatar: newContact.avatar || c.avatar,
+      linkedin: newContact.linkedin || c.linkedin,
+      twitter: newContact.twitter || c.twitter,
+      email: newContact.email || c.email,
+    } : c);
+    setContacts(updated);
+    if (user) {
+      dispatch({ type: 'SET_USER', payload: { ...user, contacts: updated } });
+    }
+    setNewContact({ relationshipScore: 50, lastContactedDate: new Date() });
+    setEditingId(null);
+    toast.success('Contact updated');
+  };
+
+  const cancelEdit = () => {
+    setNewContact({ relationshipScore: 50, lastContactedDate: new Date() });
+    setEditingId(null);
+  };
 
   const removeContact = (id: string) => {
-<<<<<<< HEAD
     const updated = contacts.filter(c => c.id !== id);
     setContacts(updated);
     if (user) {
       dispatch({ type: 'SET_USER', payload: { ...user, contacts: updated } });
     }
-=======
-    setContacts(prev => prev.filter(c => c.id !== id));
->>>>>>> origin/main
     toast.success('Contact removed');
   };
 
   const markContactedNow = (id: string) => {
-<<<<<<< HEAD
     const updated = contacts.map(c => c.id === id ? { ...c, lastContactedDate: new Date(), relationshipScore: Math.min(100, c.relationshipScore + 5) } : c);
     setContacts(updated);
     if (user) {
       dispatch({ type: 'SET_USER', payload: { ...user, contacts: updated } });
     }
-=======
-    setContacts(prev => prev.map(c => c.id === id ? { ...c, lastContactedDate: new Date(), relationshipScore: Math.min(100, c.relationshipScore + 5) } : c));
->>>>>>> origin/main
     toast.success('Contacted updated');
   };
 
   const nudgeScore = (id: string, delta: number) => {
-<<<<<<< HEAD
     const updated = contacts.map(c => c.id === id ? { ...c, relationshipScore: Math.max(0, Math.min(100, c.relationshipScore + delta)) } : c);
     setContacts(updated);
     if (user) {
       dispatch({ type: 'SET_USER', payload: { ...user, contacts: updated } });
     }
-=======
-    setContacts(prev => prev.map(c => c.id === id ? { ...c, relationshipScore: Math.max(0, Math.min(100, c.relationshipScore + delta)) } : c));
->>>>>>> origin/main
   };
   return (
     <div className={`p-4 md:p-8 ${darkMode ? 'text-white' : 'text-gray-900'} min-h-screen`}>
@@ -237,6 +229,97 @@ export function Networking() {
             <Plus className="w-4 h-4 mr-2" /> Add Contact
           </Button>
         </div>
+
+        {/* Add/Edit Contact Form - Always Visible */}
+        {
+          <div className={`p-6 border-4 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-black'} brutal-shadow`}>
+            <h2 className="text-xl font-bold font-mono mb-4">
+              {editingId ? 'Edit Contact' : 'Add New Contact'}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-mono uppercase text-gray-500">Name *</label>
+                <Input 
+                  value={newContact.name}
+                  onChange={(e) => setNewContact({...newContact, name: e.target.value})}
+                  placeholder="Contact name"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-mono uppercase text-gray-500">Company *</label>
+                <Input 
+                  value={newContact.company}
+                  onChange={(e) => setNewContact({...newContact, company: e.target.value})}
+                  placeholder="Company name"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-mono uppercase text-gray-500">Role</label>
+                <Input 
+                  value={newContact.role}
+                  onChange={(e) => setNewContact({...newContact, role: e.target.value})}
+                  placeholder="Job title"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-mono uppercase text-gray-500">Email</label>
+                <Input 
+                  value={newContact.email}
+                  onChange={(e) => setNewContact({...newContact, email: e.target.value})}
+                  placeholder="email@example.com"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-mono uppercase text-gray-500">LinkedIn</label>
+                <Input 
+                  value={newContact.linkedin}
+                  onChange={(e) => setNewContact({...newContact, linkedin: e.target.value})}
+                  placeholder="LinkedIn profile URL"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-mono uppercase text-gray-500">Twitter</label>
+                <Input 
+                  value={newContact.twitter}
+                  onChange={(e) => setNewContact({...newContact, twitter: e.target.value})}
+                  placeholder="Twitter handle"
+                  className="mt-1"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="text-xs font-mono uppercase text-gray-500">Notes</label>
+                <textarea 
+                  value={newContact.notes}
+                  onChange={(e) => setNewContact({...newContact, notes: e.target.value})}
+                  placeholder="Meeting notes, conversation topics, etc."
+                  className="w-full mt-1 p-2 border border-gray-300 rounded font-mono text-sm"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              {editingId ? (
+                <>
+                  <Button onClick={saveEdit} className="bg-cyan-500 text-black">
+                    Save Changes
+                  </Button>
+                  <Button onClick={cancelEdit} variant="outline">
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <Button onClick={addContact} className="bg-fuchsia-500 text-black">
+                  Add Contact
+                </Button>
+              )}
+            </div>
+          </div>
+        }
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
            {/* Stats */}

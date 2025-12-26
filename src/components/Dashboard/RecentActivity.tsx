@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, Clock, Target, Trophy, Info, AlertCircle } from 'lucide-react';
+import { CheckCircle, Clock, Target, Trophy, AlertCircle } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { Card } from '../ui/card';
 import { ActivityItem } from '../../services/dashboardService';
@@ -12,18 +12,6 @@ interface RecentActivityProps {
 export function RecentActivity({ activities: externalActivities }: RecentActivityProps) {
   const { state } = useApp();
   const { darkMode } = state;
-
-  const defaultActivities = [
-    {
-      id: '1',
-      type: 'task',
-      title: 'Completed Leetcode Easy Problem',
-      time: '2 hours ago',
-      icon: 'check',
-      xp: 50,
-    },
-    // ... potentially other defaults or just empty
-  ];
 
   const activities = externalActivities || []; // Use external or empty (could use defaults but external is preferred)
 

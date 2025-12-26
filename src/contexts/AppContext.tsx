@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
+/* eslint-disable react-refresh/only-export-components */
 import { User, Task, Achievement, Milestone, CareerStats, SystemLog, ShopItem, Project, MindfulnessStats } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { profileService } from '../services/profileService';
@@ -2152,7 +2153,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           
           console.log('✅ XP system initialized from backend:', { xp: user.xp, level: user.level });
 
-<<<<<<< HEAD
           try {
             const appData = await appDataService.getAppData(authUser.id);
             if (appData) {
@@ -2182,12 +2182,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 dispatch({ type: 'SET_CHALLENGES', payload: arena as unknown as Challenge[] });
               }
             }
-          } catch {
-            // ignore app data load errors
+          } catch (e) {
+            void e;
           }
 
-=======
->>>>>>> origin/main
           // Load tasks
           const tasks = await taskService.getTasks(authUser.id);
           dispatch({ type: 'SET_TASKS', payload: tasks });
@@ -2208,12 +2206,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             totalSolved: codingStreak.totalProblemsSolved,
           }});
 
-<<<<<<< HEAD
           // App data is synced via appDataService when available; localStorage acts as backup
-=======
-          // App data is managed locally via state and localStorage
-          // No backend sync needed for app state
->>>>>>> origin/main
+          // App data is synced via appDataService when available; localStorage acts as backup
 
           // Initialize XP system with user data
           dispatch({ type: 'ADD_XP', payload: { amount: 0, source: 'initialization' } });
@@ -2280,16 +2274,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Energy regeneration
+  // Use a ref to track energy state to avoid resetting the interval on every change
+  const energyRef = React.useRef(state.vitality.energy);
+  
+  useEffect(() => {
+    energyRef.current = state.vitality.energy;
+  }, [state.vitality.energy]);
+
   useEffect(() => {
     const energyInterval = setInterval(() => {
       // Only restore if not at max
-      if (state.vitality.energy.current < state.vitality.energy.max) {
+      if (energyRef.current.current < energyRef.current.max) {
         dispatch({ type: 'RESTORE_ENERGY', payload: 1 }); // +1 Energy every 5 minutes
       }
     }, 5 * 60 * 1000); // 5 minutes
 
     return () => clearInterval(energyInterval);
-  }, [state.vitality.energy.current, state.vitality.energy.max]);
+  }, [dispatch]);
 
   // Track activity timer
   useEffect(() => {
@@ -2411,7 +2412,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     appDataService.updateAppDataField(authUser.id, 'integrationData', payload).catch(() => {});
   }, [state.ownedPowerUps, state.activePowerUps, state.xpSystem.xpMultiplier, state.xpSystem.bonusXPActive, state.xpSystem.bonusXPExpiry, authUser]);
 
-<<<<<<< HEAD
   // Sync projects
   useEffect(() => {
     if (!authUser || isDemoMode) return;
@@ -2471,8 +2471,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timeoutId);
   }, [state.user?.mindfulness, authUser, isDemoMode]);
 
-=======
->>>>>>> origin/main
   // Update activity timer when user interacts
   useEffect(() => {
     const handleActivity = () => {

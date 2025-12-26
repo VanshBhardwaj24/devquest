@@ -20,7 +20,6 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, info: ErrorInfo) {
     // Log for debugging; keep minimal to avoid leaking in prod
     // Developers can hook this to a reporting service later
-    // eslint-disable-next-line no-console
     console.error('Uncaught error in a component:', error, info);
   }
 

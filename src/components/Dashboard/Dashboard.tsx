@@ -1,66 +1,23 @@
-import { useState, useEffect, useMemo, useReducer, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { motion } from 'framer-motion';
-import { useApp } from '../../contexts/AppContext';
-  Zap, Trophy, Target, Star, Crown,
-  TrendingUp, Gift, Shield,
-  CheckCircle, Rocket, Flame, ArrowUp, Clock,
-  Activity, Terminal, Crosshair, Map, Database,
-  Cpu, Battery, Signal, Wifi, Menu, User, Briefcase,
-  AlertTriangle, RefreshCw, Grid, List, Layout
-  AlertTriangle, RefreshCw, Grid, List
-=======
+import { useState, useEffect, useReducer, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../../contexts/AppContext';
-import { Mindfulness } from '../Life/Mindfulness';
-import { 
-import { BucketList } from '../Life/BucketList';
-  Zap, Trophy, Target, Star, Crown,
-  TrendingUp, Gift, Shield,
-  CheckCircle, Rocket, Flame, ArrowUp, Clock,
-  Activity, Terminal, Crosshair, Map, Database,
-  Cpu, Battery, Signal, Wifi, Menu, User, Briefcase,
-  AlertTriangle, RefreshCw, Grid, List, Layout
->>>>>>> origin/main
-} from 'lucide-react';  
-import { LootBoxOpener } from '../Gamification/LootBoxOpener';
-import { Progress } from '../ui/progress';
-import DashboardService, { DashboardData } from '../../services/dashboardService';
+import { Zap, Trophy, Target, Crown, CheckCircle, Activity, Map, Menu, User, AlertTriangle, RefreshCw, Grid, List, Briefcase } from 'lucide-react';
+import DashboardService from '../../services/dashboardService';
 import { DailyMissions } from '../Gamification/DailyMissions';
-<<<<<<< HEAD
 import { Networking } from '../Life/Networking';
 import { Accountability } from '../Life/Accountability';
 import { LifeMap } from '../Life/LifeMap';
-  const { user, xpSystem, tasks, codingStats, darkMode, systemLogs, vitality } = appState;
-
 import { Achievements } from './Achievements';
 import { QuickActions } from './QuickActions';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import DashboardService from '../../services/dashboardService';
-=======
-import { Mindfulness } from '../Life/Mindfulness';
-import { Networking } from '../Life/Networking';
-import { BucketList } from '../Life/BucketList';
-import { Accountability } from '../Life/Accountability';
-
-import { Achievements } from './Achievements';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Progress } from '../ui/progress';
-            const data = await DashboardService.fetchDashboardData(user as any);
->>>>>>> origin/main
 import { dashboardReducer, initialDashboardState } from './dashboardReducer';
 import { RecentActivity } from './RecentActivity';
 
 export function Dashboard() {
   const { state: appState, dispatch: appDispatch } = useApp();
-<<<<<<< HEAD
   const { user, xpSystem, tasks, codingStats, darkMode, vitality } = appState;
-=======
-  const { user, xpSystem, tasks, codingStats, darkMode, systemLogs, vitality } = appState;
->>>>>>> origin/main
   
   // Local state management with useReducer for complex logic
   const [state, localDispatch] = useReducer(dashboardReducer, initialDashboardState);
@@ -75,25 +32,23 @@ export function Dashboard() {
   // Initial Data Fetch
   useEffect(() => {
     const initDashboard = async () => {
-<<<<<<< HEAD
-        if (!user) return;
+        if (!user) {
+            // If no user, stop loading and maybe show error or empty state
+            // For now, we assume user should be there, but let's stop spinning
+            localDispatch({ type: 'FETCH_ERROR', payload: 'User not authenticated' });
+            return;
+        }
         localDispatch({ type: 'INIT_FETCH' });
         try {
             // We pass the user object to calculate initial stats based on global state
             const data = await DashboardService.fetchDashboardData(user);
-=======
-        localDispatch({ type: 'INIT_FETCH' });
-        try {
-            // We pass the user object to calculate initial stats based on global state
-            const data = await DashboardService.fetchDashboardData(user as any);
->>>>>>> origin/main
             localDispatch({ type: 'FETCH_SUCCESS', payload: data });
         } catch (error) {
             localDispatch({ type: 'FETCH_ERROR', payload: error instanceof Error ? error.message : 'Unknown system failure' });
         }
     };
     initDashboard();
-  }, [xpSystem, user, tasks, codingStats, state.data]);
+  }, [xpSystem, user, tasks, codingStats]);
 
   // Periodic Log Refresh Simulation
   useEffect(() => {
@@ -130,12 +85,8 @@ export function Dashboard() {
       taskRate: totalTasks > 0 ? Math.floor((completedTasks / totalTasks) * 100) : 0,
       nextLevelXP: xpForNextLevel - currentXP
     };
-<<<<<<< HEAD
   }, [xpSystem, user, tasks, codingStats]);
-=======
-  }, [xpSystem, user, tasks, codingStats, state.data]);
 
-      DashboardService.fetchDashboardData(user as any)
   const priorityTasks = useMemo(() => {
     return [...tasks]
       .filter(t => !t.completed)
@@ -148,40 +99,12 @@ export function Dashboard() {
       .slice(0, 5);
   }, [tasks]);
 
-  const handleManualStreakCheck = useCallback(() => {
-    appDispatch({ type: 'CHECK_DAILY_RESET' });
-    const logId = Date.now().toString();
-    appDispatch({ 
-        type: 'ADD_SYSTEM_LOG', 
-        payload: { 
-            id: logId, 
-            timestamp: new Date(), 
-            message: 'Manual streak sync initiated...', 
-            type: 'info' 
-        } 
-    });
-    // Also update local logs
-    localDispatch({
-        type: 'REFRESH_LOGS',
-        payload: [{
-            id: logId,
-            timestamp: new Date(),
-            message: 'Manual streak sync initiated...',
-            type: 'info',
-            source: 'User Action'
-        }]
-    });
-  }, [appDispatch]);
+  // Manual streak sync function removed (unused)
 
   const retryFetch = () => {
-<<<<<<< HEAD
       if (!user) return;
       localDispatch({ type: 'INIT_FETCH' });
       DashboardService.fetchDashboardData(user)
-=======
-      localDispatch({ type: 'INIT_FETCH' });
-      DashboardService.fetchDashboardData(user as any)
->>>>>>> origin/main
         .then(data => localDispatch({ type: 'FETCH_SUCCESS', payload: data }))
         .catch(err => localDispatch({ type: 'FETCH_ERROR', payload: err.message }));
   };
@@ -198,12 +121,12 @@ export function Dashboard() {
 
     if (state.error) {
         return (
-            <Card variant="brutal" className="p-8 bg-red-100 border-red-500 text-red-900">
+            <Card className="p-8 bg-red-100 border-red-500 text-red-900">
                 <div className="flex flex-col items-center text-center space-y-4">
                     <AlertTriangle className="h-12 w-12 text-red-600" />
                     <h3 className="text-xl font-bold uppercase">System Critical Error</h3>
                     <p className="font-mono text-sm">{state.error}</p>
-                    <Button onClick={retryFetch} variant="brutal" className="bg-white">
+                    <Button onClick={retryFetch} className="bg-white text-black border-2 border-black">
                         <RefreshCw className="mr-2 h-4 w-4" /> REBOOT SYSTEM
                     </Button>
                 </div>
@@ -218,7 +141,7 @@ export function Dashboard() {
             <DailyMissions />
             
             {/* Priority Targets */}
-            <Card variant="brutal" className={`min-h-[300px] relative ${darkMode ? 'bg-zinc-900 border-white' : 'bg-white border-black'}`}>
+            <Card className={`min-h-[300px] relative ${darkMode ? 'bg-zinc-900 border-white' : 'bg-white border-black'} border-2`}>
               <CardHeader className="border-b-2 border-black pb-3">
                 <CardTitle className="flex justify-between items-center">
                   <span className="flex items-center gap-2 uppercase text-sm font-bold">
@@ -232,13 +155,13 @@ export function Dashboard() {
                     >
                         {state.viewMode === 'list' ? <Grid className="h-4 w-4" /> : <List className="h-4 w-4" />}
                     </Button>
-                    <Button variant="brutal" size="sm" className="text-xs h-8 shadow-[2px_2px_0px_0px_#000]">
+                    <Button size="sm" className="text-xs h-8 shadow-[2px_2px_0px_0px_#000] border-2 border-black">
                         + New Target
                     </Button>
                   </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 pt-4">
+              <CardContent className={`pt-4 ${state.viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'space-y-4'}`}>
                  {priorityTasks.map((task) => (
                    <div key={task.id} className={`flex items-center justify-between p-3 border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#000] transition-all ${darkMode ? 'bg-zinc-800' : 'bg-white'}`}>
                      <div className="flex items-center gap-3">
@@ -267,7 +190,7 @@ export function Dashboard() {
               </CardContent>
             </Card>
 
-            <RecentActivity activities={state.data?.activities} />
+            <RecentActivity activities={state.data?.activities || []} />
             <Accountability />
           </div>
         );
@@ -275,15 +198,12 @@ export function Dashboard() {
         return <Achievements />;
       case 'career':
         return <Accountability />;
-<<<<<<< HEAD
       case 'map':
         return <LifeMap />;
       case 'social':
         return <Networking />;
       case 'settings':
-        return <ProfileCard />;
-=======
->>>>>>> origin/main
+        return <div className="p-4">Settings Module under construction...</div>;
       default:
         return <div className="p-4">Module under construction...</div>;
     }
@@ -303,7 +223,7 @@ export function Dashboard() {
         {/* Top Header / Status Bar */}
         <header className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Operator Level */}
-          <Card variant="brutal" className={`flex flex-col justify-between p-4 ${darkMode ? 'bg-zinc-900 border-white shadow-[8px_8px_0px_0px_rgba(255,255,255,0.2)]' : 'bg-white border-black shadow-[8px_8px_0px_0px_#000]'}`}>
+          <Card className={`flex flex-col justify-between p-4 ${darkMode ? 'bg-zinc-900 border-white shadow-[8px_8px_0px_0px_rgba(255,255,255,0.2)]' : 'bg-white border-black shadow-[8px_8px_0px_0px_#000]'} border-2`}>
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="font-black tracking-widest text-lg uppercase font-mono">Operator Level</h2>
@@ -338,7 +258,7 @@ export function Dashboard() {
           </Card>
 
           {/* Vitality & Resources (Revamped) */}
-          <Card variant="brutal" className={`flex flex-col justify-between p-4 space-y-4 ${darkMode ? 'bg-zinc-900 border-white shadow-[8px_8px_0px_0px_rgba(255,255,255,0.2)]' : 'bg-white border-black shadow-[8px_8px_0px_0px_#000]'}`}>
+          <Card className={`flex flex-col justify-between p-4 space-y-4 ${darkMode ? 'bg-zinc-900 border-white shadow-[8px_8px_0px_0px_rgba(255,255,255,0.2)]' : 'bg-white border-black shadow-[8px_8px_0px_0px_#000]'} border-2`}>
             {/* Energy Bar */}
             <div>
               <div className="flex justify-between items-center mb-1">
@@ -363,7 +283,7 @@ export function Dashboard() {
           </Card>
 
           {/* Life Overview Integration */}
-          <Card variant="brutal" className={`flex flex-col justify-between p-4 ${darkMode ? 'bg-zinc-900 border-white shadow-[8px_8px_0px_0px_rgba(255,255,255,0.2)]' : 'bg-white border-black shadow-[8px_8px_0px_0px_#000]'}`}>
+          <Card className={`flex flex-col justify-between p-4 ${darkMode ? 'bg-zinc-900 border-white shadow-[8px_8px_0px_0px_rgba(255,255,255,0.2)]' : 'bg-white border-black shadow-[8px_8px_0px_0px_#000]'} border-2`}>
              <div className="flex items-center justify-between mb-4">
                 <h2 className="font-black tracking-widest text-lg uppercase font-mono">Life Status</h2>
                 <Activity className="h-5 w-5 text-blue-500" />
@@ -392,7 +312,7 @@ export function Dashboard() {
  
 
           {/* Time & System Status */}
-          <Card variant="brutal" className={`flex flex-col justify-between p-4 relative overflow-hidden ${darkMode ? 'bg-zinc-900 border-white shadow-[8px_8px_0px_0px_rgba(255,255,255,0.2)]' : 'bg-white border-black shadow-[8px_8px_0px_0px_#000]'}`}>
+          <Card className={`flex flex-col justify-between p-4 relative overflow-hidden ${darkMode ? 'bg-zinc-900 border-white shadow-[8px_8px_0px_0px_rgba(255,255,255,0.2)]' : 'bg-white border-black shadow-[8px_8px_0px_0px_#000]'} border-2`}>
              <div className="absolute top-2 right-2 flex gap-2">
                <div className={`flex items-center gap-1 border border-black px-1 ${state.loading ? 'bg-yellow-500' : state.error ? 'bg-red-500' : 'bg-green-500'} text-black text-[10px] font-bold uppercase`}>
                   <div className={`h-2 w-2 bg-black ${!state.error ? 'animate-pulse' : ''} rounded-full`} />
@@ -436,128 +356,52 @@ export function Dashboard() {
           
           {/* Left Column - Navigation & Quick Stats */}
           <div className="lg:col-span-3 space-y-6">
-             <Card variant="brutal" className={`p-0 overflow-hidden ${darkMode ? 'bg-zinc-900 border-white' : 'bg-white border-black'}`}>
+             <Card className={`p-0 overflow-hidden ${darkMode ? 'bg-zinc-900 border-white' : 'bg-white border-black'} border-2`}>
                <div className={`p-3 border-b-2 border-black ${darkMode ? 'bg-zinc-800' : 'bg-gray-100'}`}>
                  <h3 className="font-bold text-sm flex items-center gap-2 uppercase">
-<<<<<<< HEAD
                    <Menu className="h-4 w-4" /> System Menu
-=======
-                   <Menu className="h-4 w-4" /> Quick Access
->>>>>>> origin/main
                  </h3>
                </div>
                <div className="p-3 grid grid-cols-2 gap-2">
-                 <Button onClick={() => localDispatch({ type: 'SET_TAB', payload: 'overview' })} variant={state.activeTab === 'overview' ? 'default' : 'brutal'} size="sm" className="justify-start text-xs font-bold uppercase h-9 w-full shadow-[2px_2px_0px_0px_#000]">
+                 <Button onClick={() => localDispatch({ type: 'SET_TAB', payload: 'overview' })} variant={state.activeTab === 'overview' ? 'default' : 'outline'} size="sm" className="justify-start text-xs font-bold uppercase h-9 w-full shadow-[2px_2px_0px_0px_#000] border-2 border-black">
                    <Activity className="h-3 w-3 mr-2" /> Overview
                  </Button>
-                 <Button onClick={() => localDispatch({ type: 'SET_TAB', payload: 'career' })} variant={state.activeTab === 'career' ? 'default' : 'brutal'} size="sm" className="justify-start text-xs font-bold uppercase h-9 w-full shadow-[2px_2px_0px_0px_#000]">
+                 <Button onClick={() => localDispatch({ type: 'SET_TAB', payload: 'career' })} variant={state.activeTab === 'career' ? 'default' : 'outline'} size="sm" className="justify-start text-xs font-bold uppercase h-9 w-full shadow-[2px_2px_0px_0px_#000] border-2 border-black">
                    <Briefcase className="h-3 w-3 mr-2" /> Career
                  </Button>
-                 <Button onClick={() => localDispatch({ type: 'SET_TAB', payload: 'achievements' })} variant={state.activeTab === 'achievements' ? 'default' : 'brutal'} size="sm" className="justify-start text-xs font-bold uppercase h-9 w-full shadow-[2px_2px_0px_0px_#000]">
+                 <Button onClick={() => localDispatch({ type: 'SET_TAB', payload: 'achievements' })} variant={state.activeTab === 'achievements' ? 'default' : 'outline'} size="sm" className="justify-start text-xs font-bold uppercase h-9 w-full shadow-[2px_2px_0px_0px_#000] border-2 border-black">
                    <Trophy className="h-3 w-3 mr-2" /> Stats
                  </Button>
-<<<<<<< HEAD
-                 <Button onClick={() => localDispatch({ type: 'SET_TAB', payload: 'map' })} variant={state.activeTab === 'map' ? 'default' : 'brutal'} size="sm" className="justify-start text-xs font-bold uppercase h-9 w-full shadow-[2px_2px_0px_0px_#000]">
+                 <Button onClick={() => localDispatch({ type: 'SET_TAB', payload: 'map' })} variant={state.activeTab === 'map' ? 'default' : 'outline'} size="sm" className="justify-start text-xs font-bold uppercase h-9 w-full shadow-[2px_2px_0px_0px_#000] border-2 border-black">
                    <Map className="h-3 w-3 mr-2" /> Map
                  </Button>
-                 <Button onClick={() => localDispatch({ type: 'SET_TAB', payload: 'social' })} variant={state.activeTab === 'social' ? 'default' : 'brutal'} size="sm" className="justify-start text-xs font-bold uppercase h-9 w-full shadow-[2px_2px_0px_0px_#000]">
+                 <Button onClick={() => localDispatch({ type: 'SET_TAB', payload: 'social' })} variant={state.activeTab === 'social' ? 'default' : 'outline'} size="sm" className="justify-start text-xs font-bold uppercase h-9 w-full shadow-[2px_2px_0px_0px_#000] border-2 border-black">
                    <User className="h-3 w-3 mr-2" /> Social
                  </Button>
-                 <Button onClick={() => localDispatch({ type: 'SET_TAB', payload: 'settings' })} variant={state.activeTab === 'settings' ? 'default' : 'brutal'} size="sm" className="justify-start text-xs font-bold uppercase h-9 w-full shadow-[2px_2px_0px_0px_#000]">
-=======
-                 <Button variant="brutal" size="sm" className="justify-start text-xs font-bold uppercase h-9 w-full shadow-[2px_2px_0px_0px_#000]">
-                   <Map className="h-3 w-3 mr-2" /> Map
-                 </Button>
-                 <Button variant="brutal" size="sm" className="justify-start text-xs font-bold uppercase h-9 w-full shadow-[2px_2px_0px_0px_#000]">
-                   <User className="h-3 w-3 mr-2" /> Social
-                 </Button>
-                 <Button variant="brutal" size="sm" className="justify-start text-xs font-bold uppercase h-9 w-full shadow-[2px_2px_0px_0px_#000]">
->>>>>>> origin/main
-                   <Terminal className="h-3 w-3 mr-2" /> Settings
+                 <Button onClick={() => localDispatch({ type: 'SET_TAB', payload: 'settings' })} variant={state.activeTab === 'settings' ? 'default' : 'outline'} size="sm" className="justify-start text-xs font-bold uppercase h-9 w-full shadow-[2px_2px_0px_0px_#000] border-2 border-black">
+                    <List className="h-3 w-3 mr-2" /> Settings
                  </Button>
                </div>
              </Card>
 
-<<<<<<< HEAD
              <QuickActions />
-
-=======
->>>>>>> origin/main
-             <Card variant="brutal" className={`p-4 ${darkMode ? 'bg-zinc-900 border-white' : 'bg-white border-black'}`}>
-               <h3 className="font-bold text-sm mb-4 flex items-center gap-2 uppercase">
-                 <Flame className="h-4 w-4 text-orange-500" /> Streak Status
-               </h3>
-               <div className="text-center py-4 border-2 border-black bg-orange-500 text-white mb-4 shadow-[4px_4px_0px_0px_#000]">
-                 <div className="text-5xl font-bold mb-1">
-                   {stats.streak}
-                 </div>
-                 <div className="text-xs font-bold uppercase tracking-widest text-black bg-white inline-block px-2 border border-black">Day Streak</div>
-               </div>
-               <div className="grid grid-cols-7 gap-1 mt-4">
-                 {[...Array(7)].map((_, i) => (
-                   <div key={i} className={`h-8 border border-black ${i < (stats.streak % 7) ? 'bg-orange-500' : 'bg-gray-200 dark:bg-zinc-800'}`} />
-                 ))}
-               </div>
-               <Button onClick={handleManualStreakCheck} size="sm" variant="ghost" className="w-full mt-2 text-[10px] uppercase border border-dashed border-black">
-                 Sync Streak
-               </Button>
-             </Card>
-
-             <Card variant="brutal" className={`p-4 min-h-[200px] ${darkMode ? 'bg-zinc-900 border-white' : 'bg-white border-black'}`}>
-               <h3 className="font-bold text-sm mb-2 flex items-center gap-2 uppercase">
-                 <Terminal className="h-4 w-4" /> System Log
-               </h3>
-               <div className={`font-mono text-[10px] space-y-1 p-2 border-2 border-black h-40 overflow-hidden relative ${darkMode ? 'bg-black text-green-400' : 'bg-gray-100 text-gray-800'}`}>
-                 {state.data?.systemLogs && state.data.systemLogs.length > 0 ? (
-                    state.data.systemLogs.slice(0, 10).map((log) => (
-                      <p key={log.id}>
-                        <span className="opacity-50">[{new Date(log.timestamp).toLocaleTimeString([], {hour12: false, hour: '2-digit', minute:'2-digit'})}]</span> {'>'} <span className={log.type === 'error' ? 'text-red-500' : log.type === 'success' ? 'text-green-400' : ''}>{log.message}</span>
-                      </p>
-                    ))
-                 ) : (
-                   <>
-                     <p>{'>'} System initialized...</p>
-                     <p>{'>'} Waiting for input...</p>
-                   </>
-                 )}
-               </div>
-             </Card>
           </div>
 
           {/* Center Column - Main Content */}
-          <div className="lg:col-span-6">
-            <ErrorBoundary>
-              {renderContent()}
-            </ErrorBoundary>
-          </div>
-
-          {/* Right Column - Gamification & Social */}
-          <div className="lg:col-span-3 space-y-6">
-             <EnergySystem />
-             
-             <Card variant="brutal" className={`p-4 ${darkMode ? 'bg-zinc-900 border-white' : 'bg-white border-black'}`}>
-               <h3 className="font-bold text-sm mb-4 flex items-center gap-2 uppercase">
-                 <Trophy className="h-4 w-4 text-yellow-500" /> Leaderboard
-               </h3>
-               <div className="space-y-3">
-                 {[
-                   { name: 'User_001', score: 9850, rank: 1 },
-                   { name: 'NeonSamurai', score: 8720, rank: 2 },
-                   { name: 'CodeNinja', score: 8540, rank: 3 },
-                 ].map((player, i) => (
-                   <div key={i} className={`flex items-center justify-between p-2 border border-black ${darkMode ? 'bg-zinc-800' : 'bg-gray-50'}`}>
-                     <div className="flex items-center gap-2">
-                       <span className={`font-black w-6 text-center ${i === 0 ? 'text-yellow-500' : i === 1 ? 'text-gray-400' : 'text-orange-600'}`}>#{player.rank}</span>
-                       <span className="font-bold text-xs uppercase">{player.name}</span>
-                     </div>
-                     <span className="font-mono text-xs">{player.score}</span>
-                   </div>
-                 ))}
-               </div>
-               <Button variant="brutal" size="sm" className="w-full mt-4 text-xs">View Full Leaderboard</Button>
-             </Card>
-
-             <LootBoxOpener />
+          <div className="lg:col-span-9">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={state.activeTab}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ErrorBoundary>
+                    {renderContent()}
+                </ErrorBoundary>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </div>

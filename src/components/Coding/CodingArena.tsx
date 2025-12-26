@@ -1,15 +1,9 @@
-import { useState, useEffect, useCallback, useMemo, useReducer } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Code, Trophy, Zap, Target, Flame, CheckCircle, ExternalLink, Filter, Search, RotateCcw, Building2, X, ChevronDown, MoreHorizontal, BarChart2, PieChart as PieChartIcon, List, Grid, Calendar, Star, Share2 } from 'lucide-react';
+import { Code, Trophy, Zap, Target, Flame, CheckCircle, ExternalLink, Filter, Search, RotateCcw, Building2, X } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../hooks/useAuth';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '../ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuCheckboxItem } from '../ui/dropdown-menu';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Badge } from '../ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
+
 
 // --- Extended Types & Interfaces ---
 
@@ -38,146 +32,18 @@ interface CodingProblem {
   isFavorite?: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 type SortOption = 'default' | 'xp-desc' | 'xp-asc' | 'difficulty-asc' | 'difficulty-desc' | 'title-asc';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 type ViewMode = 'list' | 'grid' | 'analytics';
 
-interface ArenaState {
-  problems: CodingProblem[];
-  filteredProblems: CodingProblem[];
-  loading: boolean;
-  error: string | null;
-  filters: {
-    platform: string;
-    difficulty: string;
-    category: string;
-    sheet: string;
-    search: string;
-    showSolved: boolean;
-    showRevision: boolean;
-    showFavorites: boolean;
-    company: string;
-  };
-  sorting: SortOption;
-  pagination: {
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-  viewMode: ViewMode;
-  selectedIds: Set<string>;
-  analyticsData: any;
-}
-
-type ArenaAction =
-  | { type: 'INIT_PROBLEMS'; payload: CodingProblem[] }
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'SET_FILTER'; payload: Partial<ArenaState['filters']> }
-  | { type: 'SET_SORT'; payload: SortOption }
-  | { type: 'SET_PAGE'; payload: number }
-  | { type: 'SET_VIEW_MODE'; payload: ViewMode }
-  | { type: 'TOGGLE_SELECT'; payload: string }
-  | { type: 'SELECT_ALL'; payload: boolean }
-  | { type: 'UPDATE_PROBLEM'; payload: CodingProblem }
-  | { type: 'BULK_UPDATE'; payload: { ids: string[]; updates: Partial<CodingProblem> } };
-
-// --- Validator Class ---
-
-class ArenaValidator {
-  static validateSearch(term: string): string | null {
-    if (term.length > 50) return "Search term is too long.";
-    if (/[<>]/.test(term)) return "Invalid characters in search.";
-    return null;
-  }
-
-  static validateNote(note: string): string | null {
-    if (note.length > 500) return "Note must be under 500 characters.";
-    return null;
-  }
-}
-
-// --- Service Class ---
-
-class ArenaService {
-  private static STORAGE_KEY_SOLVED = 'coding_solved_ids_v2';
-  private static STORAGE_KEY_REVISION = 'coding_revision_ids_v2';
-  private static STORAGE_KEY_FAVORITES = 'coding_favorites_v2';
-  private static STORAGE_KEY_NOTES = 'coding_notes_v2';
-
-  static async simulateDelay(ms: number = 500): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  static getStoredData() {
-    return {
-      solved: new Set(JSON.parse(localStorage.getItem(this.STORAGE_KEY_SOLVED) || '[]')),
-      revision: new Set(JSON.parse(localStorage.getItem(this.STORAGE_KEY_REVISION) || '[]')),
-      favorites: new Set(JSON.parse(localStorage.getItem(this.STORAGE_KEY_FAVORITES) || '[]')),
-      notes: JSON.parse(localStorage.getItem(this.STORAGE_KEY_NOTES) || '{}'),
-    };
-  }
-
-  static saveData(type: 'solved' | 'revision' | 'favorites', ids: string[]) {
-    const key = type === 'solved' ? this.STORAGE_KEY_SOLVED :
-                type === 'revision' ? this.STORAGE_KEY_REVISION :
-                this.STORAGE_KEY_FAVORITES;
-    localStorage.setItem(key, JSON.stringify(ids));
-  }
-
-  static saveNote(id: string, note: string) {
-    const notes = JSON.parse(localStorage.getItem(this.STORAGE_KEY_NOTES) || '{}');
-    notes[id] = note;
-    localStorage.setItem(this.STORAGE_KEY_NOTES, JSON.stringify(notes));
-  }
-}
-
-// --- Reducer ---
-
-function arenaReducer(state: ArenaState, action: ArenaAction): ArenaState {
-  switch (action.type) {
-    case 'INIT_PROBLEMS':
-      return { ...state, problems: action.payload, loading: false };
-    case 'SET_LOADING':
-      return { ...state, loading: action.payload };
-    case 'SET_ERROR':
-      return { ...state, error: action.payload };
-    case 'SET_FILTER':
-      return { ...state, filters: { ...state.filters, ...action.payload }, pagination: { ...state.pagination, page: 1 } };
-    case 'SET_SORT':
-      return { ...state, sorting: action.payload };
-    case 'SET_PAGE':
-      return { ...state, pagination: { ...state.pagination, page: action.payload } };
-    case 'SET_VIEW_MODE':
-      return { ...state, viewMode: action.payload };
-    case 'TOGGLE_SELECT': {
-      const newSelected = new Set(state.selectedIds);
-      if (newSelected.has(action.payload)) newSelected.delete(action.payload);
-      else newSelected.add(action.payload);
-      return { ...state, selectedIds: newSelected };
-    }
-    case 'SELECT_ALL':
-      return { ...state, selectedIds: action.payload ? new Set(state.filteredProblems.map(p => p.id)) : new Set() };
-    case 'UPDATE_PROBLEM':
-      return {
-        ...state,
-        problems: state.problems.map(p => p.id === action.payload.id ? action.payload : p),
-      };
-    case 'BULK_UPDATE':
-      return {
-        ...state,
-        problems: state.problems.map(p => action.payload.ids.includes(p.id) ? { ...p, ...action.payload.updates } : p),
-        selectedIds: new Set(), // Clear selection after bulk action
-      };
-    default:
-      return state;
-  }
-}
 
 export function CodingArena() {
   const { state, dispatch } = useApp();
   const { user: authUser } = useAuth();
   const { darkMode, codingStats } = state;
   // Read GitHub integration state safely from global app state (may be undefined)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const githubStats = (state as any).github ?? null;
   const [problems, setProblems] = useState<CodingProblem[]>([]);
   const [filteredProblems, setFilteredProblems] = useState<CodingProblem[]>([]);
@@ -198,7 +64,7 @@ export function CodingArena() {
   const companies = ['Google', 'Amazon', 'Microsoft', 'Meta', 'Apple', 'Netflix', 'Uber', 'Airbnb', 'LinkedIn', 'Twitter', 'Adobe', 'Oracle', 'Salesforce', 'Goldman Sachs', 'Morgan Stanley', 'Bloomberg', 'Stripe', 'Atlassian', 'Shopify', 'Coinbase'];
 
   // Essential problem database
-  const problemDatabase: Omit<CodingProblem, 'solved' | 'timeSpent' | 'solvedAt'>[] = [
+  const problemDatabase = useMemo<Omit<CodingProblem, 'solved' | 'timeSpent' | 'solvedAt'>[]>(() => [
     // Basic Array Problems
     { id: 'day1-1', title: 'Sort an array of 0\'s 1\'s 2\'s without using extra space or sorting algo', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/sort-an-array-of-0s-1s-and-2s4231/1', tags: ['Array', 'Two Pointers', 'Sorting'], xp: 100, category: 'Array', sheet: 'Striver', day: 1, dayTitle: 'Day 1 (Arrays)' },
     { id: 'day1-2', title: 'Repeat and Missing Number', difficulty: 'Medium', platform: 'GeeksforGeeks', url: 'https://practice.geeksforgeeks.org/problems/find-missing-and-repeating2512/1', tags: ['Array', 'Math', 'Hash Table'], xp: 125, category: 'Array', sheet: 'Striver', day: 1, dayTitle: 'Day 1 (Arrays)' },
@@ -1127,7 +993,7 @@ export function CodingArena() {
     
     // Day 23: Graph
     { id: 'day23-1', title: 'Number of Islands', difficulty: 'Medium', platform: 'LeetCode', url: 'https://leetcode.com/problems/number-of-islands/', tags: ['Graph', 'DFS'], xp: 125, category: 'Graph', sheet: 'Striver', day: 23, dayTitle: 'Day 23 (Graph)' },
-  ];
+  ], []);
 
   const loadProblems = useCallback(() => {
     setLoading(true);
@@ -1146,7 +1012,7 @@ export function CodingArena() {
     
     setProblems(problemsWithProgress);
     setLoading(false);
-  }, []);
+  }, [problemDatabase]);
 
   useEffect(() => {
     loadProblems();
@@ -1237,6 +1103,7 @@ export function CodingArena() {
         streak: codingStats.currentStreak || 0,
       }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [codingStats?.currentStreak, showCelebration]);
 
   // Toggle revision status for a problem

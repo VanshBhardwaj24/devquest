@@ -8,10 +8,7 @@ import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { Project } from '../../types';
-<<<<<<< HEAD
 import { appDataService } from '../../services/appDataService';
-=======
->>>>>>> origin/main
 
 export function ProjectShowcase() {
   const { state, dispatch } = useApp();
@@ -64,13 +61,10 @@ export function ProjectShowcase() {
     };
 
     dispatch({ type: 'ADD_PROJECT', payload: project });
-<<<<<<< HEAD
     if (user?.id) {
       const updated = [project, ...projects];
       appDataService.updateAppDataField(user.id, 'projects', updated).catch(() => {});
     }
-=======
->>>>>>> origin/main
     setIsAdding(false);
     setNewProject({
       title: '',
@@ -80,8 +74,6 @@ export function ProjectShowcase() {
       techStack: [],
     });
   };
-<<<<<<< HEAD
-  
   const handleDeleteProject = (id: string) => {
     if (!user) return;
     const updated = projects.filter(p => p.id !== id);
@@ -95,11 +87,58 @@ export function ProjectShowcase() {
     const proj = projects.find(p => p.id === id);
     if (!proj) return;
     const nextProgress = Math.max(0, Math.min(100, (proj.progress || 0) + delta));
-    const updated = { ...proj, progress: nextProgress, status: nextProgress >= 100 ? 'completed' : proj.status };
+    const updated = { ...proj, progress: nextProgress, status: nextProgress >= 100 ? 'completed' : proj.status, lastUpdated: new Date() };
     dispatch({ type: 'UPDATE_PROJECT', payload: updated });
+    if (user?.id) {
+      const updatedProjects = projects.map(p => p.id === id ? updated : p);
+      appDataService.updateAppDataField(user.id, 'projects', updatedProjects).catch(() => {});
+    }
   };
-=======
->>>>>>> origin/main
+
+  const handleEditProject = (id: string) => {
+    const proj = projects.find(p => p.id === id);
+    if (!proj) return;
+    setNewProject({
+      title: proj.title,
+      description: proj.description,
+      status: proj.status,
+      progress: proj.progress,
+      techStack: proj.techStack,
+    });
+    setEditingId(id);
+    setIsAdding(true);
+  };
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const handleSaveEdit = () => {
+    if (!editingId || !newProject.title || !newProject.description) return;
+    
+    const updated = projects.map(p => p.id === editingId ? {
+      ...p,
+      title: newProject.title,
+      description: newProject.description,
+      status: newProject.status as Project['status'],
+      progress: newProject.progress || 0,
+      techStack: newProject.techStack || [],
+      lastUpdated: new Date()
+    } : p);
+    
+    dispatch({ type: 'SET_USER', payload: { ...user!, projects: updated } });
+    if (user?.id) {
+      appDataService.updateAppDataField(user.id, 'projects', updated).catch(() => {});
+    }
+    
+    setIsAdding(false);
+    setEditingId(null);
+    setNewProject({
+      title: '',
+      description: '',
+      status: 'planning',
+      progress: 0,
+      techStack: [],
+    });
+  };
 
   const addTech = () => {
     if (techInput.trim() && !newProject.techStack?.includes(techInput.trim())) {
@@ -223,13 +262,40 @@ export function ProjectShowcase() {
                 </div>
               </div>
 
-              <div className="mt-6 flex justify-end">
-                <Button 
-                  onClick={handleAddProject}
-                  className="bg-cyan-400 text-black font-bold font-mono hover:bg-cyan-300"
-                >
-                  {user?.name ? `Create for ${user.name}` : 'Create'}
-                </Button>
+              <div className="mt-6 flex justify-end gap-2">
+                {editingId ? (
+                  <>
+                    <Button 
+                      onClick={handleSaveEdit}
+                      className="bg-cyan-400 text-black font-bold font-mono hover:bg-cyan-300"
+                    >
+                      Save Changes
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        setIsAdding(false);
+                        setEditingId(null);
+                        setNewProject({
+                          title: '',
+                          description: '',
+                          status: 'planning',
+                          progress: 0,
+                          techStack: [],
+                        });
+                      }}
+                      variant="outline"
+                    >
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <Button 
+                    onClick={handleAddProject}
+                    className="bg-cyan-400 text-black font-bold font-mono hover:bg-cyan-300"
+                  >
+                    {user?.name ? `Create for ${user.name}` : 'Create'}
+                  </Button>
+                )}
               </div>
             </div>
           </motion.div>
@@ -310,15 +376,15 @@ export function ProjectShowcase() {
                     <ExternalLink className="w-4 h-4" />
                   </a>
                 )}
-<<<<<<< HEAD
                 <button onClick={() => handleUpdateProgress(project.id, 10)} className="p-2 bg-gray-800 hover:bg-yellow-400 hover:text-black transition-colors rounded-bl-lg border-l border-b border-gray-700">
                   <Clock className="w-4 h-4" />
+                </button>
+                <button onClick={() => handleEditProject(project.id)} className="p-2 bg-gray-800 hover:bg-blue-400 hover:text-white transition-colors rounded-bl-lg border-l border-b border-gray-700">
+                  <Plus className="w-4 h-4" />
                 </button>
                 <button onClick={() => handleDeleteProject(project.id)} className="p-2 bg-gray-800 hover:bg-red-500 hover:text-white transition-colors rounded-bl-lg border-l border-b border-gray-700">
                   <X className="w-4 h-4" />
                 </button>
-=======
->>>>>>> origin/main
             </div>
           </motion.div>
         ))}

@@ -4,27 +4,17 @@ import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Brain, Wind, CloudRain, Sun, Focus, Play } from 'lucide-react';
 import { getLocalStorage, setLocalStorage, clamp } from '../../lib/utils';
-<<<<<<< HEAD
 import { appDataService } from '../../services/appDataService';
 import { useAuth } from '../../hooks/useAuth';
-=======
->>>>>>> origin/main
 
 export function Mindfulness() {
   const { state, dispatch } = useApp();
   const { user, darkMode } = state;
-<<<<<<< HEAD
   const { user: authUser } = useAuth();
   const [activeSession, setActiveSession] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [selectedDuration, setSelectedDuration] = useState(5);
   const [stats, setStats] = useState<{ currentStreak: number; totalMinutes: number; averageMood: number; totalSessions: number }>({ currentStreak: 0, totalMinutes: 0, averageMood: 0, totalSessions: 0 });
-=======
-  const [activeSession, setActiveSession] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(0);
-  const [selectedDuration, setSelectedDuration] = useState(5);
-  const [stats, setStats] = useState({ currentStreak: 0, totalMinutes: 0, averageMood: 0 });
->>>>>>> origin/main
   const [selectedType, setSelectedType] = useState<'focus' | 'calm' | 'anxiety' | 'morning'>('focus');
   const [error, setError] = useState('');
   const [paused, setPaused] = useState(false);
@@ -42,7 +32,6 @@ export function Mindfulness() {
     setHistory(Array.isArray(saved) ? saved.slice(0, 50) : []);
   }, []);
 
-<<<<<<< HEAD
   useEffect(() => {
     const loadBackend = async () => {
       if (!authUser?.id) return;
@@ -60,15 +49,13 @@ export function Mindfulness() {
         if (Array.isArray(payload?.sessions)) {
           setHistory(payload.sessions.slice(0, 50));
         }
-      } catch {
-        // ignore
+      } catch (e) {
+        void e;
       }
     };
     loadBackend();
   }, [authUser?.id]);
 
-=======
->>>>>>> origin/main
   const sessions = [
     { id: 'focus', name: 'Deep Focus', icon: Focus, color: 'text-cyan-500', bg: 'bg-cyan-500/10' },
     { id: 'calm', name: 'Calm Mind', icon: Wind, color: 'text-lime-500', bg: 'bg-lime-500/10' },
@@ -126,7 +113,6 @@ export function Mindfulness() {
       const updated = [entry, ...history].slice(0, 50);
       setHistory(updated);
       setLocalStorage('mindfulness_sessions', updated);
-<<<<<<< HEAD
       const newTotalSessions = (stats.totalSessions || 0) + 1;
       const newAvgMood = Math.round((((stats.averageMood || 0) * (newTotalSessions - 1)) + finalMood) / newTotalSessions);
       const updatedStats = {
@@ -156,7 +142,7 @@ export function Mindfulness() {
     const totalSessions = updatedHistory.length;
     const averageMood = totalSessions > 0 ? Math.round(updatedHistory.reduce((acc, h) => acc + h.mood, 0) / totalSessions) : 0;
     const lastSessionDate = updatedHistory[0]?.date ? new Date(updatedHistory[0].date) : undefined;
-    const updatedStats = { ...stats, totalMinutes, totalSessions, averageMood, lastSessionDate };
+    const updatedStats = { currentStreak: stats.currentStreak, totalMinutes, totalSessions, averageMood, lastSessionDate };
     setStats(updatedStats);
     if (authUser?.id) {
       const payload = {
@@ -172,11 +158,62 @@ export function Mindfulness() {
       appDataService.updateAppDataField(authUser.id, 'mindfulness', payload).catch(() => {});
     }
   };
-=======
-      setActiveSession(false);
+
+  const addCustomSession = (type: string, duration: number, mood: number, notes?: string) => {
+    const entry = { 
+      id: Date.now().toString(), 
+      type, 
+      duration, 
+      mood, 
+      date: new Date().toISOString(),
+      notes: notes || ''
+    };
+    const updated = [entry, ...history].slice(0, 50);
+    setHistory(updated);
+    setLocalStorage('mindfulness_sessions', updated);
+    const newTotalSessions = (stats.totalSessions || 0) + 1;
+    const newAvgMood = Math.round((((stats.averageMood || 0) * (newTotalSessions - 1)) + mood) / newTotalSessions);
+    const updatedStats = {
+      currentStreak: stats.currentStreak,
+      totalMinutes: (stats.totalMinutes || 0) + duration,
+      averageMood: newAvgMood,
+      totalSessions: newTotalSessions,
+      lastSessionDate: new Date(),
+    };
+    setStats({ currentStreak: updatedStats.currentStreak, totalMinutes: updatedStats.totalMinutes, averageMood: updatedStats.averageMood, totalSessions: updatedStats.totalSessions });
+    if (authUser?.id) {
+      const payload = {
+        stats: updatedStats,
+        sessions: updated
+      };
+      appDataService.updateAppDataField(authUser.id, 'mindfulness', payload).catch(() => {});
     }
-  }, [activeSession, timeLeft, selectedDuration, selectedType, moodScore, history, state.timeBasedStreak.dailyActivity, dispatch]);
->>>>>>> origin/main
+  };
+
+  const updateSession = (id: string, updates: Partial<typeof history[0]>) => {
+    const updatedHistory = history.map(h => h.id === id ? { ...h, ...updates } : h);
+    setHistory(updatedHistory);
+    setLocalStorage('mindfulness_sessions', updatedHistory);
+    const totalMinutes = updatedHistory.reduce((acc, h) => acc + h.duration, 0);
+    const totalSessions = updatedHistory.length;
+    const averageMood = totalSessions > 0 ? Math.round(updatedHistory.reduce((acc, h) => acc + h.mood, 0) / totalSessions) : 0;
+    const lastSessionDate = updatedHistory[0]?.date ? new Date(updatedHistory[0].date) : undefined;
+    const updatedStats = { currentStreak: stats.currentStreak, totalMinutes, totalSessions, averageMood, lastSessionDate };
+    setStats(updatedStats);
+    if (authUser?.id) {
+      const payload = {
+        stats: {
+          currentStreak: updatedStats.currentStreak,
+          totalMinutes: updatedStats.totalMinutes,
+          averageMood: updatedStats.averageMood,
+          totalSessions: updatedStats.totalSessions,
+          lastSessionDate: updatedStats.lastSessionDate
+        },
+        sessions: updatedHistory
+      };
+      appDataService.updateAppDataField(authUser.id, 'mindfulness', payload).catch(() => {});
+    }
+  };
 
   return (
     <div className={`p-4 md:p-8 ${darkMode ? 'text-white' : 'text-gray-900'} min-h-screen`}>
@@ -301,7 +338,6 @@ export function Mindfulness() {
               <div className="font-bold uppercase">Duration</div>
               <div className="font-bold uppercase">Mood</div>
               {history.map(h => (
-<<<<<<< HEAD
                 <div key={h.id} className="contents">
                   <div className="flex items-center justify-between">
                     <span>{new Date(h.date).toLocaleString()}</span>
@@ -311,14 +347,6 @@ export function Mindfulness() {
                   <div>{h.duration}m</div>
                   <div>{h.mood}/10</div>
                 </div>
-=======
-                <>
-                  <div>{new Date(h.date).toLocaleString()}</div>
-                  <div className="uppercase">{h.type}</div>
-                  <div>{h.duration}m</div>
-                  <div>{h.mood}/10</div>
-                </>
->>>>>>> origin/main
               ))}
               {history.length === 0 && (
                 <>

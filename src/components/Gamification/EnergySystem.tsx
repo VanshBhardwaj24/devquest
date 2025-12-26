@@ -36,7 +36,7 @@ export function EnergySystem() {
     if (rechargeAmount > 0 && energyState.current < energyState.max) {
       dispatch({ type: 'RESTORE_ENERGY', payload: rechargeAmount });
     }
-  }, [dispatch, energyState.lastUpdated, energyState.current, energyState.max, state.globalStreak.currentStreak, moodState.label]);
+  }, [dispatch, energyState, state.globalStreak.currentStreak, moodState.label]);
 
   // Active recharge interval
   useEffect(() => {

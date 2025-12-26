@@ -1,697 +1,808 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
+import { Progress } from '../ui/progress';
+import { Textarea } from '../ui/textarea';
+import { Input } from '../ui/input';
 import { 
-  Map, Lock, Unlock, Star, Trophy, Target, Zap, Crown,
-  CheckCircle, ChevronRight, Flame, Sparkles, Battery, Smile,
-  // Activity, ZapOff
+  Target, Trophy, Heart, Brain, 
+  Briefcase, Users, Plane,
+  Zap, Award, Sparkles, Flag, CheckCircle,
+  Circle, Plus, Globe,
+  GraduationCap, Rocket, Lock, TrendingUp
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { appDataService } from '../../services/appDataService';
 
-interface LifeZone {
+interface LifeArea {
   id: string;
   name: string;
   description: string;
-  icon: string;
+  icon: React.ReactNode;
   color: string;
-  bgColor: string;
-  requiredLevel: number;
-  unlocked: boolean;
+  currentLevel: number;
+  targetLevel: number;
   progress: number;
-  missions: Mission[];
-  rewards: string[];
+  goals: LifeGoal[];
+  milestones: Milestone[];
+  isUnlocked: boolean;
+  requiredAreas: string[];
 }
 
-interface Mission {
+interface LifeGoal {
   id: string;
   title: string;
   description: string;
-  xpReward: number;
-  completed: boolean;
-  type: 'main' | 'side' | 'daily';
-  energyCost?: number;
-  moodEffect?: number;
-  relatedSkillId?: string; // Links mission to a skill
+  category: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  status: 'not_started' | 'in_progress' | 'completed' | 'on_hold';
+  targetDate: Date;
+  progress: number;
+  rewards: {
+    xp: number;
+    achievement?: string;
+    unlock?: string;
+  };
+  dependencies: string[];
+  subtasks: Subtask[];
 }
 
-const initialLifeZones: LifeZone[] = [
+interface Subtask {
+  id: string;
+  title: string;
+  completed: boolean;
+  dueDate?: Date;
+}
+
+interface Milestone {
+  id: string;
+  title: string;
+  description: string;
+  achieved: boolean;
+  achievedDate?: Date;
+  icon: React.ReactNode;
+  rewards: {
+    xp: number;
+    title: string;
+    ability?: string;
+  };
+}
+
+interface Journey {
+  id: string;
+  name: string;
+  description: string;
+  areas: LifeArea[];
+  currentArea: string;
+  journeyProgress: number;
+  totalGoals: number;
+  completedGoals: number;
+  achievements: Achievement[];
+}
+
+interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  unlocked: boolean;
+  unlockedDate?: Date;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+}
+
+const LIFE_AREAS: LifeArea[] = [
   {
-    id: 'spawn',
-    name: 'THE BEGINNING',
-    description: 'Where every legend starts. Complete basic setup to unlock your journey.',
-    icon: '🏠',
-    color: 'green',
-    bgColor: 'bg-green-900/30',
-    requiredLevel: 1,
-    unlocked: true,
-    progress: 100,
-    missions: [
-      { id: 'm1', title: 'Create Profile', description: 'Set up your identity', xpReward: 50, completed: true, type: 'main', energyCost: 10, moodEffect: 5 },
-      { id: 'm2', title: 'First Task', description: 'Complete your first task', xpReward: 25, completed: true, type: 'main', energyCost: 5, moodEffect: 5 },
+    id: 'career',
+    name: 'Career & Professional',
+    description: 'Professional growth, skills, and achievements',
+    icon: <Briefcase className="w-6 h-6" />,
+    color: 'blue',
+    currentLevel: 1,
+    targetLevel: 10,
+    progress: 10,
+    goals: [],
+    milestones: [
+      {
+        id: 'first_job',
+        title: 'First Professional Role',
+        description: 'Land your first career position',
+        achieved: false,
+        icon: <Trophy className="w-5 h-5" />,
+        rewards: { xp: 100, title: 'Career Starter' }
+      },
+      {
+        id: 'promotion',
+        title: 'First Promotion',
+        description: 'Get promoted to a higher position',
+        achieved: false,
+        icon: <TrendingUp className="w-5 h-5" />,
+        rewards: { xp: 200, title: 'Rising Star', ability: 'Leadership Basics' }
+      }
     ],
-    rewards: ['🎮 Player Status Unlocked', '📊 Stats Dashboard'],
+    isUnlocked: true,
+    requiredAreas: []
   },
   {
-    id: 'coding',
-    name: 'CODE DISTRICT',
-    description: 'The tech hub. Master DSA, solve problems, build your coding arsenal.',
-    icon: '💻',
-    color: 'cyan',
-    bgColor: 'bg-cyan-900/30',
-    requiredLevel: 2,
-    unlocked: true,
-    progress: 45,
-    missions: [
-      { id: 'c1', title: 'Solve 10 Easy Problems', description: 'Build fundamentals', xpReward: 100, completed: true, type: 'main', energyCost: 20, moodEffect: -5, relatedSkillId: 'dsa' },
-      { id: 'c2', title: 'Solve 5 Medium Problems', description: 'Level up your skills', xpReward: 150, completed: false, type: 'main', energyCost: 30, moodEffect: -10, relatedSkillId: 'dsa' },
-      { id: 'c3', title: 'Complete a Hard Problem', description: 'Prove your worth', xpReward: 300, completed: false, type: 'side', energyCost: 40, moodEffect: 20, relatedSkillId: 'dsa' }, // High satisfaction
-      { id: 'c4', title: '7-Day Coding Streak', description: 'Consistency is key', xpReward: 200, completed: false, type: 'daily', energyCost: 0, moodEffect: 15, relatedSkillId: 'dsa' },
-    ],
-    rewards: ['🏆 Code Warrior Badge', '⚡ +10% XP on coding tasks'],
-  },
-  {
-    id: 'fitness',
-    name: 'IRON TEMPLE',
-    description: 'Physical power zone. Transform your body, unlock strength.',
-    icon: '💪',
-    color: 'red',
-    bgColor: 'bg-red-900/30',
-    requiredLevel: 3,
-    unlocked: true,
-    progress: 30,
-    missions: [
-      { id: 'f1', title: 'First Workout', description: 'Begin your physical journey', xpReward: 75, completed: true, type: 'main', energyCost: 30, moodEffect: 10 },
-      { id: 'f2', title: '10 Gym Sessions', description: 'Build the habit', xpReward: 200, completed: false, type: 'main', energyCost: 40, moodEffect: 15 },
-      { id: 'f3', title: 'Run 5K', description: 'Cardio milestone', xpReward: 150, completed: false, type: 'side', energyCost: 50, moodEffect: 20 },
-      { id: 'f4', title: '30-Day Streak', description: 'Become unstoppable', xpReward: 500, completed: false, type: 'main', energyCost: 0, moodEffect: 30 },
-    ],
-    rewards: ['💪 Iron Will Badge', '🔥 +2 Energy per day'],
-  },
-  {
-    id: 'wealth',
-    name: 'FORTUNE TOWERS',
-    description: 'Financial district. Build wealth, master money, secure your future.',
-    icon: '💰',
-    color: 'yellow',
-    bgColor: 'bg-yellow-900/30',
-    requiredLevel: 5,
-    unlocked: false,
-    progress: 0,
-    missions: [
-      { id: 'w1', title: 'Track First Income', description: 'Know your money', xpReward: 50, completed: false, type: 'main', energyCost: 5, moodEffect: 5 },
-      { id: 'w2', title: 'Save ₹10,000', description: 'Emergency fund start', xpReward: 200, completed: false, type: 'main', energyCost: 10, moodEffect: 10 },
-      { id: 'w3', title: 'First Investment', description: 'Make money work', xpReward: 300, completed: false, type: 'main', energyCost: 15, moodEffect: 5 },
-      { id: 'w4', title: 'Zero Debt', description: 'Financial freedom', xpReward: 500, completed: false, type: 'side', energyCost: 0, moodEffect: 50 },
-    ],
-    rewards: ['💎 Wealthy Mindset', '📈 Investment Tracker'],
-  },
-  {
-    id: 'social',
-    name: 'HEART HAVEN',
-    description: 'Relationship zone. Build connections, nurture bonds, grow together.',
-    icon: '❤️',
+    id: 'relationships',
+    name: 'Relationships & Social',
+    description: 'Family, friends, and social connections',
+    icon: <Users className="w-6 h-6" />,
     color: 'pink',
-    bgColor: 'bg-pink-900/30',
-    requiredLevel: 4,
-    unlocked: false,
-    progress: 0,
-    missions: [
-      { id: 's1', title: 'Add 5 Connections', description: 'Map your circle', xpReward: 75, completed: false, type: 'main', energyCost: 10, moodEffect: 10, relatedSkillId: 'communication' },
-      { id: 's2', title: 'Weekly Check-in', description: 'Stay connected', xpReward: 50, completed: false, type: 'daily', energyCost: 15, moodEffect: 15, relatedSkillId: 'communication' },
-      { id: 's3', title: 'Deep Conversation', description: 'Meaningful connections', xpReward: 100, completed: false, type: 'side', energyCost: 20, moodEffect: 25, relatedSkillId: 'communication' },
-      { id: 's4', title: 'Help Someone', description: 'Give back', xpReward: 150, completed: false, type: 'main', energyCost: 15, moodEffect: 30, relatedSkillId: 'communication' },
+    currentLevel: 1,
+    targetLevel: 10,
+    progress: 10,
+    goals: [],
+    milestones: [
+      {
+        id: 'deep_connection',
+        title: 'Deep Connection',
+        description: 'Form a meaningful, lasting relationship',
+        achieved: false,
+        icon: <Heart className="w-5 h-5" />,
+        rewards: { xp: 150, title: 'Connection Master' }
+      }
     ],
-    rewards: ['💕 Social Butterfly', '🤝 Network Bonus'],
+    isUnlocked: true,
+    requiredAreas: []
   },
   {
-    id: 'knowledge',
-    name: 'WISDOM LIBRARY',
-    description: 'Knowledge fortress. Read, learn, grow your mind exponentially.',
-    icon: '📚',
+    id: 'health',
+    name: 'Health & Wellness',
+    description: 'Physical and mental well-being',
+    icon: <Heart className="w-6 h-6" />,
+    color: 'green',
+    currentLevel: 1,
+    targetLevel: 10,
+    progress: 10,
+    goals: [],
+    milestones: [
+      {
+        id: 'fitness_goal',
+        title: 'Fitness Achievement',
+        description: 'Reach your fitness goals',
+        achieved: false,
+        icon: <Zap className="w-5 h-5" />,
+        rewards: { xp: 120, title: 'Health Warrior' }
+      }
+    ],
+    isUnlocked: true,
+    requiredAreas: []
+  },
+  {
+    id: 'finance',
+    name: 'Financial Freedom',
+    description: 'Money management, investments, and wealth',
+    icon: <Trophy className="w-6 h-6" />,
+    color: 'yellow',
+    currentLevel: 1,
+    targetLevel: 10,
+    progress: 10,
+    goals: [],
+    milestones: [
+      {
+        id: 'first_savings',
+        title: 'Emergency Fund',
+        description: 'Build your first emergency fund',
+        achieved: false,
+        icon: <Award className="w-5 h-5" />,
+        rewards: { xp: 100, title: 'Financial Planner' }
+      }
+    ],
+    isUnlocked: false,
+    requiredAreas: ['career']
+  },
+  {
+    id: 'personal_growth',
+    name: 'Personal Growth',
+    description: 'Learning, skills, and self-improvement',
+    icon: <Brain className="w-6 h-6" />,
     color: 'purple',
-    bgColor: 'bg-purple-900/30',
-    requiredLevel: 3,
-    unlocked: true,
-    progress: 20,
-    missions: [
-      { id: 'k1', title: 'Read First Book', description: 'Begin the journey', xpReward: 100, completed: true, type: 'main', energyCost: 10, moodEffect: 5 },
-      { id: 'k2', title: 'Complete a Course', description: 'Structured learning', xpReward: 200, completed: false, type: 'main', energyCost: 30, moodEffect: -5 },
-      { id: 'k3', title: '100 Pages Read', description: 'Bookworm milestone', xpReward: 150, completed: false, type: 'side', energyCost: 20, moodEffect: 10 },
-      { id: 'k4', title: 'Teach Someone', description: 'Master by teaching', xpReward: 250, completed: false, type: 'main', energyCost: 25, moodEffect: 20, relatedSkillId: 'communication' },
+    currentLevel: 1,
+    targetLevel: 10,
+    progress: 10,
+    goals: [],
+    milestones: [
+      {
+        id: 'skill_mastery',
+        title: 'Skill Mastery',
+        description: 'Master a new skill completely',
+        achieved: false,
+        icon: <GraduationCap className="w-5 h-5" />,
+        rewards: { xp: 180, title: 'Lifelong Learner', ability: 'Accelerated Learning' }
+      }
     ],
-    rewards: ['🧠 Big Brain Badge', '📖 +25% Learning XP'],
+    isUnlocked: true,
+    requiredAreas: []
   },
   {
-    id: 'discipline',
-    name: 'SHADOW REALM',
-    description: 'Accountability zone. Face your demons, destroy bad habits.',
-    icon: '⚔️',
-    color: 'gray',
-    bgColor: 'bg-gray-800/50',
-    requiredLevel: 6,
-    unlocked: false,
-    progress: 0,
-    missions: [
-      { id: 'd1', title: 'Track Distractions', description: 'Know your enemy', xpReward: 50, completed: false, type: 'main', energyCost: 5, moodEffect: -5, relatedSkillId: 'mindfulness' },
-      { id: 'd2', title: '24 Hours No Social Media', description: 'Digital detox', xpReward: 200, completed: false, type: 'main', energyCost: 40, moodEffect: 20, relatedSkillId: 'mindfulness' },
-      { id: 'd3', title: '7 Days Under 1 Hour Reels', description: 'Break the addiction', xpReward: 300, completed: false, type: 'main', energyCost: 50, moodEffect: 30, relatedSkillId: 'mindfulness' },
-      { id: 'd4', title: '30 Days Clean', description: 'Absolute discipline', xpReward: 1000, completed: false, type: 'side', energyCost: 0, moodEffect: 100, relatedSkillId: 'mindfulness' },
+    id: 'adventure',
+    name: 'Adventure & Travel',
+    description: 'Exploration, experiences, and memories',
+    icon: <Plane className="w-6 h-6" />,
+    color: 'orange',
+    currentLevel: 1,
+    targetLevel: 10,
+    progress: 10,
+    goals: [],
+    milestones: [
+      {
+        id: 'first_trip',
+        title: 'First Big Adventure',
+        description: 'Embark on a memorable journey',
+        achieved: false,
+        icon: <Globe className="w-5 h-5" />,
+        rewards: { xp: 150, title: 'Explorer' }
+      }
     ],
-    rewards: ['👁️ Shadow Hunter', '🛡️ Discipline Shield'],
+    isUnlocked: false,
+    requiredAreas: ['finance', 'health']
+  }
+];
+
+const getColorClasses = (color: string) => {
+  const colorMap: Record<string, { bg: string; text: string }> = {
+    blue: { bg: 'bg-blue-100', text: 'text-blue-600' },
+    pink: { bg: 'bg-pink-100', text: 'text-pink-600' },
+    green: { bg: 'bg-green-100', text: 'text-green-600' },
+    yellow: { bg: 'bg-yellow-100', text: 'text-yellow-600' },
+    purple: { bg: 'bg-purple-100', text: 'text-purple-600' },
+    orange: { bg: 'bg-orange-100', text: 'text-orange-600' }
+  };
+  return colorMap[color] || { bg: 'bg-gray-100', text: 'text-gray-600' };
+};
+
+const ACHIEVEMENTS: Achievement[] = [
+  {
+    id: 'goal_setter',
+    title: 'Goal Setter',
+    description: 'Set your first life goal',
+    icon: <Target className="w-5 h-5" />,
+    unlocked: false,
+    rarity: 'common'
   },
   {
-    id: 'legendary',
-    name: 'LEGEND\'S PEAK',
-    description: 'The ultimate destination. Only the truly dedicated reach here.',
-    icon: '👑',
-    color: 'amber',
-    bgColor: 'bg-gradient-to-br from-amber-900/40 to-yellow-800/30',
-    requiredLevel: 10,
+    id: 'milestone_master',
+    title: 'Milestone Master',
+    description: 'Complete 5 milestones',
+    icon: <Flag className="w-5 h-5" />,
     unlocked: false,
-    progress: 0,
-    missions: [
-      { id: 'l1', title: 'Reach Level 10', description: 'Prove your dedication', xpReward: 500, completed: false, type: 'main', energyCost: 0, moodEffect: 50 },
-      { id: 'l2', title: 'Complete All Zones', description: 'Master of all', xpReward: 1000, completed: false, type: 'main', energyCost: 0, moodEffect: 100 },
-      { id: 'l3', title: '100-Day Streak', description: 'Legendary consistency', xpReward: 2000, completed: false, type: 'main', energyCost: 0, moodEffect: 100 },
-      { id: 'l4', title: 'Help 10 People', description: 'Leave a legacy', xpReward: 1500, completed: false, type: 'side', energyCost: 50, moodEffect: 100 },
-    ],
-    rewards: ['👑 Legend Status', '🌟 All XP +50%', '🏆 Hall of Fame'],
+    rarity: 'rare'
   },
+  {
+    id: 'life_balancer',
+    title: 'Life Balancer',
+    description: 'Balance all 6 life areas',
+    icon: <Sparkles className="w-5 h-5" />,
+    unlocked: false,
+    rarity: 'epic'
+  },
+  {
+    id: 'journey_complete',
+    title: 'Journey Complete',
+    description: 'Complete your life journey',
+    icon: <Rocket className="w-5 h-5" />,
+    unlocked: false,
+    rarity: 'legendary'
+  }
 ];
 
 export function LifeMap() {
   const { state, dispatch } = useApp();
-  const [selectedZone, setSelectedZone] = useState<LifeZone | null>(null);
-  const [zones, setZones] = useState(initialLifeZones);
-  
-  // Life Stats State
-  const [energy, setEnergy] = useState(100);
-  const [maxEnergy] = useState(100);
-  const [mood, setMood] = useState(75);
+  const { user } = state;
+  const [journey, setJourney] = useState<Journey>({
+    id: 'main_journey',
+    name: 'My Life Journey',
+    description: 'The path to your ideal life',
+    areas: LIFE_AREAS,
+    currentArea: 'career',
+    journeyProgress: 0,
+    totalGoals: 0,
+    completedGoals: 0,
+    achievements: ACHIEVEMENTS
+  });
+  const [selectedArea, setSelectedArea] = useState<string>('career');
+  const [newGoal, setNewGoal] = useState<Partial<LifeGoal>>({
+    title: '',
+    description: '',
+    category: '',
+    priority: 'medium',
+    status: 'not_started',
+    targetDate: new Date(),
+    progress: 0,
+    rewards: { xp: 50 },
+    dependencies: [],
+    subtasks: []
+  });
+  const [showGoalForm, setShowGoalForm] = useState(false);
+  const [userLevel, setUserLevel] = useState(1);
 
-  const currentLevel = state.xpSystem?.currentLevel || 1;
-  const unlockedCount = zones.filter(z => z.unlocked).length;
-  const totalMissions = zones.reduce((sum, z) => sum + z.missions.length, 0);
-  const completedMissions = zones.reduce((sum, z) => sum + z.missions.filter(m => m.completed).length, 0);
-  const overallProgress = Math.round((completedMissions / totalMissions) * 100);
-
-  // Regen energy over time (simulated)
   useEffect(() => {
-    const timer = setInterval(() => {
-      setEnergy(prev => Math.min(maxEnergy, prev + 1));
-    }, 60000); // +1 Energy every minute
-    return () => clearInterval(timer);
-  }, [maxEnergy]);
+    if (user) {
+      const loadLifeMapData = async () => {
+        try {
+          const appData = await appDataService.getAppData(user!.id);
+          const savedJourney = appData?.lifeMap as Journey | undefined;
+          
+          if (savedJourney) {
+            setJourney(savedJourney);
+            calculateJourneyProgress(savedJourney);
+          } else {
+            // Initialize with default goals
+            const initializedJourney = await initializeDefaultGoals();
+            setJourney(initializedJourney);
+            await saveLifeMapData(initializedJourney);
+          }
+        } catch (error) {
+          console.error('Error loading life map data:', error);
+        }
+      };
 
-  const getZoneStatus = (zone: LifeZone) => {
-    if (zone.progress === 100) return 'completed';
-    if (zone.unlocked) return 'active';
-    if (currentLevel >= zone.requiredLevel) return 'unlockable';
-    return 'locked';
-  };
-
-  const unlockZone = (zoneId: string) => {
-    setZones(prev => prev.map(z => 
-      z.id === zoneId ? { ...z, unlocked: true } : z
-    ));
-    dispatch({ type: 'ADD_XP', payload: { amount: 50, source: 'Zone Unlocked' } });
-  };
-
-  const completeMission = (zoneId: string, mission: Mission) => {
-    if (energy < (mission.energyCost || 0)) {
-      alert("Not enough energy! Rest or wait for regeneration.");
-      return;
+      loadLifeMapData();
     }
+  }, [user]);
 
-    setEnergy(prev => Math.max(0, prev - (mission.energyCost || 0)));
-    setMood(prev => Math.min(100, Math.max(0, prev + (mission.moodEffect || 0))));
-
-    setZones(prev => prev.map(z => {
-      if (z.id === zoneId) {
-        const updatedMissions = z.missions.map(m => 
-          m.id === mission.id ? { ...m, completed: true } : m
-        );
-        const progress = Math.round((updatedMissions.filter(m => m.completed).length / updatedMissions.length) * 100);
-        return { ...z, missions: updatedMissions, progress };
+  const initializeDefaultGoals = async () => {
+    const defaultGoals: LifeGoal[] = [
+      {
+        id: 'career_start',
+        title: 'Get First Job',
+        description: 'Land your first professional position in your field',
+        category: 'career',
+        priority: 'high',
+        status: 'not_started',
+        targetDate: new Date('2025-06-01'),
+        progress: 0,
+        rewards: { xp: 100, achievement: 'Career Starter' },
+        dependencies: [],
+        subtasks: [
+          { id: 'resume', title: 'Update Resume', completed: false },
+          { id: 'apply', title: 'Apply to 10 companies', completed: false },
+          { id: 'interview', title: 'Complete 3 interviews', completed: false }
+        ]
+      },
+      {
+        id: 'health_fitness',
+        title: 'Improve Physical Fitness',
+        description: 'Reach a healthy weight and fitness level',
+        category: 'health',
+        priority: 'medium',
+        status: 'not_started',
+        targetDate: new Date('2025-12-31'),
+        progress: 0,
+        rewards: { xp: 80, achievement: 'Health Warrior' },
+        dependencies: [],
+        subtasks: [
+          { id: 'exercise', title: 'Exercise 3x per week', completed: false },
+          { id: 'diet', title: 'Eat healthy meals', completed: false },
+          { id: 'sleep', title: 'Get 8 hours sleep', completed: false }
+        ]
+      },
+      {
+        id: 'learning_skill',
+        title: 'Learn New Skill',
+        description: 'Master a valuable new skill',
+        category: 'personal_growth',
+        priority: 'medium',
+        status: 'not_started',
+        targetDate: new Date('2025-09-01'),
+        progress: 0,
+        rewards: { xp: 120, achievement: 'Skill Master' },
+        dependencies: [],
+        subtasks: [
+          { id: 'research', title: 'Research skill options', completed: false },
+          { id: 'course', title: 'Enroll in course', completed: false },
+          { id: 'practice', title: 'Practice daily', completed: false }
+        ]
       }
-      return z;
-    }));
+    ];
 
-    dispatch({ type: 'ADD_XP', payload: { amount: mission.xpReward, source: `Completed Mission: ${mission.title}` } });
+    const updatedAreas = LIFE_AREAS.map(area => {
+      const areaGoals = defaultGoals.filter(goal => goal.category === area.id);
+      return { ...area, goals: areaGoals };
+    });
 
-    // Interconnectedness: Add Skill XP if related
-    if (mission.relatedSkillId) {
-      dispatch({ 
-        type: 'ADD_SKILL_XP', 
-        payload: { 
-          skillId: mission.relatedSkillId, 
-          amount: mission.xpReward, // Mission XP counts towards Skill XP
-          source: `Life Mission: ${mission.title}` 
-        } 
-      });
-    }
-    
-    // Update selected zone to reflect changes immediately
-    if (selectedZone && selectedZone.id === zoneId) {
-      setSelectedZone(prev => {
-        if (!prev) return null;
-        const updatedMissions = prev.missions.map(m => 
-          m.id === mission.id ? { ...m, completed: true } : m
-        );
-        const progress = Math.round((updatedMissions.filter(m => m.completed).length / updatedMissions.length) * 100);
-        return { ...prev, missions: updatedMissions, progress };
-      });
+    return {
+      ...journey,
+      areas: updatedAreas,
+      totalGoals: defaultGoals.length,
+      completedGoals: 0
+    };
+  };
+
+  const saveLifeMapData = async (updatedJourney: Journey) => {
+    try {
+      await appDataService.updateAppDataField(user!.id, 'lifeMap' as any, updatedJourney);
+      setJourney(updatedJourney);
+    } catch (error) {
+      console.error('Error saving life map data:', error);
     }
   };
+
+  const calculateJourneyProgress = (journeyData: Journey) => {
+    const totalGoals = journeyData.areas.reduce((sum, area) => sum + area.goals.length, 0);
+    const completedGoals = journeyData.areas.reduce((sum, area) => 
+      sum + area.goals.filter(goal => goal.status === 'completed').length, 0
+    );
+    
+    const progress = totalGoals > 0 ? (completedGoals / totalGoals) * 100 : 0;
+    
+    // Update user level based on completed goals
+    const newLevel = Math.max(1, Math.floor(completedGoals / 2) + 1);
+    setUserLevel(newLevel);
+    
+    return { totalGoals, completedGoals, progress };
+  };
+
+  const addGoal = async () => {
+    if (!newGoal.title || !selectedArea) return;
+
+    const goal: LifeGoal = {
+      id: Date.now().toString(),
+      title: newGoal.title,
+      description: newGoal.description || '',
+      category: selectedArea,
+      priority: newGoal.priority || 'medium',
+      status: 'not_started',
+      targetDate: newGoal.targetDate || new Date(),
+      progress: 0,
+      rewards: newGoal.rewards || { xp: 50 },
+      dependencies: newGoal.dependencies || [],
+      subtasks: newGoal.subtasks || []
+    };
+
+    const updatedJourney = {
+      ...journey,
+      areas: journey.areas.map(area => {
+        if (area.id === selectedArea) {
+          return { ...area, goals: [...area.goals, goal] };
+        }
+        return area;
+      })
+    };
+
+    const { totalGoals, completedGoals, progress } = calculateJourneyProgress(updatedJourney);
+    updatedJourney.totalGoals = totalGoals;
+    updatedJourney.completedGoals = completedGoals;
+    updatedJourney.journeyProgress = progress;
+
+    await saveLifeMapData(updatedJourney);
+
+    // Award XP for setting a goal
+    dispatch({ type: 'ADD_XP', payload: { amount: 10, source: 'Life Goal Set' } });
+    
+    dispatch({ type: 'ADD_NOTIFICATION', payload: {
+      id: Date.now().toString(),
+      type: 'achievement',
+      title: 'New Life Goal!',
+      message: `Added "${goal.title}" to your life map (+10 XP)`,
+      timestamp: new Date(),
+      read: false,
+      priority: 'low'
+    }});
+
+    setNewGoal({
+      title: '',
+      description: '',
+      category: '',
+      priority: 'medium',
+      status: 'not_started',
+      targetDate: new Date(),
+      progress: 0,
+      rewards: { xp: 50 },
+      dependencies: [],
+      subtasks: []
+    });
+    setShowGoalForm(false);
+  };
+
+  const updateGoalProgress = async (areaId: string, goalId: string, newProgress: number) => {
+    const updatedJourney = {
+      ...journey,
+      areas: journey.areas.map(area => {
+        if (area.id === areaId) {
+          return {
+            ...area,
+            goals: area.goals.map(goal => {
+              if (goal.id === goalId) {
+                const updatedGoal = { ...goal, progress: newProgress };
+                
+                // Check if goal is completed
+                if (newProgress >= 100 && goal.status !== 'completed') {
+                  updatedGoal.status = 'completed';
+                  
+                  // Award rewards
+                  dispatch({ type: 'ADD_XP', payload: { 
+                    amount: goal.rewards.xp, 
+                    source: `Life Goal Completed: ${goal.title}` 
+                  }});
+                  
+                  dispatch({ type: 'ADD_NOTIFICATION', payload: {
+                    id: Date.now().toString(),
+                    type: 'achievement',
+                    title: 'Life Goal Achieved!',
+                    message: `Completed "${goal.title}" (+${goal.rewards.xp} XP)`,
+                    timestamp: new Date(),
+                    read: false,
+                    priority: 'high'
+                  }});
+                } else if (newProgress > 0 && newProgress < 100 && goal.status === 'not_started') {
+                  updatedGoal.status = 'in_progress';
+                }
+                
+                return updatedGoal;
+              }
+              return goal;
+            })
+          };
+        }
+        return area;
+      })
+    };
+
+    const { totalGoals, completedGoals, progress } = calculateJourneyProgress(updatedJourney);
+    updatedJourney.totalGoals = totalGoals;
+    updatedJourney.completedGoals = completedGoals;
+    updatedJourney.journeyProgress = progress;
+
+    await saveLifeMapData(updatedJourney);
+  };
+
+  const toggleSubtask = async (areaId: string, goalId: string, subtaskId: string) => {
+    const updatedJourney = {
+      ...journey,
+      areas: journey.areas.map(area => {
+        if (area.id === areaId) {
+          return {
+            ...area,
+            goals: area.goals.map(goal => {
+              if (goal.id === goalId) {
+                const updatedSubtasks = goal.subtasks.map(subtask =>
+                  subtask.id === subtaskId ? { ...subtask, completed: !subtask.completed } : subtask
+                );
+                
+                const completedSubtasks = updatedSubtasks.filter(st => st.completed).length;
+                const newProgress = (completedSubtasks / updatedSubtasks.length) * 100;
+                
+                return { ...goal, subtasks: updatedSubtasks, progress: newProgress };
+              }
+              return goal;
+            })
+          };
+        }
+        return area;
+      })
+    };
+
+    await saveLifeMapData(updatedJourney);
+  };
+
+  const currentArea = journey.areas.find(area => area.id === selectedArea);
+  const areaStats = useMemo(() => {
+    return journey.areas.map(area => ({
+      id: area.id,
+      name: area.name,
+      progress: area.goals.length > 0 
+        ? (area.goals.filter(g => g.status === 'completed').length / area.goals.length) * 100
+        : 0,
+      goalsCount: area.goals.length,
+      completedCount: area.goals.filter(g => g.status === 'completed').length
+    }));
+  }, [journey.areas]);
 
   return (
-    <div className="p-3 sm:p-4 lg:p-6 bg-[#0a0a0a] min-h-screen pb-20 lg:pb-6 relative overflow-hidden">
-      {/* Background Grid */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none opacity-20" />
-
-      <div className="max-w-7xl mx-auto relative z-10">
-        {/* Header & Stats HUD */}
-        <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-black text-white mb-2 font-mono flex items-center gap-3">
-              <Map className="text-amber-400" size={36} />
-              LIFE MAP <span className="text-amber-400">🗺️</span>
-            </h1>
-            <p className="text-base sm:text-lg text-gray-500 font-mono">
-              // Manage your Energy. Boost your Mood. Conquer Life.
-            </p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Life Map</h2>
+        <div className="flex gap-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-purple-600">Level {userLevel}</div>
+            <div className="text-sm text-gray-600">Life Level</div>
           </div>
-
-          {/* Life Stats HUD */}
-          <div className="flex gap-4">
-            {/* Energy */}
-            <div className="brutal-card bg-gray-900 border-cyan-500/30 p-3 min-w-[140px]">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-cyan-400 font-bold text-xs flex items-center gap-1">
-                  <Battery size={14} /> ENERGY
-                </span>
-                <span className="text-white font-mono text-sm">{energy}/{maxEnergy}</span>
-              </div>
-              <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-                <motion.div 
-                  className="h-full bg-cyan-500"
-                  animate={{ width: `${(energy / maxEnergy) * 100}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Mood */}
-            <div className="brutal-card bg-gray-900 border-pink-500/30 p-3 min-w-[140px]">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-pink-400 font-bold text-xs flex items-center gap-1">
-                  <Smile size={14} /> MOOD
-                </span>
-                <span className="text-white font-mono text-sm">{mood}%</span>
-              </div>
-              <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-                <motion.div 
-                  className="h-full bg-pink-500"
-                  animate={{ width: `${mood}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Overall Progress */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="brutal-card bg-gradient-to-br from-amber-900/20 to-yellow-900/20 border-amber-500/50 p-6 mb-6"
-        >
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-amber-500/20 flex items-center justify-center border-4 border-amber-500">
-                <span className="text-4xl">🎮</span>
-              </div>
-              <div>
-                <h2 className="text-2xl font-black text-white font-mono">YOUR JOURNEY</h2>
-                <p className="text-amber-400 font-mono">Level {currentLevel} Explorer</p>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-6">
-              <div className="text-center">
-                <p className="text-3xl font-black text-amber-400">{unlockedCount}/{zones.length}</p>
-                <p className="text-xs text-gray-500 font-mono uppercase">Zones Unlocked</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-black text-cyan-400">{completedMissions}/{totalMissions}</p>
-                <p className="text-xs text-gray-500 font-mono uppercase">Missions Done</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-black text-green-400">{overallProgress}%</p>
-                <p className="text-xs text-gray-500 font-mono uppercase">World Progress</p>
-              </div>
-            </div>
-          </div>
-          
-          {/* Overall progress bar */}
-          <div className="mt-4">
-            <div className="h-3 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${overallProgress}%` }}
-                transition={{ duration: 1.5, ease: 'easeOut' }}
-                className="h-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500"
-              />
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Zone Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
-          {zones.map((zone, index) => {
-            const status = getZoneStatus(zone);
-            
-            return (
-              <motion.div
-                key={zone.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.1 }}
-                whileHover={status !== 'locked' ? { scale: 1.02, y: -5 } : {}}
-                onClick={() => status !== 'locked' && setSelectedZone(zone)}
-                className={`brutal-card ${zone.bgColor} p-5 cursor-pointer relative overflow-hidden transition-all ${
-                  status === 'locked' ? 'opacity-50 cursor-not-allowed grayscale' : ''
-                } ${
-                  status === 'completed' ? 'border-green-500' :
-                  status === 'active' ? `border-${zone.color}-500` :
-                  'border-gray-600'
-                }`}
-              >
-                {/* Lock overlay */}
-                {status === 'locked' && (
-                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
-                    <div className="text-center">
-                      <Lock className="text-gray-500 mx-auto mb-2" size={32} />
-                      <p className="text-gray-500 font-mono text-sm">Level {zone.requiredLevel}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Unlockable glow */}
-                {status === 'unlockable' && (
-                  <motion.div
-                    animate={{ opacity: [0.5, 1, 0.5] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="absolute inset-0 bg-amber-500/10 pointer-events-none"
-                  />
-                )}
-
-                {/* Completed badge */}
-                {status === 'completed' && (
-                  <div className="absolute top-3 right-3">
-                    <CheckCircle className="text-green-400" size={24} />
-                  </div>
-                )}
-
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-4xl">{zone.icon}</span>
-                  <div>
-                    <h3 className={`font-black text-white text-lg`}>{zone.name}</h3>
-                    <p className="text-xs text-gray-500 font-mono">Lvl {zone.requiredLevel}+</p>
-                  </div>
-                </div>
-
-                <p className="text-sm text-gray-400 mb-4 line-clamp-2">{zone.description}</p>
-
-                {/* Progress bar */}
-                <div className="mb-3">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-gray-500 font-mono">Progress</span>
-                    <span className={`font-bold text-${zone.color}-400`}>{zone.progress}%</span>
-                  </div>
-                  <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${zone.progress}%` }}
-                      transition={{ duration: 1, delay: index * 0.1 }}
-                      className={`h-full bg-gradient-to-r ${
-                        zone.color === 'green' ? 'from-green-600 to-green-500' :
-                        zone.color === 'cyan' ? 'from-cyan-600 to-cyan-400' :
-                        zone.color === 'red' ? 'from-red-600 to-red-500' :
-                        zone.color === 'yellow' ? 'from-yellow-600 to-yellow-400' :
-                        zone.color === 'pink' ? 'from-pink-600 to-pink-400' :
-                        zone.color === 'purple' ? 'from-purple-600 to-purple-500' :
-                        zone.color === 'amber' ? 'from-amber-600 to-amber-400' :
-                        'from-gray-600 to-gray-500'
-                      }`}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500 font-mono">
-                    {zone.missions.filter(m => m.completed).length}/{zone.missions.length} Missions
-                  </span>
-                  {status === 'unlockable' && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        unlockZone(zone.id);
-                      }}
-                      className="brutal-btn px-3 py-1 bg-amber-500 text-black text-xs hover:bg-amber-400"
-                    >
-                      <Unlock size={12} className="inline mr-1" /> UNLOCK
-                    </button>
-                  )}
-                  {status === 'active' && (
-                    <ChevronRight className="text-gray-500" size={16} />
-                  )}
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* Legend */}
-        <div className="brutal-card bg-gray-900 border-gray-700 p-4 mb-6">
-          <h3 className="text-sm font-bold text-gray-400 mb-3 font-mono">MAP LEGEND</h3>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-green-500" />
-              <span className="text-xs text-gray-500">Completed</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-cyan-500" />
-              <span className="text-xs text-gray-500">In Progress</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-amber-500 animate-pulse" />
-              <span className="text-xs text-gray-500">Ready to Unlock</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Lock size={12} className="text-gray-500" />
-              <span className="text-xs text-gray-500">Locked (Level Up)</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Zone Detail Modal */}
-        <AnimatePresence>
-          {selectedZone && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-              onClick={() => setSelectedZone(null)}
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                onClick={e => e.stopPropagation()}
-                className={`brutal-card ${selectedZone.bgColor} p-4 sm:p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto border-4 ${
-                  selectedZone.color === 'green' ? 'border-green-500' :
-                  selectedZone.color === 'cyan' ? 'border-cyan-400' :
-                  selectedZone.color === 'red' ? 'border-red-500' :
-                  selectedZone.color === 'yellow' ? 'border-yellow-400' :
-                  selectedZone.color === 'pink' ? 'border-pink-400' :
-                  selectedZone.color === 'purple' ? 'border-purple-500' :
-                  selectedZone.color === 'amber' ? 'border-amber-400' : 'border-gray-500'
-                }`}
-              >
-                <div className="flex items-center gap-4 mb-6">
-                  <span className="text-6xl">{selectedZone.icon}</span>
-                  <div>
-                    <h2 className="text-3xl font-black text-white font-mono">{selectedZone.name}</h2>
-                    <p className="text-gray-400">{selectedZone.description}</p>
-                  </div>
-                </div>
-
-                {/* Zone Progress */}
-                <div className="mb-6">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-gray-400 font-mono">Zone Progress</span>
-                    <span className="text-white font-black">{selectedZone.progress}%</span>
-                  </div>
-                  <div className="h-4 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${selectedZone.progress}%` }}
-                      transition={{ duration: 1 }}
-                      className={`h-full bg-gradient-to-r ${
-                        selectedZone.color === 'green' ? 'from-green-600 to-green-500' :
-                        selectedZone.color === 'cyan' ? 'from-cyan-600 to-cyan-400' :
-                        selectedZone.color === 'red' ? 'from-red-600 to-red-500' :
-                        selectedZone.color === 'yellow' ? 'from-yellow-600 to-yellow-400' :
-                        selectedZone.color === 'pink' ? 'from-pink-600 to-pink-400' :
-                        selectedZone.color === 'purple' ? 'from-purple-600 to-purple-500' :
-                        selectedZone.color === 'amber' ? 'from-amber-600 to-amber-400' :
-                        'from-gray-600 to-gray-500'
-                      }`}
-                    />
-                  </div>
-                </div>
-
-                {/* Missions */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-black text-white mb-4 flex items-center gap-2">
-                    <Target className="text-amber-400" size={20} /> MISSIONS
-                  </h3>
-                  <div className="space-y-3">
-                    {selectedZone.missions.map(mission => (
-                      <div
-                        key={mission.id}
-                        className={`brutal-card p-4 transition-all ${
-                          mission.completed 
-                            ? 'bg-green-900/30 border-green-500/50' 
-                            : 'bg-gray-800 border-gray-700 hover:border-gray-500'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="flex items-start gap-3 flex-1">
-                            {mission.completed ? (
-                              <CheckCircle className="text-green-400 mt-1" size={20} />
-                            ) : (
-                              <div className={`mt-1 w-5 h-5 rounded-full border-2 flex-shrink-0 ${
-                                mission.type === 'main' ? 'border-amber-400' :
-                                mission.type === 'side' ? 'border-purple-400' :
-                                'border-cyan-400'
-                              }`} />
-                            )}
-                            <div>
-                              <h4 className={`font-bold ${mission.completed ? 'text-green-400 line-through' : 'text-white'}`}>
-                                {mission.title}
-                              </h4>
-                              <p className="text-xs text-gray-500 mb-2">{mission.description}</p>
-                              
-                              {/* Energy/Mood Indicators */}
-                              {!mission.completed && (
-                                <div className="flex gap-3">
-                                  {mission.energyCost !== undefined && mission.energyCost > 0 && (
-                                    <span className="text-[10px] flex items-center gap-1 font-mono text-cyan-400 bg-cyan-900/30 px-1.5 py-0.5 rounded">
-                                      <Battery size={10} /> -{mission.energyCost}
-                                    </span>
-                                  )}
-                                  {mission.moodEffect !== undefined && mission.moodEffect !== 0 && (
-                                    <span className={`text-[10px] flex items-center gap-1 font-mono ${mission.moodEffect > 0 ? 'text-pink-400 bg-pink-900/30' : 'text-red-400 bg-red-900/30'} px-1.5 py-0.5 rounded`}>
-                                      <Smile size={10} /> {mission.moodEffect > 0 ? '+' : ''}{mission.moodEffect}
-                                    </span>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="text-right flex flex-col items-end gap-2">
-                            <div>
-                              <p className={`font-black ${mission.completed ? 'text-green-400' : 'text-amber-400'}`}>
-                                +{mission.xpReward} XP
-                              </p>
-                              <span className={`text-xs uppercase font-mono ${
-                                mission.type === 'main' ? 'text-amber-500' :
-                                mission.type === 'side' ? 'text-purple-500' :
-                                'text-cyan-500'
-                              }`}>
-                                {mission.type}
-                              </span>
-                            </div>
-                            
-                            {!mission.completed && (
-                              <button
-                                onClick={() => completeMission(selectedZone.id, mission)}
-                                disabled={energy < (mission.energyCost || 0)}
-                                className="brutal-btn px-3 py-1 bg-white text-black text-xs hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                COMPLETE
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Rewards */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-black text-white mb-4 flex items-center gap-2">
-                    <Trophy className="text-yellow-400" size={20} /> ZONE REWARDS
-                  </h3>
-                  <div className="grid gap-2">
-                    {selectedZone.rewards.map((reward, i) => (
-                      <div key={i} className="flex items-center gap-2 bg-gray-800/50 p-3 border border-gray-700">
-                        <Sparkles className="text-yellow-400" size={16} />
-                        <span className="text-gray-300">{reward}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setSelectedZone(null)}
-                  className="brutal-btn w-full bg-gray-700 hover:bg-gray-600 text-white py-3 border-gray-600"
-                >
-                  CLOSE
-                </button>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Quick Tips */}
-        <div className="brutal-card bg-gray-900 border-gray-700 p-6">
-          <h3 className="text-lg font-black text-white mb-4 flex items-center gap-2">
-            <Flame className="text-orange-400" /> HOW TO PROGRESS
-          </h3>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-cyan-500/20 rounded">
-                <Zap className="text-cyan-400" size={20} />
-              </div>
-              <div>
-                <h4 className="text-white font-bold">Manage Energy</h4>
-                <p className="text-sm text-gray-500">Missions cost energy. Rest or wait to regenerate.</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-amber-500/20 rounded">
-                <Star className="text-amber-400" size={20} />
-              </div>
-              <div>
-                <h4 className="text-white font-bold">Boost Mood</h4>
-                <p className="text-sm text-gray-500">Complete side quests to improve mood and multipliers.</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-green-500/20 rounded">
-                <Crown className="text-green-400" size={20} />
-              </div>
-              <div>
-                <h4 className="text-white font-bold">Claim Rewards</h4>
-                <p className="text-sm text-gray-500">Completing zones gives permanent bonuses</p>
-              </div>
-            </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-600">{journey.completedGoals}</div>
+            <div className="text-sm text-gray-600">Goals Completed</div>
           </div>
         </div>
       </div>
+
+      {/* Journey Progress */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Rocket className="w-6 h-6" />
+            {journey.name}
+          </CardTitle>
+          <p className="text-gray-600">{journey.description}</p>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Journey Progress</span>
+              <span>{Math.round(journey.journeyProgress)}%</span>
+            </div>
+            <Progress value={journey.journeyProgress} className="h-3" />
+            <div className="text-sm text-gray-600">
+              {journey.completedGoals} of {journey.totalGoals} goals completed
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Life Areas Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {areaStats.map(stat => {
+          const area = journey.areas.find(a => a.id === stat.id);
+          if (!area) return null;
+          
+          return (
+            <Card 
+              key={stat.id} 
+              className={`cursor-pointer transition-all ${selectedArea === stat.id ? 'ring-2 ring-blue-500' : ''} ${area.isUnlocked ? 'hover:shadow-lg' : 'opacity-50'}`}
+              onClick={() => area.isUnlocked && setSelectedArea(stat.id)}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`p-2 rounded-lg ${getColorClasses(area.color).bg} ${getColorClasses(area.color).text}`}>
+                    {area.icon}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">{area.name}</h3>
+                    <div className="text-sm text-gray-600">Level {area.currentLevel}</div>
+                  </div>
+                  {!area.isUnlocked && <Lock className="w-4 h-4 text-gray-400" />}
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Progress</span>
+                    <span>{Math.round(stat.progress)}%</span>
+                  </div>
+                  <Progress value={stat.progress} className="h-2" />
+                  <div className="text-xs text-gray-600">
+                    {stat.completedCount}/{stat.goalsCount} goals
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Selected Area Details */}
+      {currentArea && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                {currentArea.icon}
+                {currentArea.name}
+              </CardTitle>
+              <Button onClick={() => setShowGoalForm(!showGoalForm)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Goal
+              </Button>
+            </div>
+            <p className="text-gray-600">{currentArea.description}</p>
+          </CardHeader>
+          <CardContent>
+            {/* Add Goal Form */}
+            {showGoalForm && (
+              <div className="mb-6 p-4 border rounded-lg space-y-4">
+                <h3 className="font-semibold">Add New Goal</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    placeholder="Goal title..."
+                    value={newGoal.title}
+                    onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
+                  />
+                  <select
+                    className="px-3 py-2 border border-gray-300 rounded-md"
+                    value={newGoal.priority}
+                    onChange={(e) => setNewGoal({ ...newGoal, priority: e.target.value as any })}
+                  >
+                    <option value="low">Low Priority</option>
+                    <option value="medium">Medium Priority</option>
+                    <option value="high">High Priority</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+                <Textarea
+                  placeholder="Goal description..."
+                  value={newGoal.description}
+                  onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
+                  rows={3}
+                />
+                <div className="flex gap-2">
+                  <Button onClick={addGoal} disabled={!newGoal.title}>
+                    Add Goal
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowGoalForm(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Goals List */}
+            <div className="space-y-4">
+              {currentArea.goals.map(goal => (
+                <Card key={goal.id} className={`border-l-4 ${
+                  goal.status === 'completed' ? 'border-green-500 bg-green-50' :
+                  goal.status === 'in_progress' ? 'border-blue-500 bg-blue-50' :
+                  goal.priority === 'critical' ? 'border-red-500' :
+                  goal.priority === 'high' ? 'border-orange-500' :
+                  goal.priority === 'medium' ? 'border-yellow-500' :
+                  'border-gray-300'
+                }`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <h4 className="font-semibold">{goal.title}</h4>
+                        <p className="text-sm text-gray-600 mb-2">{goal.description}</p>
+                        <div className="flex gap-2 mb-2">
+                          <Badge variant={
+                            goal.status === 'completed' ? 'default' :
+                            goal.status === 'in_progress' ? 'secondary' :
+                            'outline'
+                          }>
+                            {goal.status.replace('_', ' ')}
+                          </Badge>
+                          <Badge variant="outline">{goal.priority}</Badge>
+                          <Badge variant="outline">+{goal.rewards.xp} XP</Badge>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-gray-600">
+                          Target: {goal.targetDate.toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Progress</span>
+                        <span>{Math.round(goal.progress)}%</span>
+                      </div>
+                      <Progress value={goal.progress} className="h-2" />
+                      
+                      {/* Subtasks */}
+                      {goal.subtasks.length > 0 && (
+                        <div className="mt-3 space-y-1">
+                          {goal.subtasks.map(subtask => (
+                            <div key={subtask.id} className="flex items-center gap-2 text-sm">
+                              <button
+                                onClick={() => toggleSubtask(currentArea.id, goal.id, subtask.id)}
+                                className="flex-shrink-0"
+                              >
+                                {subtask.completed ? (
+                                  <CheckCircle className="w-4 h-4 text-green-600" />
+                                ) : (
+                                  <Circle className="w-4 h-4 text-gray-400" />
+                                )}
+                              </button>
+                              <span className={subtask.completed ? 'line-through text-gray-500' : ''}>
+                                {subtask.title}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              
+              {currentArea.goals.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <Target className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No goals yet. Add your first goal to get started!</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

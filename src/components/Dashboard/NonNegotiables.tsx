@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  AlertTriangle, Code2, GitBranch, Skull, 
+  Code2, GitBranch, Skull, 
   CheckCircle, X, Terminal, Clock,
   Flame, TrendingDown, Lock, BookOpen
 } from 'lucide-react';
@@ -223,7 +223,7 @@ export function NonNegotiables() {
         timestamp: new Date(),
       }
     });
-  }, [user, dispatch]);
+  }, [user, dispatch, data.penalties.lastReset]);
 
   // Check for penalty at midnight/week end
   useEffect(() => {
@@ -361,7 +361,6 @@ export function NonNegotiables() {
 
   const logReading = () => {
     const today = new Date().toISOString();
-    const alreadyToday = isToday(data.dailyReading.lastReadDate) && data.dailyReading.minutes >= 15;
     const newMinutes = Math.min(180, data.dailyReading.minutes + readingMinutes);
     const achieved = newMinutes >= 15 && data.dailyReading.minutes < 15;
     

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useApp } from '../contexts/AppContext';
-import { InternshipApplication } from '../types';
+import { useApp } from '../../contexts/AppContext';
+import { InternshipApplication } from '../../types';
 import { 
   Briefcase, 
   MapPin, 
@@ -22,20 +22,20 @@ import {
   Upload,
   Download
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Badge } from './ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
-import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Textarea } from './ui/textarea';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Badge } from '../ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
+import { Label } from '../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Textarea } from '../ui/textarea';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
 import toast from 'react-hot-toast';
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, Legend, LineChart, Line, CartesianGrid } from 'recharts';
-import { appDataService } from '../services/appDataService';
+import { appDataService } from '../../services/appDataService';
 
-export function InternshipQuest() {
+export function ApplicationTracker() {
   const { state, dispatch } = useApp();
   const { user, darkMode } = state;
   const [applications, setApplications] = useState<InternshipApplication[]>([]);
@@ -121,7 +121,7 @@ export function InternshipQuest() {
       setApplications(user?.internships || []);
       setLoading(false);
     }
-  }, [user?.id, user?.internships]);
+  }, [user?.id]);
 
   // Load extras
   useEffect(() => {
@@ -149,7 +149,7 @@ export function InternshipQuest() {
     } catch {
       // ignore
     }
-  }, [user?.id]);
+  }, []);
 
   useEffect(() => {
     try {
@@ -477,11 +477,11 @@ export function InternshipQuest() {
     <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-black font-mono uppercase tracking-tight flex items-center gap-3">
-            <Briefcase className="text-lime-500" size={32} />
-            Internship <span className="text-lime-500">Quest</span>
-          </h1>
-          <p className="text-gray-500 font-mono">Track your journey to the dream offer.</p>
+          <h2 className="text-2xl font-black font-mono uppercase tracking-tight flex items-center gap-3">
+            <Briefcase className="text-lime-500" size={24} />
+            Application <span className="text-lime-500">Tracker</span>
+          </h2>
+          <p className="text-gray-500 font-mono text-sm">Manage your job hunt pipeline.</p>
         </div>
         
         <div className="flex gap-2 md:gap-3">
