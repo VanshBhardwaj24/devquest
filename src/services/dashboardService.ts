@@ -26,7 +26,7 @@ export interface ActivityItem {
   time: string; // ISO string or relative time
   icon?: string; // string identifier for icon
   xp?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface SystemLog {

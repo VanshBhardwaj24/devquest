@@ -264,7 +264,7 @@ export function Finance() {
           payload: {
             id: Date.now().toString(),
             type: 'achievement',
-            title: 'Goal Achieved! 🎉',
+    } catch (err) {
             message: `You completed your "${goal.name}" savings goal! +500 XP`,
             timestamp: new Date(),
             read: false,
@@ -272,7 +272,11 @@ export function Finance() {
           }
         });
       }
+<<<<<<< HEAD
     } catch {
+=======
+    } catch (err) {
+>>>>>>> origin/main
       alert('Failed to update goal contribution.');
     }
   };

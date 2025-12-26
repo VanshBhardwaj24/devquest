@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../contexts/AppContext';
+<<<<<<< HEAD
 import { useAuth } from '../../hooks/useAuth';
+=======
+>>>>>>> origin/main
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
@@ -9,11 +12,17 @@ import { Contact } from '../../types';
 import { Progress } from '../ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import toast from 'react-hot-toast';
+<<<<<<< HEAD
 import { appDataService } from '../../services/appDataService';
 
 export function Networking() {
   const { state, dispatch } = useApp();
   const { user: authUser } = useAuth();
+=======
+
+export function Networking() {
+  const { state } = useApp();
+>>>>>>> origin/main
   const { user, darkMode } = state;
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [search, setSearch] = useState('');
@@ -42,6 +51,7 @@ export function Networking() {
   }, [user]);
 
   useEffect(() => {
+<<<<<<< HEAD
     const loadBackend = async () => {
       if (!authUser?.id) return;
       setLoading(true);
@@ -73,6 +83,33 @@ export function Networking() {
     };
     sync();
   }, [contacts, authUser?.id]);
+=======
+    setLoading(true);
+    try {
+      const local = typeof window !== 'undefined' ? window.localStorage.getItem('networkContacts') : null;
+      if (local) {
+        const parsed = JSON.parse(local) as Contact[];
+        const normalized = parsed.map(c => ({ ...c, lastContactedDate: new Date(c.lastContactedDate) }));
+        setContacts(normalized);
+      }
+    } catch {
+      // Ignore local load error
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const serializable = contacts.map(c => ({ ...c, lastContactedDate: c.lastContactedDate instanceof Date ? c.lastContactedDate.toISOString() : c.lastContactedDate }));
+        window.localStorage.setItem('networkContacts', JSON.stringify(serializable));
+      }
+    } catch {
+      toast.error('Could not persist contacts');
+    }
+  }, [contacts]);
+>>>>>>> origin/main
   // Calculate stats
   const totalContacts = contacts.length;
   const thisMonth = contacts.filter(c => {
@@ -117,11 +154,15 @@ export function Networking() {
       twitter: newContact.twitter,
       email: newContact.email,
     } as Contact;
+<<<<<<< HEAD
     const updated = [contact, ...contacts];
     setContacts(updated);
     if (user) {
       dispatch({ type: 'SET_USER', payload: { ...user, contacts: updated } });
     }
+=======
+    setContacts(prev => [contact, ...prev]);
+>>>>>>> origin/main
     setNewContact({ relationshipScore: 50, lastContactedDate: new Date() });
     toast.success('Contact added');
   };
@@ -146,29 +187,41 @@ export function Networking() {
   // Saving edits UI not implemented
 
   const removeContact = (id: string) => {
+<<<<<<< HEAD
     const updated = contacts.filter(c => c.id !== id);
     setContacts(updated);
     if (user) {
       dispatch({ type: 'SET_USER', payload: { ...user, contacts: updated } });
     }
+=======
+    setContacts(prev => prev.filter(c => c.id !== id));
+>>>>>>> origin/main
     toast.success('Contact removed');
   };
 
   const markContactedNow = (id: string) => {
+<<<<<<< HEAD
     const updated = contacts.map(c => c.id === id ? { ...c, lastContactedDate: new Date(), relationshipScore: Math.min(100, c.relationshipScore + 5) } : c);
     setContacts(updated);
     if (user) {
       dispatch({ type: 'SET_USER', payload: { ...user, contacts: updated } });
     }
+=======
+    setContacts(prev => prev.map(c => c.id === id ? { ...c, lastContactedDate: new Date(), relationshipScore: Math.min(100, c.relationshipScore + 5) } : c));
+>>>>>>> origin/main
     toast.success('Contacted updated');
   };
 
   const nudgeScore = (id: string, delta: number) => {
+<<<<<<< HEAD
     const updated = contacts.map(c => c.id === id ? { ...c, relationshipScore: Math.max(0, Math.min(100, c.relationshipScore + delta)) } : c);
     setContacts(updated);
     if (user) {
       dispatch({ type: 'SET_USER', payload: { ...user, contacts: updated } });
     }
+=======
+    setContacts(prev => prev.map(c => c.id === id ? { ...c, relationshipScore: Math.max(0, Math.min(100, c.relationshipScore + delta)) } : c));
+>>>>>>> origin/main
   };
   return (
     <div className={`p-4 md:p-8 ${darkMode ? 'text-white' : 'text-gray-900'} min-h-screen`}>

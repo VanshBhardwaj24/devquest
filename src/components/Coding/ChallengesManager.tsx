@@ -35,7 +35,10 @@ import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import toast from 'react-hot-toast';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts';
+<<<<<<< HEAD
 import { appDataService } from '../../services/appDataService';
+=======
+>>>>>>> origin/main
 
 // --- Types & Interfaces ---
 
@@ -314,6 +317,7 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
   const fetchData = async () => {
     dispatch({ type: 'FETCH_START' });
     try {
+<<<<<<< HEAD
       let data: ChallengeItem[] = [];
       if (user?.id) {
         const appData = await appDataService.getAppData(user.id);
@@ -326,6 +330,9 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
       if (!data || data.length === 0) {
         data = await ChallengeService.fetchChallenges(frequency);
       }
+=======
+      const data = await ChallengeService.fetchChallenges(frequency);
+>>>>>>> origin/main
       dispatch({ type: 'FETCH_SUCCESS', payload: data });
     } catch (err) {
       dispatch({ type: 'FETCH_ERROR', payload: (err as Error).message });
@@ -468,6 +475,7 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
         dispatch({ type: 'ADD_ITEM', payload: newItem });
         toast.success('New challenge added');
       }
+<<<<<<< HEAD
       if (user?.id) {
         const key = frequency.toLowerCase() as 'daily' | 'weekly' | 'monthly';
         const current = state.items;
@@ -478,6 +486,8 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
         const appPayload = { challenges: { ...(appState as any).data?.challenges, ...payload } };
         appDataService.saveAppData(user.id, appPayload).catch(() => {});
       }
+=======
+>>>>>>> origin/main
       setIsDialogOpen(false);
       setEditingItem(null);
     } catch (err) {
@@ -492,6 +502,7 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
       await ChallengeService.deleteChallenge(frequency, id);
       dispatch({ type: 'DELETE_ITEM', payload: id });
       toast.success('Challenge deleted');
+<<<<<<< HEAD
       if (user?.id) {
         const key = frequency.toLowerCase() as 'daily' | 'weekly' | 'monthly';
         const updatedList = state.items.filter(i => i.id !== id);
@@ -500,6 +511,8 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
         const appPayload = { challenges: { ...(appState as any).data?.challenges, ...payload } };
         appDataService.saveAppData(user.id, appPayload).catch(() => {});
       }
+=======
+>>>>>>> origin/main
     } catch (err) {
       toast.error('Failed to delete');
     }
@@ -514,6 +527,7 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
       await ChallengeService.bulkDelete(frequency, ids);
       dispatch({ type: 'BULK_DELETE', payload: ids });
       toast.success(`${ids.length} challenges deleted`);
+<<<<<<< HEAD
       if (user?.id) {
         const key = frequency.toLowerCase() as 'daily' | 'weekly' | 'monthly';
         const updatedList = state.items.filter(i => !ids.includes(i.id));
@@ -522,6 +536,8 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
         const appPayload = { challenges: { ...(appState as any).data?.challenges, ...payload } };
         appDataService.saveAppData(user.id, appPayload).catch(() => {});
       }
+=======
+>>>>>>> origin/main
     } catch (err) {
       toast.error('Bulk delete failed');
     }
@@ -551,6 +567,7 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
           } 
         });
       }
+<<<<<<< HEAD
       if (user?.id) {
         const key = frequency.toLowerCase() as 'daily' | 'weekly' | 'monthly';
         const updatedList = state.items.map(i => i.id === updated.id ? updated : i);
@@ -559,6 +576,8 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
         const appPayload = { challenges: { ...(appState as any).data?.challenges, ...payload } };
         appDataService.saveAppData(user.id, appPayload).catch(() => {});
       }
+=======
+>>>>>>> origin/main
     } catch (err) {
       toast.error('Failed to update status');
     }

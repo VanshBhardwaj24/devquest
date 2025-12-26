@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS user_app_data (
     "notifications": true
   }'::jsonb,
   
+<<<<<<< HEAD
   contacts jsonb DEFAULT '[]'::jsonb,
   bucket_list jsonb DEFAULT '[]'::jsonb,
   mindfulness jsonb DEFAULT '{
@@ -100,6 +101,8 @@ CREATE TABLE IF NOT EXISTS user_app_data (
     "monthly": []
   }'::jsonb,
   
+=======
+>>>>>>> origin/main
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );

@@ -1,5 +1,10 @@
-import { User, Task } from '../types';
+import { User, Task, ActivityLog } from '../types';
+import { LifeService } from './lifeService';
 import { LifeService, LifeData } from './lifeService';
+=======
+import { User, Task, ActivityLog } from '../types';
+import { LifeService } from './lifeService';
+>>>>>>> origin/main
 
 export interface PerformanceDataPoint {
   date: string;
@@ -48,12 +53,16 @@ export class AnalyticsService {
     }
 
     // Fetch Life Data
-    let lifeData;
+    } catch (e) {
     try {
         const fitness = await LifeService.getFitnessData();
         const finance = await LifeService.getFinanceData();
         lifeData = { fitness, finance };
+<<<<<<< HEAD
     } catch {
+=======
+    } catch (e) {
+>>>>>>> origin/main
         lifeData = { fitness: [], finance: { transactions: [], goals: [] } };
     }
 
@@ -65,7 +74,7 @@ export class AnalyticsService {
     const insights = this.generateInsights(performance, focusDistribution, lifeData);
 
     return {
-        performance,
+  private static calculateLifeAnalytics(lifeData: any): LifeAnalytics {
         focusDistribution,
         completionRate,
         lifeAnalytics,
@@ -73,8 +82,12 @@ export class AnalyticsService {
         lastUpdated: new Date()
     };
   }
-
+              .filter((s: any) => s.date.startsWith(dateStr))
+              .reduce((acc: number, s: any) => acc + s.duration, 0);
   private static calculateLifeAnalytics(lifeData: LifeData): LifeAnalytics {
+=======
+  private static calculateLifeAnalytics(lifeData: any): LifeAnalytics {
+>>>>>>> origin/main
       // Workout Trend (Last 7 days)
       const workoutTrend = Array.from({ length: 7 }, (_, i) => {
           const d = new Date();
@@ -82,8 +95,13 @@ export class AnalyticsService {
           const dateStr = d.toISOString().split('T')[0];
           
           const duration = lifeData.fitness
-              .filter(s => s.date.startsWith(dateStr))
+            .filter((t: any) => t.type === 'expense' && t.date.startsWith(dateStr))
+            .reduce((acc: number, t: any) => acc + t.amount, 0);
               .reduce((acc, s) => acc + s.duration, 0);
+=======
+              .filter((s: any) => s.date.startsWith(dateStr))
+              .reduce((acc: number, s: any) => acc + s.duration, 0);
+>>>>>>> origin/main
           
           return { date: d.toLocaleDateString('en-US', { weekday: 'short' }), duration };
       });
@@ -95,8 +113,13 @@ export class AnalyticsService {
         const dateStr = d.toISOString().split('T')[0];
         
         const amount = lifeData.finance.transactions
+<<<<<<< HEAD
             .filter(t => t.type === 'expense' && t.date.startsWith(dateStr))
             .reduce((acc, t) => acc + t.amount, 0);
+=======
+            .filter((t: any) => t.type === 'expense' && t.date.startsWith(dateStr))
+            .reduce((acc: number, t: any) => acc + t.amount, 0);
+>>>>>>> origin/main
         
         return { date: d.toLocaleDateString('en-US', { weekday: 'short' }), amount };
     });
@@ -143,7 +166,7 @@ export class AnalyticsService {
         productivity,
       };
     });
-  }
+        .filter(([_, value]) => value > 0)
 
   private static calculateFocus(tasks: Task[]): FocusMetric[] {
     const cutoff = new Date();
@@ -166,7 +189,11 @@ export class AnalyticsService {
     };
 
     return Object.entries(counts)
+<<<<<<< HEAD
         .filter(([, value]) => value > 0)
+=======
+        .filter(([_, value]) => value > 0)
+>>>>>>> origin/main
         .map(([key, value]) => ({
             name: key.charAt(0).toUpperCase() + key.slice(1),
             value,
@@ -178,7 +205,7 @@ export class AnalyticsService {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const today = new Date();
     const last7Days = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(today);
+  private static generateInsights(performance: PerformanceDataPoint[], focus: FocusMetric[], lifeData: any): string[] {
         d.setDate(d.getDate() - (6 - i));
         return d;
     });
@@ -205,8 +232,12 @@ export class AnalyticsService {
     });
   }
 
+<<<<<<< HEAD
   private static generateInsights(performance: PerformanceDataPoint[], focus: FocusMetric[], lifeData: LifeData): string[] {
-      const insights: string[] = [];
+=======
+  private static generateInsights(performance: PerformanceDataPoint[], focus: FocusMetric[], lifeData: any): string[] {
+>>>>>>> origin/main
+            .filter((t: any) => t.type === 'expense' && new Date(t.date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
       
       // Analyze trends
       const recentPerformance = performance.slice(-7);
@@ -237,7 +268,11 @@ export class AnalyticsService {
 
       if (lifeData.finance.transactions.length > 0) {
           const recentExpenses = lifeData.finance.transactions
+<<<<<<< HEAD
             .filter(t => t.type === 'expense' && new Date(t.date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
+=======
+            .filter((t: any) => t.type === 'expense' && new Date(t.date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
+>>>>>>> origin/main
           if (recentExpenses.length > 10) {
               insights.push("High number of transactions this week. Review your spending.");
           }

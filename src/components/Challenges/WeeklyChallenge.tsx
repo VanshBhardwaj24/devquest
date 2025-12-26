@@ -3,7 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Target, Clock, Trophy, Star, CheckCircle, Play, Edit, Calendar, Users, Zap, Award, TrendingUp, Flag, Timer, BarChart3 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../hooks/useAuth';
+<<<<<<< HEAD
 import { appDataService } from '../../services/appDataService';
+=======
+>>>>>>> origin/main
 
 export function WeeklyChallenge() {
   const { state, dispatch } = useApp();
@@ -13,6 +16,7 @@ export function WeeklyChallenge() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState<(typeof challenges)[number]['milestones'][number] | null>(null);
 
+<<<<<<< HEAD
   const persistArena = async () => {
     if (!authUser?.id) return;
     try {
@@ -24,13 +28,18 @@ export function WeeklyChallenge() {
     }
   };
 
+=======
+>>>>>>> origin/main
   // Enhanced challenge management functions
   const startChallenge = async (challengeId: string) => {
     if (!authUser) return;
 
     try {
       dispatch({ type: 'START_CHALLENGE', payload: challengeId });
+<<<<<<< HEAD
       await persistArena();
+=======
+>>>>>>> origin/main
       
       // Add XP for starting challenge
       dispatch({ type: 'ADD_XP', payload: { amount: 25, source: 'Challenge Started' } });
@@ -75,7 +84,10 @@ export function WeeklyChallenge() {
     };
 
     dispatch({ type: 'UPDATE_CHALLENGE', payload: updatedChallenge });
+<<<<<<< HEAD
     await persistArena();
+=======
+>>>>>>> origin/main
 
     // Add XP for progress
     const xpGained = progressIncrement * 10;
@@ -167,7 +179,10 @@ export function WeeklyChallenge() {
     };
 
     dispatch({ type: 'UPDATE_CHALLENGE', payload: updatedChallenge });
+<<<<<<< HEAD
     persistArena();
+=======
+>>>>>>> origin/main
   };
 
   const getDifficultyColor = (difficulty: string) => {

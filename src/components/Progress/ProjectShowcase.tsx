@@ -8,7 +8,10 @@ import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { Project } from '../../types';
+<<<<<<< HEAD
 import { appDataService } from '../../services/appDataService';
+=======
+>>>>>>> origin/main
 
 export function ProjectShowcase() {
   const { state, dispatch } = useApp();
@@ -61,10 +64,13 @@ export function ProjectShowcase() {
     };
 
     dispatch({ type: 'ADD_PROJECT', payload: project });
+<<<<<<< HEAD
     if (user?.id) {
       const updated = [project, ...projects];
       appDataService.updateAppDataField(user.id, 'projects', updated).catch(() => {});
     }
+=======
+>>>>>>> origin/main
     setIsAdding(false);
     setNewProject({
       title: '',
@@ -74,6 +80,7 @@ export function ProjectShowcase() {
       techStack: [],
     });
   };
+<<<<<<< HEAD
   
   const handleDeleteProject = (id: string) => {
     if (!user) return;
@@ -91,6 +98,8 @@ export function ProjectShowcase() {
     const updated = { ...proj, progress: nextProgress, status: nextProgress >= 100 ? 'completed' : proj.status };
     dispatch({ type: 'UPDATE_PROJECT', payload: updated });
   };
+=======
+>>>>>>> origin/main
 
   const addTech = () => {
     if (techInput.trim() && !newProject.techStack?.includes(techInput.trim())) {
@@ -301,12 +310,15 @@ export function ProjectShowcase() {
                     <ExternalLink className="w-4 h-4" />
                   </a>
                 )}
+<<<<<<< HEAD
                 <button onClick={() => handleUpdateProgress(project.id, 10)} className="p-2 bg-gray-800 hover:bg-yellow-400 hover:text-black transition-colors rounded-bl-lg border-l border-b border-gray-700">
                   <Clock className="w-4 h-4" />
                 </button>
                 <button onClick={() => handleDeleteProject(project.id)} className="p-2 bg-gray-800 hover:bg-red-500 hover:text-white transition-colors rounded-bl-lg border-l border-b border-gray-700">
                   <X className="w-4 h-4" />
                 </button>
+=======
+>>>>>>> origin/main
             </div>
           </motion.div>
         ))}

@@ -19,14 +19,12 @@ interface WorkoutType {
 const workoutTypes: WorkoutType[] = [
   { name: 'Gym Workout', icon: '💪', baseXP: 100, intensityMultiplier: { Light: 1, Moderate: 1.5, Intense: 2 } },
   { name: 'Running/Cardio', icon: '🏃', baseXP: 80, intensityMultiplier: { Light: 1, Moderate: 1.5, Intense: 2 } },
-  { name: 'Yoga/Stretching', icon: '🧘', baseXP: 60, intensityMultiplier: { Light: 1, Moderate: 1.3, Intense: 1.5 } },
   { name: 'Swimming', icon: '🏊', baseXP: 90, intensityMultiplier: { Light: 1, Moderate: 1.5, Intense: 2 } },
   { name: 'Cycling', icon: '🚴', baseXP: 75, intensityMultiplier: { Light: 1, Moderate: 1.5, Intense: 2 } },
   { name: 'Sports/Games', icon: '⚽', baseXP: 85, intensityMultiplier: { Light: 1, Moderate: 1.5, Intense: 2 } },
   { name: 'Home Workout', icon: '🏠', baseXP: 70, intensityMultiplier: { Light: 1, Moderate: 1.5, Intense: 2 } },
   { name: 'Martial Arts', icon: '🥋', baseXP: 95, intensityMultiplier: { Light: 1, Moderate: 1.6, Intense: 2.2 } },
 ];
-
 
 export function Fitness() {
   const { dispatch, state } = useApp();
@@ -46,8 +44,8 @@ export function Fitness() {
     try {
       const data = await LifeService.getFitnessData();
       setSessions(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load workouts');
+    } catch {
+      setError('Failed to load workouts');
     } finally {
       setLoading(false);
     }
@@ -90,7 +88,7 @@ export function Fitness() {
 
         // Add notification
         dispatch({ 
-        type: 'ADD_NOTIFICATION', 
+    } catch (err) {
         payload: {
             id: Date.now().toString(),
             type: 'achievement',
@@ -105,7 +103,11 @@ export function Fitness() {
         setShowAddModal(false);
         setDuration(30);
         setNotes('');
+<<<<<<< HEAD
     } catch {
+=======
+        } catch (err) {
+>>>>>>> origin/main
         alert('Failed to save workout. Please try again.');
     }
   };
@@ -123,7 +125,11 @@ export function Fitness() {
                 source: `Removed: ${session.type}` 
                 } 
             });
+<<<<<<< HEAD
         } catch {
+=======
+        } catch (err) {
+>>>>>>> origin/main
             alert('Failed to delete workout.');
         }
     }
@@ -288,7 +294,7 @@ export function Fitness() {
                           : 'bg-white text-black border-black hover:bg-gray-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                       }`}
                     >
-                      <span className="mr-2">{type.icon}</span>
+                    onChange={(e) => setIntensity(e.target.value as any)}
                       {type.name}
                     </button>
                   ))}
@@ -311,7 +317,11 @@ export function Fitness() {
                   <label className="block font-bold font-mono mb-2 text-sm uppercase">Intensity</label>
                   <select
                     value={intensity}
+<<<<<<< HEAD
                     onChange={(e) => setIntensity(e.target.value as 'Light' | 'Moderate' | 'Intense')}
+=======
+                    onChange={(e) => setIntensity(e.target.value as any)}
+>>>>>>> origin/main
                     className={`w-full p-2 border-2 font-mono ${
                       darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-black'
                     }`}

@@ -1,10 +1,17 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
+<<<<<<< HEAD
 import { Target, BookOpen, Users, Code, Zap, Trophy, Brain, Rocket } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../hooks/useAuth';
 import { taskService } from '../../services/taskService';
 import { Card } from '../ui/card';
+=======
+import { Plus, Target, BookOpen, Users, Calendar, Code, Zap, Trophy, Brain, Rocket } from 'lucide-react';
+import { useApp } from '../../contexts/AppContext';
+import { useAuth } from '../../hooks/useAuth';
+import { taskService } from '../../services/taskService';
+>>>>>>> origin/main
 
 type TaskTemplate = {
   title: string;

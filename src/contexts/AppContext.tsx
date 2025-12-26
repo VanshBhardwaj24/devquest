@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { User, Task, Achievement, Milestone, CareerStats, SystemLog, ShopItem, Project } from '../types';
+import { User, Task, Achievement, Milestone, CareerStats, SystemLog, ShopItem, Project, MindfulnessStats } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { profileService } from '../services/profileService';
 import { taskService } from '../services/taskService';
@@ -2152,27 +2152,42 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           
           console.log('✅ XP system initialized from backend:', { xp: user.xp, level: user.level });
 
+<<<<<<< HEAD
           try {
             const appData = await appDataService.getAppData(authUser.id);
             if (appData) {
+              const mindfulnessRaw = appData.mindfulness;
+              let mindfulnessResolved = mindfulnessRaw as unknown;
+              if (mindfulnessRaw && typeof mindfulnessRaw === 'object' && 'stats' in (mindfulnessRaw as Record<string, unknown>)) {
+                mindfulnessResolved = (mindfulnessRaw as { stats: unknown }).stats;
+              }
               const hydratedUser: User = {
                 ...user,
-                contacts: appData.contacts || user.contacts,
-                bucketList: appData.bucketList || user.bucketList,
-                mindfulness: (appData.mindfulness as any)?.stats || appData.mindfulness || user.mindfulness,
-                projects: appData.projects || user.projects,
-                skills: appData.skills || user.skills,
+                contacts: appData.contacts ?? user.contacts,
+                bucketList: appData.bucketList ?? user.bucketList,
+                mindfulness: (mindfulnessResolved as MindfulnessStats) ?? user.mindfulness,
+                projects: appData.projects ?? user.projects,
+                skills: appData.skills ?? user.skills,
               };
               dispatch({ type: 'SET_USER', payload: hydratedUser });
-              const arena = (appData.challenges as any)?.arena;
-              if (arena && Array.isArray(arena)) {
-                dispatch({ type: 'SET_CHALLENGES', payload: arena });
+              const ch = appData.challenges;
+              let arena: unknown[] | undefined;
+              if (ch && typeof ch === 'object' && 'arena' in (ch as Record<string, unknown>)) {
+                const val = (ch as Record<string, unknown>)['arena'];
+                if (Array.isArray(val)) {
+                  arena = val;
+                }
+              }
+              if (arena) {
+                dispatch({ type: 'SET_CHALLENGES', payload: arena as unknown as Challenge[] });
               }
             }
           } catch {
             // ignore app data load errors
           }
 
+=======
+>>>>>>> origin/main
           // Load tasks
           const tasks = await taskService.getTasks(authUser.id);
           dispatch({ type: 'SET_TASKS', payload: tasks });
@@ -2193,7 +2208,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             totalSolved: codingStreak.totalProblemsSolved,
           }});
 
+<<<<<<< HEAD
           // App data is synced via appDataService when available; localStorage acts as backup
+=======
+          // App data is managed locally via state and localStorage
+          // No backend sync needed for app state
+>>>>>>> origin/main
 
           // Initialize XP system with user data
           dispatch({ type: 'ADD_XP', payload: { amount: 0, source: 'initialization' } });
@@ -2391,6 +2411,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     appDataService.updateAppDataField(authUser.id, 'integrationData', payload).catch(() => {});
   }, [state.ownedPowerUps, state.activePowerUps, state.xpSystem.xpMultiplier, state.xpSystem.bonusXPActive, state.xpSystem.bonusXPExpiry, authUser]);
 
+<<<<<<< HEAD
   // Sync projects
   useEffect(() => {
     if (!authUser || isDemoMode) return;
@@ -2450,6 +2471,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timeoutId);
   }, [state.user?.mindfulness, authUser, isDemoMode]);
 
+=======
+>>>>>>> origin/main
   // Update activity timer when user interacts
   useEffect(() => {
     const handleActivity = () => {

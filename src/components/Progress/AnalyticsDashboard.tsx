@@ -7,15 +7,13 @@ import { AnalyticsService } from '../../services/analyticsService';
 import { AlertTriangle, RefreshCw, BarChart2, PieChart as PieIcon, Activity, TrendingUp } from 'lucide-react';
 import { Button } from '../ui/button';
 import { motion } from 'framer-motion';
-
+ 
 export function AnalyticsDashboard() {
   const { state: appState } = useApp();
   const { darkMode, tasks, user } = appState;
-  
   const [state, dispatch] = useReducer(analyticsReducer, initialAnalyticsState);
 
   const fetchData = useCallback(async () => {
-    if (!user) return;
     dispatch({ type: 'INIT_FETCH' });
     try {
         const data = await AnalyticsService.fetchAnalyticsData(user, tasks);

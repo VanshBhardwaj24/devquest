@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Calendar, Clock, Activity, Flame, Medal, Star, Zap, Lock, Filter, Target, Brain, Rocket } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
-import { Progress } from '../ui/progress';
 
 export function Achievements() {
   const { state, dispatch } = useApp();
