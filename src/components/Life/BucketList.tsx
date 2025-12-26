@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
-import { CheckCircle, Circle, Plus, Trash2, Edit2, Save, X, MapPin, Calendar, Star } from 'lucide-react';
+import { CheckCircle, Circle, Plus, Trash2, Edit2, Save, X, MapPin, Calendar, Star, Trophy, Flame, Timer, Crown, Shield, Gem, Coins, Gift, Bell, TrendingUp, TrendingDown, Users, Clock, Award, Medal, Heart, Zap, Target, AlertTriangle, Rocket, Lock } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { appDataService } from '../../services/appDataService';
 
@@ -305,6 +305,207 @@ export function BucketList() {
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-purple-600">{stats.completionRate}%</div>
             <div className="text-sm text-gray-600">Completion Rate</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Extreme Gamification Components */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Dream Hunter Progress */}
+        <Card className="bg-gradient-to-br from-purple-900/20 to-pink-900/20 border-2 border-purple-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-purple-400">
+              <Crown className="w-5 h-5" />
+              Dream Hunter
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Hunter Level</span>
+                <span className="text-lg font-bold text-purple-400">Level {Math.floor(stats.completed / 5) + 1}</span>
+              </div>
+              <div className="h-3 bg-black border-2 border-purple-500/30 rounded-full">
+                <div 
+                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500"
+                  style={{ width: `${(stats.completed % 5) * 20}%` }}
+                />
+              </div>
+              <div className="text-xs text-gray-400">
+                {stats.completed} dreams conquered • {stats.completionRate}% life complete
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <Flame className="w-3 h-3 text-orange-400" />
+                <span className="text-orange-400">{stats.completed * 7} day dream streak</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Achievement Vault */}
+        <Card className="bg-gradient-to-br from-yellow-900/20 to-orange-900/20 border-2 border-yellow-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-yellow-400">
+              <Trophy className="w-5 h-5" />
+              Achievement Vault
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Achievements</span>
+                <span className="text-lg font-bold text-yellow-400">{stats.completed * 2}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="text-center p-2 bg-yellow-500/20 border border-yellow-500/50 rounded">
+                    <Medal className="w-6 h-6 mx-auto text-yellow-400 mb-1" />
+                    <div className="text-xs text-yellow-400">Tier {i}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="text-xs text-gray-400">
+                Next achievement: Complete 3 more dreams
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Dream Quest System */}
+        <Card className="bg-gradient-to-br from-blue-900/20 to-cyan-900/20 border-2 border-blue-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-400">
+              <Target className="w-5 h-5" />
+              Dream Quests
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-2 bg-blue-500/20 border border-blue-500/50 rounded">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                    <span className="text-sm">Add 1 dream</span>
+                  </div>
+                  <span className="text-xs text-green-400">+30 XP</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-gray-700/50 border border-gray-600/50 rounded">
+                  <div className="flex items-center gap-2">
+                    <Circle className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm">Complete 2 dreams</span>
+                  </div>
+                  <span className="text-xs text-blue-400">+75 XP</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-gray-700/50 border border-gray-600/50 rounded">
+                  <div className="flex items-center gap-2">
+                    <Circle className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm">Plan adventure</span>
+                  </div>
+                  <span className="text-xs text-purple-400">+150 XP</span>
+                </div>
+              </div>
+              <div className="text-xs text-gray-400">
+                1/3 quests completed • Reset in 6h 45m
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Dream Streak Guardian */}
+        <Card className="bg-gradient-to-br from-red-900/20 to-orange-900/20 border-2 border-red-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-400">
+              <AlertTriangle className="w-5 h-5" />
+              Dream Streak
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Dream Streak</span>
+                <span className="text-lg font-bold text-red-400">{stats.completed * 12} days</span>
+              </div>
+              <div className="p-3 bg-red-500/20 border border-red-500/50 rounded">
+                <div className="flex items-center gap-2 mb-2">
+                  <Timer className="w-4 h-4 text-red-400" />
+                  <span className="text-sm font-medium text-red-400">STREAK AT RISK!</span>
+                </div>
+                <div className="text-xs text-gray-300">
+                  Complete a dream in 2h 15m to keep your streak alive
+                </div>
+                <Button className="w-full mt-2 bg-red-600 hover:bg-red-700 text-white text-xs">
+                  PROTECT STREAK (150 XP)
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Dream Rewards Vault */}
+        <Card className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-2 border-green-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-green-400">
+              <Gift className="w-5 h-5" />
+              Dream Rewards
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Dream Coins</span>
+                <span className="text-lg font-bold text-green-400">{stats.completed * 250}</span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-2 bg-green-500/20 border border-green-500/50 rounded">
+                  <div className="flex items-center gap-2">
+                    <Gem className="w-4 h-4 text-green-400" />
+                    <span className="text-sm">Mystery Dream</span>
+                  </div>
+                  <Button className="text-xs bg-green-600 hover:bg-green-700">750</Button>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-gray-700/50 border border-gray-600/50 rounded">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm">Dream Shield</span>
+                  </div>
+                  <Button className="text-xs bg-gray-600 hover:bg-gray-700" disabled>1500</Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Dream Leaderboard */}
+        <Card className="bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border-2 border-indigo-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-indigo-400">
+              <Users className="w-5 h-5" />
+              Dream Leaders
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                {[
+                  { rank: 1, name: "DreamMaster", score: 18420, trend: "up" },
+                  { rank: 2, name: "BucketCrusher", score: 16850, trend: "down" },
+                  { rank: 3, name: "You", score: 15200, trend: "up", isUser: true },
+                  { rank: 4, name: "Achiever", score: 14900, trend: "same" }
+                ].map(leader => (
+                  <div key={leader.rank} className={`flex items-center justify-between p-2 rounded ${leader.isUser ? 'bg-indigo-500/30 border border-indigo-500/50' : 'bg-gray-700/50'}`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-indigo-400">#{leader.rank}</span>
+                      <span className={`text-sm ${leader.isUser ? 'text-indigo-300' : 'text-gray-300'}`}>{leader.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400">{leader.score}</span>
+                      {leader.trend === "up" && <TrendingUp className="w-3 h-3 text-green-400" />}
+                      {leader.trend === "down" && <TrendingDown className="w-3 h-3 text-red-400" />}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

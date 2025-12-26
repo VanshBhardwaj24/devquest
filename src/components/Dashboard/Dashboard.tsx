@@ -15,6 +15,145 @@ import { Button } from '../ui/button';
 import { dashboardReducer, initialDashboardState } from './dashboardReducer';
 import { RecentActivity } from './RecentActivity';
 
+// Sub-component for User Stats Overview
+const UserStatsOverview = ({ user, xpSystem }: { user: any; xpSystem: any }) => {
+  const levelProgress = xpSystem ? (xpSystem.currentXp % xpSystem.xpToNextLevel) / xpSystem.xpToNextLevel * 100 : 0;
+  
+  return (
+    <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-2xl font-bold">{user?.name || 'User'}</h3>
+            <p className="text-blue-100">Level {xpSystem?.level || 1}</p>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold">{xpSystem?.currentXp || 0}</div>
+            <div className="text-sm text-blue-100">Total XP</div>
+          </div>
+        </div>
+        
+        <div className="mt-4">
+          <div className="flex items-center justify-between text-sm mb-2">
+            <span>Level Progress</span>
+            <span>{Math.floor(levelProgress)}%</span>
+          </div>
+          <div className="w-full bg-blue-200 rounded-full h-2">
+            <div 
+              className="bg-white rounded-full h-2 transition-all duration-300"
+              style={{ width: `${levelProgress}%` }}
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Sub-component for Quick Stats Grid
+const QuickStatsGrid = ({ stats }: { stats: any }) => {
+  const statCards = [
+    { label: 'Tasks Completed', value: stats.tasksCompleted || 0, icon: CheckCircle, color: 'green' },
+    { label: 'Coding Streak', value: `${stats.codingStreak || 0} days`, icon: Activity, color: 'blue' },
+    { label: 'Achievements', value: stats.achievements || 0, icon: Trophy, color: 'yellow' },
+    { label: 'Energy', value: `${stats.energy || 100}%`, icon: Zap, color: 'purple' }
+  ];
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {statCards.map((stat, index) => (
+        <Card key={index} className="text-center">
+          <CardContent className="p-4">
+            <stat.icon className={`w-8 h-8 mx-auto mb-2 text-${stat.color}-500`} />
+            <div className="text-2xl font-bold">{stat.value}</div>
+            <div className="text-sm text-gray-600">{stat.label}</div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+};
+
+// Sub-component for Recent Activities Feed
+const ActivitiesFeed = ({ activities }: { activities: any[] }) => {
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'task_completed': return CheckCircle;
+      case 'achievement_unlocked': return Trophy;
+      case 'level_up': return Crown;
+      default: return Activity;
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Recent Activity</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {activities.slice(0, 5).map((activity, index) => {
+            const Icon = getActivityIcon(activity.type);
+            return (
+              <div key={index} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded">
+                <Icon className="w-5 h-5 text-blue-500" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{activity.title}</p>
+                  <p className="text-xs text-gray-500">{activity.timestamp}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Sub-component for Daily Challenges
+const DailyChallengesWidget = ({ challenges }: { challenges: any[] }) => {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Target className="w-5 h-5" />
+          Daily Challenges
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {challenges.slice(0, 3).map((challenge, index) => (
+            <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+              <div>
+                <h4 className="font-semibold text-sm">{challenge.title}</h4>
+                <p className="text-xs text-gray-600">{challenge.description}</p>
+              </div>
+              <div className="text-right">
+                <div className="text-sm font-bold text-green-600">+{challenge.xp} XP</div>
+                <div className="text-xs text-gray-500">{challenge.progress}%</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Sub-component for Motivational Quote
+const MotivationalQuote = ({ quote }: { quote: { text: string; author: string } }) => {
+  return (
+    <Card className="bg-gradient-to-r from-purple-100 to-pink-100">
+      <CardContent className="p-6 text-center">
+        <div className="text-lg font-medium text-gray-800 italic mb-2">
+          "{quote.text}"
+        </div>
+        <div className="text-sm text-gray-600">— {quote.author}</div>
+      </CardContent>
+    </Card>
+  );
+};
+
 export function Dashboard() {
   const { state: appState, dispatch: appDispatch } = useApp();
   const { user, xpSystem, tasks, codingStats, darkMode, vitality } = appState;

@@ -230,7 +230,7 @@ type AppAction =
   | { type: 'BUY_SHOP_ITEM'; payload: { itemId: string; cost: number } }
   | { type: 'SET_OVERDUE_PENALTIES'; payload: boolean };
 
-// Dynamic XP calculation functions - Unified formula across app
+// Unified XP calculation functions - Single source of truth
 const getXPForLevel = (level: number): number => {
   return Math.floor(1000 * Math.pow(1.1, level - 1));
 };
@@ -248,39 +248,94 @@ const calculateLevelFromXP = (totalXP: number): number => {
   return level;
 };
 
-// Time-based streak calculation functions
+// Unified XP progress calculation
+const calculateXPProgress = (currentXP: number, currentLevel: number): {
+  levelXP: number;
+  neededXP: number;
+  progress: number;
+  xpToNext: number;
+} => {
+  const xpForCurrentLevel = getXPForLevel(currentLevel);
+  const xpForNextLevel = getXPForLevel(currentLevel + 1);
+  const levelXP = Math.max(0, currentXP - xpForCurrentLevel);
+  const neededXP = xpForNextLevel - xpForCurrentLevel;
+  const progress = Math.min(Math.max((levelXP / neededXP) * 100, 0), 100);
+  
+  return {
+    levelXP,
+    neededXP,
+    progress,
+    xpToNext: xpForNextLevel - currentXP
+  };
+};
+
+// Enhanced time-based streak calculation with proper timezone handling
 const getTodayDateString = (): string => {
-  return new Date().toISOString().split('T')[0];
+  return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format
 };
 
 const calculateTimeBasedStreak = (
   currentStreak: number,
   lastActivityDate: string,
   todayDate: string = getTodayDateString()
-): { newStreak: number; streakBroken: boolean; streakContinued: boolean } => {
+): { newStreak: number; streakBroken: boolean; streakContinued: boolean; daysInactive: number } => {
   if (!lastActivityDate) {
-    return { newStreak: 1, streakBroken: false, streakContinued: false };
+    return { newStreak: 1, streakBroken: false, streakContinued: false, daysInactive: 0 };
   }
 
-  const lastDate = new Date(lastActivityDate);
-  const today = new Date(todayDate);
+  const lastDate = new Date(lastActivityDate + 'T00:00:00');
+  const today = new Date(todayDate + 'T00:00:00');
 
-  // Normalize to just dates (remove time)
-  const lastDateOnly = new Date(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate());
-  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-  const daysDiff = Math.floor((todayOnly.getTime() - lastDateOnly.getTime()) / (1000 * 60 * 60 * 24));
+  const daysDiff = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
 
   if (daysDiff === 0) {
     // Activity today - streak continues
-    return { newStreak: currentStreak, streakBroken: false, streakContinued: true };
+    return { newStreak: currentStreak, streakBroken: false, streakContinued: true, daysInactive: 0 };
   } else if (daysDiff === 1) {
     // Activity yesterday - increment streak
-    return { newStreak: currentStreak + 1, streakBroken: false, streakContinued: true };
+    return { newStreak: currentStreak + 1, streakBroken: false, streakContinued: true, daysInactive: 0 };
   } else {
     // More than 1 day gap - streak broken
-    return { newStreak: 1, streakBroken: true, streakContinued: false };
+    return { newStreak: 1, streakBroken: true, streakContinued: false, daysInactive: daysDiff };
   }
+};
+
+// Calculate punishment based on inactivity
+const calculateInactivityPunishment = (daysInactive: number, currentXP: number): {
+  shouldPunish: boolean;
+  xpPenalty: number;
+  streakReset: boolean;
+  description: string;
+} => {
+  if (daysInactive === 0) {
+    return { shouldPunish: false, xpPenalty: 0, streakReset: false, description: '' };
+  }
+
+  let xpPenalty = 0;
+  let streakReset = false;
+  let description = '';
+
+  if (daysInactive >= 14) {
+    xpPenalty = Math.floor(currentXP * 0.5); // 50% penalty
+    streakReset = true;
+    description = 'Major inactivity: 50% XP loss and streak reset';
+  } else if (daysInactive >= 7) {
+    xpPenalty = Math.floor(currentXP * 0.25); // 25% penalty
+    description = 'Extended inactivity: 25% XP loss';
+  } else if (daysInactive >= 3) {
+    xpPenalty = Math.floor(currentXP * 0.1); // 10% penalty
+    description = 'Moderate inactivity: 10% XP loss';
+  } else if (daysInactive >= 1) {
+    xpPenalty = Math.floor(currentXP * 0.05); // 5% penalty
+    description = 'Minor inactivity: 5% XP loss';
+  }
+
+  return {
+    shouldPunish: xpPenalty > 0,
+    xpPenalty,
+    streakReset,
+    description
+  };
 };
 
 const getNextResetTime = (): Date => {
@@ -1544,7 +1599,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
       const resetToday = getTodayDateString();
       const nextResetTime = getNextResetTime();
       
-      // Check streak status on daily reset
+      // Enhanced streak and punishment system using unified logic
       let currentStreak = state.user?.streak || 0;
       let streakBroken = false;
       let penaltyXP = 0;
@@ -1552,36 +1607,45 @@ function appReducer(state: AppState, action: AppAction): AppState {
       let newLevelAfterPenalty = state.xpSystem.currentLevel;
       let newXPToNextAfterPenalty = state.xpSystem.xpToNextLevel;
       let newHpAfterPenalty = state.user?.hp || 0;
+      let punishmentDescription = '';
       
-      if (state.user?.lastActivity) {
-        const lastDate = new Date(state.user.lastActivity);
-        const todayDate = new Date(); // use current date for comparison
+      // Use unified streak calculation
+      const streakResult = calculateTimeBasedStreak(
+        currentStreak,
+        state.user?.lastActivity?.toISOString().split('T')[0] || '',
+        resetToday
+      );
+      
+      // Check for streak shield protection
+      const hasShield = (state.activePowerUps || []).some(pu => {
+        const meta = ALL_POWER_UPS.find(pp => pp.id === pu.id);
+        return meta?.type === 'streak_shield' || meta?.type === 'perfect_streak';
+      });
+      
+      if (streakResult.streakBroken && !hasShield) {
+        // Use unified punishment calculation
+        const punishment = calculateInactivityPunishment(streakResult.daysInactive, state.xpSystem.currentXP);
         
-        // Normalize to just dates (remove time)
-        const lastDateOnly = new Date(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate());
-        const todayDateOnly = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate());
-        
-        const daysDiff = Math.floor((todayDateOnly.getTime() - lastDateOnly.getTime()) / (1000 * 60 * 60 * 24));
-        
-        // If more than 1 day has passed since last activity, streak is broken
-        // (If daysDiff is 1, it means last activity was yesterday, so streak is still valid but pending today's action)
-        const hasShield = (state.activePowerUps || []).some(pu => {
-          const meta = ALL_POWER_UPS.find(pp => pp.id === pu.id);
-          return meta?.type === 'streak_shield' || meta?.type === 'perfect_streak';
-        });
-        if (daysDiff > 1) {
-          if (hasShield) {
-            streakBroken = false;
-          } else {
+        if (punishment.shouldPunish) {
+          streakBroken = true;
+          penaltyXP = punishment.xpPenalty;
+          newTotalXPAfterPenalty = Math.max(0, state.xpSystem.currentXP - penaltyXP);
+          newLevelAfterPenalty = calculateLevelFromXP(newTotalXPAfterPenalty);
+          newXPToNextAfterPenalty = getXPForLevel(newLevelAfterPenalty + 1);
+          newHpAfterPenalty = Math.max(0, (state.user?.hp || 50) - 15);
+          punishmentDescription = punishment.description;
+          
+          // Reset streak if punishment demands it
+          if (punishment.streakReset) {
             currentStreak = 0;
-            streakBroken = true;
-            penaltyXP = Math.floor(state.xpSystem.currentXP * 0.2);
-            newTotalXPAfterPenalty = Math.max(0, state.xpSystem.currentXP - penaltyXP);
-            newLevelAfterPenalty = calculateLevelFromXP(newTotalXPAfterPenalty);
-            newXPToNextAfterPenalty = getXPForLevel(newLevelAfterPenalty + 1);
-            newHpAfterPenalty = Math.max(0, (state.user?.hp || 50) - 15);
           }
         }
+      } else if (streakResult.streakBroken && hasShield) {
+        // Shield protects from streak break
+        streakBroken = false;
+      } else {
+        // Update streak normally
+        currentStreak = streakResult.newStreak;
       }
       
       const overduePenaltyShield = (state.activePowerUps || []).some(pu => {

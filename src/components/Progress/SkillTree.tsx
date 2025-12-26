@@ -40,6 +40,109 @@ interface SkillNode {
     title?: string;
     ability?: string;
   };
+  // New components
+  masteryPath: MasteryPath[];
+  challenges: SkillChallenge[];
+  resources: SkillResource[];
+  achievements: SkillAchievement[];
+  stats: SkillStats;
+  progression: SkillProgression;
+}
+
+interface MasteryPath {
+  id: string;
+  name: string;
+  description: string;
+  requirements: string[];
+  rewards: {
+    title: string;
+    bonus: string;
+    value: number;
+  };
+  completed: boolean;
+  progress: number;
+  maxProgress: number;
+}
+
+interface SkillChallenge {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: 'easy' | 'medium' | 'hard' | 'expert';
+  requirements: string[];
+  rewards: {
+    xp: number;
+    coins: number;
+    item?: string;
+  };
+  completed: boolean;
+  attempts: number;
+  maxAttempts: number;
+  timeLimit?: number;
+}
+
+interface SkillResource {
+  id: string;
+  title: string;
+  type: 'article' | 'video' | 'course' | 'book' | 'tool';
+  url: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  duration: number;
+  rating: number;
+  tags: string[];
+  completed: boolean;
+  bookmarked: boolean;
+}
+
+interface SkillAchievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  requirements: string[];
+  progress: number;
+  maxProgress: number;
+  unlocked: boolean;
+  unlockedAt?: Date;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+}
+
+interface SkillStats {
+  totalPracticeTime: number;
+  practiceSessions: number;
+  averageSessionTime: number;
+  longestStreak: number;
+  currentStreak: number;
+  totalXpEarned: number;
+  masteryPoints: number;
+  efficiency: number;
+}
+
+interface SkillProgression {
+  milestones: ProgressMilestone[];
+  recommendations: ProgressRecommendation[];
+  nextSteps: string[];
+  estimatedTime: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+}
+
+interface ProgressMilestone {
+  id: string;
+  title: string;
+  description: string;
+  level: number;
+  unlocked: boolean;
+  unlockedAt?: Date;
+  rewards: string[];
+}
+
+interface ProgressRecommendation {
+  type: 'practice' | 'resource' | 'challenge' | 'break';
+  title: string;
+  description: string;
+  priority: 'low' | 'medium' | 'high';
+  estimatedTime: number;
+  benefits: string[];
 }
 
 interface SkillTree {
@@ -82,7 +185,94 @@ const SKILL_TREES: SkillTree[] = [
         isUnlocked: true,
         isMastered: false,
         rewards: { xp: 50, coins: 100, title: 'Code Apprentice' },
-        nextLevelRewards: { xp: 75, coins: 150, title: 'Code Journeyman' }
+        nextLevelRewards: { xp: 75, coins: 150, title: 'Code Journeyman' },
+        masteryPath: [
+          {
+            id: 'code_apprentice',
+            name: 'Code Apprentice',
+            description: 'Complete 10 coding exercises',
+            requirements: ['exercises_completed >= 10'],
+            rewards: { title: 'Code Apprentice', bonus: 'xp_multiplier', value: 0.1 },
+            completed: false,
+            progress: 0,
+            maxProgress: 10
+          }
+        ],
+        challenges: [
+          {
+            id: 'first_program',
+            title: 'First Program',
+            description: 'Write your first working program',
+            difficulty: 'easy',
+            requirements: [],
+            rewards: { xp: 25, coins: 50 },
+            completed: false,
+            attempts: 0,
+            maxAttempts: 3
+          }
+        ],
+        resources: [
+          {
+            id: 'basic_syntax',
+            title: 'Basic Programming Syntax',
+            type: 'article',
+            url: '#',
+            difficulty: 'beginner',
+            duration: 30,
+            rating: 4.5,
+            tags: ['basics', 'syntax'],
+            completed: false,
+            bookmarked: false
+          }
+        ],
+        achievements: [
+          {
+            id: 'first_line',
+            name: 'First Line of Code',
+            description: 'Write your first line of code',
+            icon: <Star className="w-4 h-4" />,
+            requirements: ['code_written'],
+            progress: 0,
+            maxProgress: 1,
+            unlocked: false,
+            rarity: 'common'
+          }
+        ],
+        stats: {
+          totalPracticeTime: 0,
+          practiceSessions: 0,
+          averageSessionTime: 0,
+          longestStreak: 0,
+          currentStreak: 0,
+          totalXpEarned: 0,
+          masteryPoints: 0,
+          efficiency: 1.0
+        },
+        progression: {
+          milestones: [
+            {
+              id: 'level_5',
+              title: 'Level 5 Milestone',
+              description: 'Reach level 5 in programming',
+              level: 5,
+              unlocked: false,
+              rewards: ['bonus_xp', 'new_abilities']
+            }
+          ],
+          recommendations: [
+            {
+              type: 'practice',
+              title: 'Daily Coding Practice',
+              description: 'Practice coding for 30 minutes daily',
+              priority: 'high',
+              estimatedTime: 30,
+              benefits: ['skill_improvement', 'consistency_bonus']
+            }
+          ],
+          nextSteps: ['Complete basic exercises', 'Read syntax guide'],
+          estimatedTime: 120,
+          difficulty: 'easy'
+        }
       },
       {
         id: 'algorithms',

@@ -1,8 +1,14 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Code, Trophy, Zap, Target, Flame, CheckCircle, ExternalLink, Filter, Search, RotateCcw, Building2, X } from 'lucide-react';
+import { Code, Trophy, Zap, Target, Flame, CheckCircle, ExternalLink, Filter, Search, RotateCcw, Building2, X, BarChart3, Clock, Star, BookOpen, Users, TrendingUp, Calendar, Award, Settings } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../hooks/useAuth';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
+import { Progress } from '../ui/progress';
+import { Input } from '../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 
 // --- Extended Types & Interfaces ---
@@ -37,6 +43,249 @@ type SortOption = 'default' | 'xp-desc' | 'xp-asc' | 'difficulty-asc' | 'difficu
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type ViewMode = 'list' | 'grid' | 'analytics';
 
+// Sub-component for Problem Card
+const ProblemCard = ({ problem, onSolve, onFavorite, onNotes }: { 
+  problem: CodingProblem; 
+  onSolve: (problemId: string) => void;
+  onFavorite: (problemId: string) => void;
+  onNotes: (problemId: string, notes: string) => void;
+}) => {
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'Easy': return 'bg-green-100 text-green-600 border-green-200';
+      case 'Medium': return 'bg-yellow-100 text-yellow-600 border-yellow-200';
+      case 'Hard': return 'bg-red-100 text-red-600 border-red-200';
+      default: return 'bg-gray-100 text-gray-600 border-gray-200';
+    }
+  };
+
+  const getPlatformColor = (platform: string) => {
+    switch (platform) {
+      case 'LeetCode': return 'bg-orange-100 text-orange-600';
+      case 'GeeksforGeeks': return 'bg-blue-100 text-blue-600';
+      case 'CodeChef': return 'bg-purple-100 text-purple-600';
+      default: return 'bg-gray-100 text-gray-600';
+    }
+  };
+
+  return (
+    <div className={`border rounded-lg p-4 ${problem.solved ? 'bg-green-50' : 'bg-white'} hover:shadow-lg transition-shadow`}>
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1">
+          <h4 className="font-semibold text-lg">{problem.title}</h4>
+          <div className="flex items-center gap-2 mt-1">
+            <Badge className={getDifficultyColor(problem.difficulty)}>
+              {problem.difficulty}
+            </Badge>
+            <Badge className={getPlatformColor(problem.platform)}>
+              {problem.platform}
+            </Badge>
+            {problem.solved && (
+              <Badge className="bg-green-100 text-green-600">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Solved
+              </Badge>
+            )}
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onFavorite(problem.id)}
+            className={problem.isFavorite ? 'text-red-500' : ''}
+          >
+            <Heart className="w-4 h-4" />
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => window.open(problem.url, '_blank')}
+          >
+            <ExternalLink className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-sm text-gray-600">{problem.description}</p>
+        
+        <div className="flex flex-wrap gap-1">
+          {problem.tags.map((tag) => (
+            <Badge key={tag} variant="outline" className="text-xs">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center gap-4">
+            <span className="font-semibold text-green-600">+{problem.xp} XP</span>
+            {problem.streak && problem.streak > 0 && (
+              <span className="flex items-center gap-1 text-orange-600">
+                <Flame className="w-4 h-4" />
+                {problem.streak}
+              </span>
+            )}
+          </div>
+          <div className="text-gray-500">
+            {problem.category} • {problem.sheet}
+          </div>
+        </div>
+
+        {problem.companies && problem.companies.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {problem.companies.map((company) => (
+              <Badge key={company} variant="outline" className="text-xs bg-blue-50">
+                <Building2 className="w-3 h-3 mr-1" />
+                {company}
+              </Badge>
+            ))}
+          </div>
+        )}
+
+        {problem.notes && (
+          <div className="p-2 bg-yellow-50 rounded text-sm">
+            <p className="font-medium">Notes:</p>
+            <p className="text-gray-600">{problem.notes}</p>
+          </div>
+        )}
+      </div>
+
+      <div className="flex gap-2 mt-4">
+        {!problem.solved ? (
+          <Button onClick={() => onSolve(problem.id)} className="flex-1">
+            Mark as Solved
+          </Button>
+        ) : (
+          <Button variant="outline" onClick={() => onSolve(problem.id)} className="flex-1">
+            Mark for Revision
+          </Button>
+        )}
+        <Button variant="outline" onClick={() => onNotes(problem.id, problem.notes || '')}>
+          Add Notes
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// Sub-component for Stats Overview
+const CodingStats = ({ stats }: { stats: any }) => {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <Card className="text-center">
+        <CardContent className="p-4">
+          <Code className="w-8 h-8 mx-auto mb-2 text-blue-500" />
+          <div className="text-2xl font-bold">{stats.totalSolved || 0}</div>
+          <div className="text-sm text-gray-600">Problems Solved</div>
+        </CardContent>
+      </Card>
+      <Card className="text-center">
+        <CardContent className="p-4">
+          <Flame className="w-8 h-8 mx-auto mb-2 text-orange-500" />
+          <div className="text-2xl font-bold">{stats.currentStreak || 0}</div>
+          <div className="text-sm text-gray-600">Current Streak</div>
+        </CardContent>
+      </Card>
+      <Card className="text-center">
+        <CardContent className="p-4">
+          <Trophy className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
+          <div className="text-2xl font-bold">{stats.totalXp || 0}</div>
+          <div className="text-sm text-gray-600">Total XP</div>
+        </CardContent>
+      </Card>
+      <Card className="text-center">
+        <CardContent className="p-4">
+          <Target className="w-8 h-8 mx-auto mb-2 text-green-500" />
+          <div className="text-2xl font-bold">{stats.accuracy || 0}%</div>
+          <div className="text-sm text-gray-600">Accuracy</div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// Sub-component for Progress Tracker
+const ProgressTracker = ({ problems }: { problems: CodingProblem[] }) => {
+  const totalProblems = problems.length;
+  const solvedProblems = problems.filter(p => p.solved).length;
+  const progress = totalProblems > 0 ? (solvedProblems / totalProblems) * 100 : 0;
+
+  const difficultyStats = {
+    Easy: problems.filter(p => p.difficulty === 'Easy' && p.solved).length,
+    Medium: problems.filter(p => p.difficulty === 'Medium' && p.solved).length,
+    Hard: problems.filter(p => p.difficulty === 'Hard' && p.solved).length
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Progress Tracker</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div>
+            <div className="flex items-center justify-between text-sm mb-2">
+              <span>Overall Progress</span>
+              <span>{Math.round(progress)}%</span>
+            </div>
+            <Progress value={progress} />
+          </div>
+
+          <div>
+            <h4 className="font-semibold mb-2">By Difficulty</h4>
+            <div className="space-y-2">
+              {Object.entries(difficultyStats).map(([difficulty, solved]) => {
+                const total = problems.filter(p => p.difficulty === difficulty).length;
+                const percentage = total > 0 ? (solved / total) * 100 : 0;
+                return (
+                  <div key={difficulty}>
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span>{difficulty}</span>
+                      <span>{solved}/{total}</span>
+                    </div>
+                    <Progress value={percentage} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Sub-component for Quick Actions
+const QuickActions = ({ onRandomProblem, onResetProgress, onExport }: {
+  onRandomProblem: () => void;
+  onResetProgress: () => void;
+  onExport: () => void;
+}) => {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Quick Actions</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <Button onClick={onRandomProblem} variant="outline">
+            <Zap className="w-4 h-4 mr-2" />
+            Random Problem
+          </Button>
+          <Button onClick={onResetProgress} variant="outline">
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Reset Progress
+          </Button>
+          <Button onClick={onExport} variant="outline">
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Export Data
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 export function CodingArena() {
   const { state, dispatch } = useApp();

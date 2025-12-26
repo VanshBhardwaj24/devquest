@@ -10,7 +10,8 @@ import {
   Briefcase, Users, Plane,
   Zap, Award, Sparkles, Flag, CheckCircle,
   Circle, Plus, Globe,
-  GraduationCap, Rocket, Lock, TrendingUp
+  GraduationCap, Rocket, Lock, TrendingUp,
+  AlertTriangle, Flame, Timer, Star, Crown, Shield, Swords, Gem, Coins, Gift, Bell, TrendingDown, Clock, Calendar, Award as AwardIcon, Medal, Ban, Sword, MessageSquare, Eye, EyeOff, Meh, Smile, Laugh, Wind, Earth, Moon, Sun, Cloud, Frown, AlertCircle, XCircle
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { appDataService } from '../../services/appDataService';
@@ -46,6 +47,95 @@ interface LifeGoal {
   };
   dependencies: string[];
   subtasks: Subtask[];
+  // New components
+  habits: GoalHabit[];
+  milestones: GoalMilestone[];
+  resources: GoalResource[];
+  reflections: GoalReflection[];
+  connections: GoalConnection[];
+  timeline: GoalTimeline[];
+  metrics: GoalMetric[];
+}
+
+interface GoalHabit {
+  id: string;
+  name: string;
+  description: string;
+  frequency: 'daily' | 'weekly' | 'monthly';
+  targetCount: number;
+  currentCount: number;
+  streak: number;
+  completedDates: Date[];
+  reminderTime?: string;
+}
+
+interface GoalMilestone {
+  id: string;
+  title: string;
+  description: string;
+  targetDate: Date;
+  completed: boolean;
+  completedAt?: Date;
+  progress: number;
+  rewards: {
+    xp: number;
+    badge?: string;
+  };
+}
+
+interface GoalResource {
+  id: string;
+  title: string;
+  type: 'article' | 'video' | 'course' | 'book' | 'tool' | 'person';
+  url?: string;
+  description: string;
+  rating: number;
+  tags: string[];
+  completed: boolean;
+  bookmarked: boolean;
+}
+
+interface GoalReflection {
+  id: string;
+  date: Date;
+  prompt: string;
+  response: string;
+  mood: 'excellent' | 'good' | 'neutral' | 'challenging' | 'difficult';
+  insights: string[];
+  nextActions: string[];
+}
+
+interface GoalConnection {
+  id: string;
+  type: 'related_goal' | 'skill' | 'life_area' | 'person' | 'resource';
+  targetId: string;
+  targetName: string;
+  strength: 'weak' | 'moderate' | 'strong';
+  description: string;
+  mutual: boolean;
+}
+
+interface GoalTimeline {
+  id: string;
+  date: Date;
+  type: 'created' | 'updated' | 'milestone' | 'reflection' | 'habit_completed';
+  title: string;
+  description: string;
+  impact: 'low' | 'medium' | 'high';
+}
+
+interface GoalMetric {
+  id: string;
+  name: string;
+  type: 'number' | 'percentage' | 'boolean' | 'time';
+  target: number;
+  current: number;
+  unit: string;
+  trend: 'improving' | 'stable' | 'declining';
+  history: {
+    date: Date;
+    value: number;
+  }[];
 }
 
 interface Subtask {
@@ -628,6 +718,207 @@ export function LifeMap() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Extreme Gamification Components */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Life Mastery Progress */}
+        <Card className="bg-gradient-to-br from-purple-900/20 to-pink-900/20 border-2 border-purple-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-purple-400">
+              <Crown className="w-5 h-5" />
+              Life Mastery
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Mastery Level</span>
+                <span className="text-lg font-bold text-purple-400">Master {userLevel}</span>
+              </div>
+              <div className="h-3 bg-black border-2 border-purple-500/30 rounded-full">
+                <div 
+                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500"
+                  style={{ width: `${(userLevel / 100) * 100}%` }}
+                />
+              </div>
+              <div className="text-xs text-gray-400">
+                {journey.completedGoals} goals mastered • {Math.round(journey.journeyProgress)}% life complete
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <Flame className="w-3 h-3 text-orange-400" />
+                <span className="text-orange-400">30 day mastery streak</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Achievement Hunter */}
+        <Card className="bg-gradient-to-br from-yellow-900/20 to-orange-900/20 border-2 border-yellow-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-yellow-400">
+              <Trophy className="w-5 h-5" />
+              Achievement Hunter
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Achievements</span>
+                <span className="text-lg font-bold text-yellow-400">{journey.completedGoals * 3}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="text-center p-2 bg-yellow-500/20 border border-yellow-500/50 rounded">
+                    <Medal className="w-6 h-6 mx-auto text-yellow-400 mb-1" />
+                    <div className="text-xs text-yellow-400">Tier {i}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="text-xs text-gray-400">
+                Next achievement: Complete 5 more goals
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Life Quest System */}
+        <Card className="bg-gradient-to-br from-blue-900/20 to-cyan-900/20 border-2 border-blue-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-400">
+              <Target className="w-5 h-5" />
+              Daily Quests
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-2 bg-blue-500/20 border border-blue-500/50 rounded">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                    <span className="text-sm">Complete 1 goal</span>
+                  </div>
+                  <span className="text-xs text-green-400">+50 XP</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-gray-700/50 border border-gray-600/50 rounded">
+                  <div className="flex items-center gap-2">
+                    <Circle className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm">Progress 3 areas</span>
+                  </div>
+                  <span className="text-xs text-blue-400">+100 XP</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-gray-700/50 border border-gray-600/50 rounded">
+                  <div className="flex items-center gap-2">
+                    <Circle className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm">Master new skill</span>
+                  </div>
+                  <span className="text-xs text-purple-400">+200 XP</span>
+                </div>
+              </div>
+              <div className="text-xs text-gray-400">
+                1/3 quests completed • Reset in 8h 23m
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Life Streak Guardian */}
+        <Card className="bg-gradient-to-br from-red-900/20 to-orange-900/20 border-2 border-red-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-400">
+              <AlertTriangle className="w-5 h-5" />
+              Streak Guardian
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Life Streak</span>
+                <span className="text-lg font-bold text-red-400">47 days</span>
+              </div>
+              <div className="p-3 bg-red-500/20 border border-red-500/50 rounded">
+                <div className="flex items-center gap-2 mb-2">
+                  <Timer className="w-4 h-4 text-red-400" />
+                  <span className="text-sm font-medium text-red-400">STREAK AT RISK!</span>
+                </div>
+                <div className="text-xs text-gray-300">
+                  Complete a goal in 4h 32m to keep your streak alive
+                </div>
+                <Button className="w-full mt-2 bg-red-600 hover:bg-red-700 text-white text-xs">
+                  PROTECT STREAK (200 XP)
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Life Rewards Vault */}
+        <Card className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-2 border-green-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-green-400">
+              <Gift className="w-5 h-5" />
+              Rewards Vault
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Life Coins</span>
+                <span className="text-lg font-bold text-green-400">{journey.completedGoals * 100}</span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-2 bg-green-500/20 border border-green-500/50 rounded">
+                  <div className="flex items-center gap-2">
+                    <Gem className="w-4 h-4 text-green-400" />
+                    <span className="text-sm">Mystery Box</span>
+                  </div>
+                  <Button className="text-xs bg-green-600 hover:bg-green-700">500</Button>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-gray-700/50 border border-gray-600/50 rounded">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm">Life Shield</span>
+                  </div>
+                  <Button className="text-xs bg-gray-600 hover:bg-gray-700" disabled>1000</Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Life Leaderboard */}
+        <Card className="bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border-2 border-indigo-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-indigo-400">
+              <Users className="w-5 h-5" />
+              Life Leaders
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                {[
+                  { rank: 1, name: "LifeMaster", score: 15420, trend: "up" },
+                  { rank: 2, name: "GoalCrusher", score: 14850, trend: "down" },
+                  { rank: 3, name: "You", score: 13200, trend: "up", isUser: true },
+                  { rank: 4, name: "Achiever", score: 12900, trend: "same" }
+                ].map(leader => (
+                  <div key={leader.rank} className={`flex items-center justify-between p-2 rounded ${leader.isUser ? 'bg-indigo-500/30 border border-indigo-500/50' : 'bg-gray-700/50'}`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-indigo-400">#{leader.rank}</span>
+                      <span className={`text-sm ${leader.isUser ? 'text-indigo-300' : 'text-gray-300'}`}>{leader.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400">{leader.score}</span>
+                      {leader.trend === "up" && <TrendingUp className="w-3 h-3 text-green-400" />}
+                      {leader.trend === "down" && <TrendingDown className="w-3 h-3 text-red-400" />}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Life Areas Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
