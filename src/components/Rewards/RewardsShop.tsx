@@ -339,44 +339,46 @@ export function RewardsShop() {
                   transition={{ delay: index * 0.05 }}
                 >
                   <Card 
+                    variant="neon"
                     className={cn(
-                      "h-full flex flex-col transition-all duration-300 hover:shadow-lg border-opacity-50",
-                      locked ? "opacity-60 bg-gray-900/50" : "bg-card hover:-translate-y-1",
+                      "h-full flex flex-col transition-all duration-300 hover:shadow-lg hover:shadow-neon-blue/20",
+                      locked ? "opacity-60 grayscale" : "hover:-translate-y-1",
                       selectedReward?.id === reward.id && "ring-2 ring-neon-blue"
                     )}
                   >
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
-                        <div className="text-4xl mb-2">{reward.icon}</div>
-                        <Badge variant="outline" className={cn("capitalize text-xs", rarityStyle)}>
+                        <div className="text-4xl mb-2 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">{reward.icon}</div>
+                        <Badge variant="outline" className={cn("capitalize text-xs font-mono border-opacity-50", rarityStyle)}>
                           {reward.rarity}
                         </Badge>
                       </div>
-                      <CardTitle className="text-xl">{reward.name}</CardTitle>
-                      <CardDescription className="line-clamp-2 h-10">
+                      <CardTitle className="text-xl font-cyber text-white">{reward.name}</CardTitle>
+                      <CardDescription className="line-clamp-2 h-10 text-gray-400 font-mono text-xs">
                         {reward.description}
                       </CardDescription>
                     </CardHeader>
                     
                     <CardContent className="flex-grow">
-                      <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
+                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-2 font-mono">
                         <Tag className="w-3 h-3" />
                         <span className="capitalize">{reward.category}</span>
                       </div>
                       {locked && (
-                        <div className="flex items-center gap-2 text-red-400 text-xs mt-2">
+                        <div className="flex items-center gap-2 text-red-400 text-xs mt-2 font-mono border border-red-500/30 p-1 rounded bg-red-500/10">
                           <Lock className="w-3 h-3" />
-                          <span>Unlocks at Level {reward.unlockLevel}</span>
+                          <span>Level {reward.unlockLevel} Required</span>
                         </div>
                       )}
                     </CardContent>
 
                     <CardFooter className="pt-0">
                       <Button 
-                        variant={affordable && !locked && !reward.purchased ? "default" : "secondary"}
+                        variant={affordable && !locked && !reward.purchased ? "neon" : "ghost"}
                         className={cn(
-                          "w-full font-bold",
-                          affordable && !locked && !reward.purchased ? "bg-gradient-to-r from-neon-blue to-neon-purple border-0" : ""
+                          "w-full font-bold font-mono",
+                          !affordable && !locked && "text-gray-500 border-gray-700 bg-gray-900/50 hover:bg-gray-900/50 cursor-not-allowed",
+                          locked && "opacity-50 cursor-not-allowed"
                         )}
                         disabled={!affordable || locked || !!reward.purchased}
                         onClick={() => handleRedeem(reward)}
@@ -384,9 +386,9 @@ export function RewardsShop() {
                         {locked ? (
                           <span className="flex items-center gap-2"><Lock className="w-4 h-4" /> LOCKED</span>
                         ) : reward.purchased ? (
-                          <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4" /> PURCHASED</span>
+                          <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4" /> OWNED</span>
                         ) : (
-                          <span className="flex items-center gap-2">
+                          <span className="flex items-center gap-2 text-yellow-400">
                             {reward.cost} Gold
                           </span>
                         )}

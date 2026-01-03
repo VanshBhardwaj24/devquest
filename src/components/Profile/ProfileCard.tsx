@@ -3,9 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Edit, Trophy, Zap, Target, Save, X, 
   Terminal, Code, GitBranch, AlertTriangle, CheckCircle,
-  Flame, Shield, Skull, Coffee
+  Flame, Shield, Skull, Coffee, Plus
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
+import { Input } from '../ui/input';
+import { cn } from '@/lib/utils';
 
 export function ProfileCard() {
   const { state, dispatch } = useApp();
@@ -164,8 +169,8 @@ export function ProfileCard() {
   const progressPercentage = Math.min((progressXp / neededXp) * 100, 100);
 
   return (
-    <div className={`p-3 sm:p-4 lg:p-6 ${darkMode ? 'bg-[#0a0a0a]' : 'bg-gray-50'} min-h-screen pb-20 lg:pb-6`}>
-      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+    <div className={`p-4 md:p-6 space-y-6 ${darkMode ? 'bg-black' : 'bg-gray-50'} min-h-screen pb-24`}>
+      <div className="max-w-4xl mx-auto space-y-6">
         
         {/* Warning Banner for Non-Negotiables */}
         <AnimatePresence>
@@ -174,338 +179,247 @@ export function ProfileCard() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="p-3 sm:p-4 bg-red-900/50 border border-red-500 rounded-lg sm:rounded-xl flex items-center gap-3 sm:gap-4"
+              className="p-4 bg-red-900/20 border border-red-500/50 rounded-lg flex items-center gap-4 mb-6 backdrop-blur-sm"
             >
-              <Skull className="w-6 h-6 sm:w-8 sm:h-8 text-red-400 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="text-red-300 font-bold text-sm sm:text-base">⚠️ NON-NEGOTIABLES WARNING</div>
-                <div className="text-red-400 text-xs sm:text-sm">
-                  You missed a daily DSA or weekly commits goal. Complete them NOW to avoid XP reset!
+              <Skull className="w-8 h-8 text-red-500 animate-pulse" />
+              <div className="flex-1">
+                <div className="text-red-400 font-bold font-cyber tracking-wide">⚠️ CRITICAL SYSTEM FAILURE IMMINENT</div>
+                <div className="text-red-300/80 text-sm font-mono">
+                  Non-negotiable protocols breached. Execute recovery tasks immediately to prevent XP wipe.
                 </div>
               </div>
-              <button 
+              <Button 
+                variant="ghost"
+                size="icon"
                 onClick={() => setShowWarning(false)}
-                className="text-red-400 hover:text-red-300 flex-shrink-0"
+                className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
               >
                 <X size={18} />
-              </button>
+              </Button>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Nerdy Header */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className={`p-4 sm:p-6 rounded-xl sm:rounded-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-xl relative overflow-hidden`}
-        >
-          {/* Terminal-style background */}
-          <div className="absolute inset-0 opacity-5">
-            <div className="font-mono text-xs text-green-500 p-4 overflow-hidden">
-              {Array(20).fill(null).map((_, i) => (
-                <div key={i}>$ git commit -m "Grinding DSA {i}"</div>
-              ))}
-            </div>
-          </div>
-
-          <div className="relative">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <Terminal className="w-6 h-6 text-green-500" />
-                <h1 className={`text-2xl font-bold font-mono ${darkMode ? 'text-green-400' : 'text-gray-900'}`}>
-                  ~/developer/profile
-                </h1>
-              </div>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-                className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${
-                  isEditing 
-                    ? 'bg-green-500 text-white hover:bg-green-600'
-                    : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {isEditing ? <><Save size={16} /> Save</> : <><Edit size={16} /> Edit</>}
-              </motion.button>
-            </div>
-
-            {/* Profile Content */}
-            <div className="flex items-start gap-6">
-              {/* Avatar */}
-              <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gradient-to-r ${getTierGradient(user.tier)} flex items-center justify-center text-white font-bold text-xl sm:text-2xl font-mono relative flex-shrink-0`}>
-                {user.name.charAt(0).toUpperCase()}
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-                  className="absolute inset-0 border-2 border-dashed border-white/30 rounded-xl"
-                />
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 space-y-2 sm:space-y-3 min-w-0">
-                {isEditing ? (
-                  <div className="space-y-2 sm:space-y-3">
-                    <input
-                      type="text"
-                      value={editData.name}
-                      onChange={e => setEditData(prev => ({ ...prev, name: e.target.value }))}
-                      className={`w-full px-3 py-2 rounded-lg border font-mono text-sm sm:text-base ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                      placeholder="Name"
-                    />
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      <input
-                        type="text"
-                        value={editData.degree}
-                        onChange={e => setEditData(prev => ({ ...prev, degree: e.target.value }))}
-                        className={`px-3 py-2 rounded-lg border font-mono text-sm ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                        placeholder="Degree"
-                      />
-                      <input
-                        type="text"
-                        value={editData.branch}
-                        onChange={e => setEditData(prev => ({ ...prev, branch: e.target.value }))}
-                        className={`px-3 py-2 rounded-lg border font-mono text-sm ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                        placeholder="Branch"
-                      />
-                      <input
-                        type="number"
-                        value={editData.year}
-                        onChange={e => setEditData(prev => ({ ...prev, year: parseInt(e.target.value) || 1 }))}
-                        className={`px-3 py-2 rounded-lg border font-mono text-sm ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                        min={1} max={5}
-                        placeholder="Year"
-                      />
-                    </div>
-                    <input
-                      type="text"
-                      value={editData.careerGoal}
-                      onChange={e => setEditData(prev => ({ ...prev, careerGoal: e.target.value }))}
-                      className={`w-full px-3 py-2 rounded-lg border font-mono text-sm ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                      placeholder="Career Goal"
-                    />
-                    <input
-                      type="text"
-                      value={editData.interests}
-                      onChange={e => setEditData(prev => ({ ...prev, interests: e.target.value }))}
-                      className={`w-full px-3 py-2 rounded-lg border font-mono text-sm ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                      placeholder="Interests (comma separated)"
-                    />
-                    <button
-                      onClick={() => setIsEditing(false)}
-                      className={`px-3 py-1 rounded text-sm ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
-                    >
-                      Cancel
-                    </button>
+        {/* Profile Header */}
+        <Card variant="neon" className="relative overflow-hidden group">
+          <div className="absolute inset-0 bg-grid-white/[0.02] pointer-events-none" />
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-neon-blue to-transparent opacity-50" />
+          
+          <CardContent className="p-6 relative z-10">
+            <div className="flex flex-col md:flex-row gap-6 items-start">
+              {/* Avatar Section */}
+              <div className="relative">
+                <div className={`w-24 h-24 rounded-xl bg-gradient-to-br ${getTierGradient(user.tier)} p-[2px] relative group-hover:shadow-[0_0_20px_rgba(var(--neon-blue),0.3)] transition-all duration-500`}>
+                  <div className="w-full h-full bg-black rounded-[10px] flex items-center justify-center relative overflow-hidden">
+                    <span className="text-3xl font-bold font-cyber text-white z-10">{user.name.charAt(0).toUpperCase()}</span>
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-                ) : (
-                  <>
-                    <div>
-                      <h2 className={`text-xl font-bold font-mono ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {user.name}
-                      </h2>
-                      <div className={`text-sm font-mono ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {user.email}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <span className={`px-2 py-1 rounded text-xs font-bold font-mono bg-gradient-to-r ${getTierGradient(user.tier)} text-white`}>
-                        {user.tier}
-                      </span>
-                      <span className={`px-2 py-1 rounded text-xs font-mono ${darkMode ? 'bg-gray-700 text-green-400' : 'bg-gray-100 text-green-600'}`}>
-                        Level {user.level}
-                      </span>
-                      <span className={`px-2 py-1 rounded text-xs font-mono ${darkMode ? 'bg-gray-700 text-orange-400' : 'bg-gray-100 text-orange-600'}`}>
-                        🔥 {user.streak} streak
-                      </span>
-                    </div>
-                    <div className={`text-sm font-mono ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      <Code className="inline w-4 h-4 mr-1" />
-                      {user.degree} in {user.branch}, Year {user.year}
-                    </div>
-                    <div className={`text-sm font-mono ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      <Target className="inline w-4 h-4 mr-1" />
-                      {user.careerGoal}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          {[
-            { label: 'Total XP', value: user.xp.toLocaleString(), icon: Zap, color: 'text-purple-400' },
-            { label: 'Level', value: user.level, icon: Trophy, color: 'text-yellow-400' },
-            { label: 'Streak', value: `${user.streak} days`, icon: Flame, color: 'text-orange-400' },
-            { label: 'Rank', value: `#${user.rank || '??'}`, icon: Shield, color: 'text-cyan-400' },
-          ].map((stat, i) => (
-            <motion.div
-              key={i}
-              whileHover={{ scale: 1.02 }}
-              className={`p-3 sm:p-4 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}
-            >
-              <div className="flex items-center gap-2 sm:gap-3">
-                <stat.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${stat.color} flex-shrink-0`} />
-                <div className="min-w-0 flex-1">
-                  <div className={`text-lg sm:text-xl font-bold font-mono ${darkMode ? 'text-white' : 'text-gray-900'} truncate`}>
-                    {stat.value}
-                  </div>
-                  <div className={`text-[10px] sm:text-xs font-mono ${darkMode ? 'text-gray-400' : 'text-gray-600'} truncate`}>
-                    {stat.label}
-                  </div>
+                  {/* Rotating border effect */}
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+                    className="absolute inset-[-4px] border border-dashed border-white/20 rounded-xl pointer-events-none"
+                  />
+                </div>
+                <div className="absolute -bottom-3 -right-3">
+                   <Badge variant="outline" className="bg-black border-neon-yellow text-neon-yellow font-bold shadow-[0_0_10px_rgba(var(--neon-yellow),0.3)]">
+                    Lvl {user.level}
+                   </Badge>
                 </div>
               </div>
-            </motion.div>
+
+              {/* Info Section */}
+              <div className="flex-1 min-w-0 w-full">
+                <div className="flex items-start justify-between gap-4 mb-2">
+                    <div className="space-y-1">
+                        {isEditing ? (
+                            <div className="space-y-3 max-w-md">
+                                <Input
+                                    value={editData.name}
+                                    onChange={e => setEditData(prev => ({ ...prev, name: e.target.value }))}
+                                    placeholder="Dev Name"
+                                    className="bg-black/50 border-white/10"
+                                />
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Input
+                                        value={editData.degree}
+                                        onChange={e => setEditData(prev => ({ ...prev, degree: e.target.value }))}
+                                        placeholder="Degree"
+                                        className="bg-black/50 border-white/10"
+                                    />
+                                    <Input
+                                        value={editData.branch}
+                                        onChange={e => setEditData(prev => ({ ...prev, branch: e.target.value }))}
+                                        placeholder="Branch"
+                                        className="bg-black/50 border-white/10"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                     <Input
+                                        type="number"
+                                        value={editData.year}
+                                        onChange={e => setEditData(prev => ({ ...prev, year: parseInt(e.target.value) || 1 }))}
+                                        placeholder="Year"
+                                        className="bg-black/50 border-white/10"
+                                    />
+                                    <Input
+                                        value={editData.careerGoal}
+                                        onChange={e => setEditData(prev => ({ ...prev, careerGoal: e.target.value }))}
+                                        placeholder="Target Role"
+                                        className="bg-black/50 border-white/10"
+                                    />
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <h1 className="text-2xl md:text-3xl font-bold font-cyber text-white tracking-wide flex items-center gap-3">
+                                    {user.name}
+                                    <span className={`text-xs px-2 py-1 rounded border border-white/10 bg-white/5 font-mono text-gray-400`}>
+                                        {user.tier}
+                                    </span>
+                                </h1>
+                                <div className="flex items-center gap-2 text-sm text-gray-400 font-mono">
+                                    <Code className="w-4 h-4 text-neon-blue" />
+                                    {user.degree} • {user.branch} • Year {user.year}
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-gray-400 font-mono">
+                                    <Target className="w-4 h-4 text-neon-purple" />
+                                    Target: <span className="text-neon-purple">{user.careerGoal}</span>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                    
+                    <Button
+                        variant={isEditing ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+                        className={isEditing ? "bg-neon-green text-black hover:bg-neon-green/90" : "border-neon-blue text-neon-blue hover:bg-neon-blue/10"}
+                    >
+                        {isEditing ? <Save className="w-4 h-4 mr-2" /> : <Edit className="w-4 h-4 mr-2" />}
+                        {isEditing ? 'SAVE' : 'EDIT'}
+                    </Button>
+                </div>
+
+                {/* Level Progress Bar */}
+                <div className="mt-6 space-y-2">
+                    <div className="flex justify-between text-xs font-mono text-gray-400">
+                        <span>XP PROGRESS</span>
+                        <span className="text-neon-blue">{progressXp} / {neededXp} XP</span>
+                    </div>
+                    <div className="h-2 bg-black/50 rounded-full overflow-hidden border border-white/10">
+                        <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progressPercentage}%` }}
+                            className={`h-full bg-gradient-to-r ${getTierGradient(user.tier)} shadow-[0_0_10px_rgba(var(--neon-blue),0.5)]`}
+                        />
+                    </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: 'Total XP', value: user.xp.toLocaleString(), icon: Zap, color: 'text-neon-yellow', border: 'border-neon-yellow/30' },
+            { label: 'Rank', value: `#${user.rank || '??'}`, icon: Trophy, color: 'text-neon-purple', border: 'border-neon-purple/30' },
+            { label: 'Streak', value: `${user.streak} Days`, icon: Flame, color: 'text-neon-orange', border: 'border-neon-orange/30' },
+            { label: 'System', value: 'ONLINE', icon: Shield, color: 'text-neon-green', border: 'border-neon-green/30' },
+          ].map((stat, i) => (
+            <Card key={i} className={`bg-black/40 backdrop-blur-sm border-white/5 hover:border-opacity-50 transition-colors group`}>
+                <CardContent className="p-4 flex flex-col items-center justify-center text-center space-y-2">
+                    <div className={`p-2 rounded-full bg-white/5 ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
+                        <stat.icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <div className="text-xl font-bold font-cyber text-white">{stat.value}</div>
+                        <div className="text-xs font-mono text-gray-500 uppercase tracking-wider">{stat.label}</div>
+                    </div>
+                </CardContent>
+            </Card>
           ))}
         </div>
 
-        {/* Level Progress */}
-        <motion.div
-          className={`p-4 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}
-        >
-          <div className="flex justify-between mb-2">
-            <span className={`font-mono text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              Level {user.level} → {user.level + 1}
-            </span>
-            <span className={`font-mono text-sm ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
-              {progressXp}/{neededXp} XP
-            </span>
-          </div>
-          <div className={`w-full h-3 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'} overflow-hidden`}>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progressPercentage}%` }}
-              className={`h-full rounded-full bg-gradient-to-r ${getTierGradient(user.tier)}`}
-            />
-          </div>
-        </motion.div>
-
-        {/* NON-NEGOTIABLES SECTION */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`p-6 rounded-2xl border-2 border-red-500/50 ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-xl`}
-        >
-          <div className="flex items-center gap-3 mb-4">
-            <AlertTriangle className="w-6 h-6 text-red-500" />
-            <h3 className={`text-xl font-bold font-mono ${darkMode ? 'text-red-400' : 'text-red-600'}`}>
-              ⚠️ NON-NEGOTIABLES
+        {/* Non-Negotiables */}
+        <div className="space-y-4">
+            <h3 className="text-lg font-cyber text-neon-red flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
+                NON-NEGOTIABLE PROTOCOLS
             </h3>
-            <span className={`px-2 py-1 rounded text-xs font-mono bg-red-500/20 text-red-400`}>
-              MISS = XP RESET TO 0
-            </span>
-          </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Daily DSA */}
+                <Card className={`bg-black/40 border-l-4 ${dailyDSA ? 'border-l-neon-green border-white/10' : 'border-l-neon-red border-red-500/30'}`}>
+                    <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-3">
+                            <div className="space-y-1">
+                                <div className="font-bold text-white flex items-center gap-2">
+                                    <Code className={`w-4 h-4 ${dailyDSA ? 'text-neon-green' : 'text-neon-red'}`} />
+                                    Daily DSA
+                                </div>
+                                <div className="text-xs font-mono text-gray-400">1 Problem / Day</div>
+                            </div>
+                            <Badge variant={dailyDSA ? "default" : "destructive"} className={dailyDSA ? "bg-neon-green/20 text-neon-green hover:bg-neon-green/30" : "bg-neon-red/20 text-neon-red hover:bg-neon-red/30"}>
+                                {dailyDSA ? 'COMPLETED' : 'PENDING'}
+                            </Badge>
+                        </div>
+                        
+                        {!dailyDSA ? (
+                             <Button 
+                                onClick={markDSAComplete}
+                                className="w-full bg-neon-green/10 hover:bg-neon-green/20 text-neon-green border border-neon-green/50"
+                                size="sm"
+                            >
+                                MARK COMPLETE
+                            </Button>
+                        ) : (
+                            <div className="text-center py-1 text-sm font-mono text-neon-green">
+                                Protocol Satisfied
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            {/* Daily DSA */}
-            <div className={`p-4 rounded-xl border ${dailyDSA ? 'border-green-500 bg-green-500/10' : 'border-red-500 bg-red-500/10'}`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Code className={`w-5 h-5 ${dailyDSA ? 'text-green-400' : 'text-red-400'}`} />
-                  <span className={`font-bold font-mono ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    Daily DSA Problem
-                  </span>
-                </div>
-                {dailyDSA ? (
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                ) : (
-                  <span className="text-red-400 text-sm font-mono animate-pulse">PENDING</span>
-                )}
-              </div>
-              <p className={`text-sm font-mono mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                Solve at least 1 DSA problem every day. No exceptions.
-              </p>
-              {!dailyDSA && (
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={markDSAComplete}
-                  className="w-full py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg font-mono font-bold text-sm"
-                >
-                  ✅ Mark DSA Complete
-                </motion.button>
-              )}
-              {dailyDSA && (
-                <div className="text-green-400 text-sm font-mono text-center">
-                  ✓ Completed for today!
-                </div>
-              )}
+                {/* Weekly Commits */}
+                <Card className={`bg-black/40 border-l-4 ${weeklyCommits >= 3 ? 'border-l-neon-green border-white/10' : 'border-l-neon-yellow border-yellow-500/30'}`}>
+                    <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-3">
+                            <div className="space-y-1">
+                                <div className="font-bold text-white flex items-center gap-2">
+                                    <GitBranch className={`w-4 h-4 ${weeklyCommits >= 3 ? 'text-neon-green' : 'text-neon-yellow'}`} />
+                                    Weekly Commits
+                                </div>
+                                <div className="text-xs font-mono text-gray-400">3 Commits / Week</div>
+                            </div>
+                            <Badge variant="outline" className={`${weeklyCommits >= 3 ? 'border-neon-green text-neon-green' : 'border-neon-yellow text-neon-yellow'}`}>
+                                {weeklyCommits}/3
+                            </Badge>
+                        </div>
+                        
+                        <div className="space-y-2">
+                             <div className="h-1.5 bg-black/50 rounded-full overflow-hidden border border-white/10">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${Math.min((weeklyCommits / 3) * 100, 100)}%` }}
+                                    className={`h-full ${weeklyCommits >= 3 ? 'bg-neon-green' : 'bg-neon-yellow'}`}
+                                />
+                            </div>
+                            <Button 
+                                onClick={addCommit}
+                                variant="ghost"
+                                size="sm"
+                                className="w-full text-xs font-mono text-gray-400 hover:text-white h-6"
+                            >
+                                <Plus className="w-3 h-3 mr-1" /> Log Manual Commit
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
+        </div>
 
-            {/* Weekly Commits */}
-            <div className={`p-4 rounded-xl border ${weeklyCommits >= 3 ? 'border-green-500 bg-green-500/10' : 'border-yellow-500 bg-yellow-500/10'}`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <GitBranch className={`w-5 h-5 ${weeklyCommits >= 3 ? 'text-green-400' : 'text-yellow-400'}`} />
-                  <span className={`font-bold font-mono ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    Weekly GitHub Commits
-                  </span>
-                </div>
-                <span className={`text-sm font-mono font-bold ${weeklyCommits >= 3 ? 'text-green-400' : 'text-yellow-400'}`}>
-                  {weeklyCommits}/3
-                </span>
-              </div>
-              <p className={`text-sm font-mono mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                Push at least 3 commits to GitHub every week.
-              </p>
-              {/* Progress bar */}
-              <div className={`w-full h-2 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'} mb-3 overflow-hidden`}>
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min((weeklyCommits / 3) * 100, 100)}%` }}
-                  className={`h-full rounded-full ${weeklyCommits >= 3 ? 'bg-green-500' : 'bg-yellow-500'}`}
-                />
-              </div>
-              {weeklyCommits < 3 && (
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={addCommit}
-                  className="w-full py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-mono font-bold text-sm"
-                >
-                  + Log Commit
-                </motion.button>
-              )}
-              {weeklyCommits >= 3 && (
-                <div className="text-green-400 text-sm font-mono text-center">
-                  ✓ Weekly goal achieved!
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className={`mt-4 p-3 rounded-lg ${darkMode ? 'bg-red-900/30' : 'bg-red-100'} border border-red-500/30`}>
-            <p className={`text-sm font-mono ${darkMode ? 'text-red-300' : 'text-red-700'}`}>
-              <Skull className="inline w-4 h-4 mr-1" />
-              <strong>WARNING:</strong> Missing daily DSA or weekly commits will reset ALL your XP to 0. 
-              These are non-negotiable requirements for serious developers. No excuses.
-            </p>
-          </div>
-        </motion.div>
-
-        {/* Interests */}
-        <motion.div
-          className={`p-4 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}
-        >
-          <h4 className={`text-sm font-bold font-mono mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-            <Coffee className="inline w-4 h-4 mr-1" /> Interests
-          </h4>
-          <div className="flex flex-wrap gap-2">
-            {user.interests.map((interest, index) => (
-              <span
-                key={index}
-                className={`px-3 py-1 rounded-lg text-xs font-mono ${
-                  darkMode ? 'bg-gray-700 text-green-400 border border-green-500/30' : 'bg-gray-100 text-green-600'
-                }`}
-              >
-                #{interest}
-              </span>
-            ))}
-          </div>
-        </motion.div>
       </div>
     </div>
   );

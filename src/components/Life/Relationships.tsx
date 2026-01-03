@@ -2,9 +2,15 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Heart, Users, UserPlus, MessageCircle, Star,
-  Plus, Sparkles, Trophy, Clock
+  Plus, Sparkles, Trophy, Clock, Crown
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
+import { Input } from '../ui/input';
+import { Textarea } from '../ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 
 interface SocialInteraction {
   id: string;
@@ -220,83 +226,110 @@ export function Relationships() {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="brutal-card bg-pink-900/20 border-pink-500/50 p-4"
           >
-            <div className="flex items-center gap-3">
-              <Heart className="text-pink-400" size={28} />
-              <div>
-                <p className="text-xs text-gray-500 font-mono uppercase">Interactions</p>
-                <p className="text-2xl font-black text-pink-400 font-mono">{totalInteractions}</p>
-              </div>
-            </div>
+            <Card variant="neon" className="border-neon-pink/50">
+              <CardContent className="p-4 flex items-center gap-3">
+                <Heart className="text-neon-pink" size={28} />
+                <div>
+                  <p className="text-xs text-gray-500 font-mono uppercase">Interactions</p>
+                  <p className="text-2xl font-black text-neon-pink font-mono">{totalInteractions}</p>
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="brutal-card bg-yellow-900/20 border-yellow-500/50 p-4"
           >
-            <div className="flex items-center gap-3">
-              <Sparkles className="text-yellow-400" size={28} />
-              <div>
-                <p className="text-xs text-gray-500 font-mono uppercase">XP Earned</p>
-                <p className="text-2xl font-black text-yellow-400 font-mono">+{totalXPEarned}</p>
-              </div>
-            </div>
+            <Card variant="neon" className="border-neon-yellow/50">
+              <CardContent className="p-4 flex items-center gap-3">
+                <Sparkles className="text-neon-yellow" size={28} />
+                <div>
+                  <p className="text-xs text-gray-500 font-mono uppercase">XP Earned</p>
+                  <p className="text-2xl font-black text-neon-yellow font-mono">+{totalXPEarned}</p>
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="brutal-card bg-cyan-900/20 border-cyan-500/50 p-4"
           >
-            <div className="flex items-center gap-3">
-              <Users className="text-cyan-400" size={28} />
-              <div>
-                <p className="text-xs text-gray-500 font-mono uppercase">People</p>
-                <p className="text-2xl font-black text-cyan-400 font-mono">{relationships.length}</p>
-              </div>
-            </div>
+            <Card variant="neon" className="border-neon-blue/50">
+              <CardContent className="p-4 flex items-center gap-3">
+                <Users className="text-neon-blue" size={28} />
+                <div>
+                  <p className="text-xs text-gray-500 font-mono uppercase">People</p>
+                  <p className="text-2xl font-black text-neon-blue font-mono">{relationships.length}</p>
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="brutal-card bg-purple-900/20 border-purple-500/50 p-4"
           >
-            <div className="flex items-center gap-3">
-              <Star className="text-purple-400" size={28} />
-              <div>
-                <p className="text-xs text-gray-500 font-mono uppercase">Avg Quality</p>
-                <p className="text-2xl font-black text-purple-400 font-mono">{avgQuality}⭐</p>
-              </div>
-            </div>
+            <Card variant="neon" className="border-neon-purple/50">
+              <CardContent className="p-4 flex items-center gap-3">
+                <Star className="text-neon-purple" size={28} />
+                <div>
+                  <p className="text-xs text-gray-500 font-mono uppercase">Avg Quality</p>
+                  <p className="text-2xl font-black text-neon-purple font-mono">{avgQuality}⭐</p>
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
         </div>
 
-        {/* Interactions Tab */}
+        {/* Navigation */}
+        <div className="flex gap-4 mb-8 overflow-x-auto pb-2">
+          <Button
+            variant={activeTab === 'interactions' ? 'neon' : 'outline'}
+            onClick={() => setActiveTab('interactions')}
+            className="font-mono"
+          >
+            INTERACTIONS
+          </Button>
+          <Button
+            variant={activeTab === 'people' ? 'neon' : 'outline'}
+            onClick={() => setActiveTab('people')}
+            className="font-mono"
+          >
+            PEOPLE
+          </Button>
+          <Button
+            variant={activeTab === 'stats' ? 'neon' : 'outline'}
+            onClick={() => setActiveTab('stats')}
+            className="font-mono"
+          >
+            STATS
+          </Button>
+        </div>
         {activeTab === 'interactions' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-black text-white font-mono">RECENT INTERACTIONS</h2>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <Button
+                variant="neon"
                 onClick={() => setShowAddModal(true)}
-                className="brutal-card bg-pink-500 hover:bg-pink-600 border-pink-400 text-black px-4 py-2 font-black flex items-center gap-2"
+                className="font-mono"
               >
-                <Plus size={16} /> LOG INTERACTION
-              </motion.button>
+                <Plus size={16} className="mr-2" /> LOG INTERACTION
+              </Button>
             </div>
 
-            <div className="brutal-card bg-gray-900 border-gray-700 p-4">
+            <Card variant="neon" className="bg-black/40 border-white/10 p-4">
               {interactions.length === 0 ? (
                 <div className="text-center py-12">
                   <Heart className="text-gray-600 mx-auto mb-4" size={64} />
@@ -311,47 +344,48 @@ export function Relationships() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.03 }}
-                      className={`brutal-card p-4 transition-colors ${categoryColors[interaction.category].bg} ${categoryColors[interaction.category].border}`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <span className="text-3xl">
-                            {interactionTypes.find(t => t.name === interaction.type)?.icon || '💬'}
-                          </span>
-                          <div>
-                            <h3 className="text-white font-bold flex items-center gap-2">
-                              {interaction.type}
-                              <span className={`text-sm ${categoryColors[interaction.category].text}`}>
-                                with {interaction.person}
-                              </span>
-                            </h3>
-                            <div className="flex items-center gap-3 mt-1 text-sm">
-                              <span className="text-yellow-400">
-                                {'⭐'.repeat(interaction.quality)}
-                              </span>
-                              {interaction.duration && (
-                                <span className="text-gray-500 font-mono flex items-center gap-1">
-                                  <Clock size={12} /> {interaction.duration} min
+                      <Card variant="neon" className={`p-4 transition-colors ${categoryColors[interaction.category].bg} ${categoryColors[interaction.category].border}`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <span className="text-3xl">
+                              {interactionTypes.find(t => t.name === interaction.type)?.icon || '💬'}
+                            </span>
+                            <div>
+                              <h3 className="text-white font-bold flex items-center gap-2">
+                                {interaction.type}
+                                <span className={`text-sm ${categoryColors[interaction.category].text}`}>
+                                  with {interaction.person}
                                 </span>
+                              </h3>
+                              <div className="flex items-center gap-3 mt-1 text-sm">
+                                <span className="text-neon-yellow">
+                                  {'⭐'.repeat(interaction.quality)}
+                                </span>
+                                {interaction.duration && (
+                                  <span className="text-gray-500 font-mono flex items-center gap-1">
+                                    <Clock size={12} /> {interaction.duration} min
+                                  </span>
+                                )}
+                                <span className="text-gray-500 font-mono">
+                                  {interaction.date.toLocaleDateString()}
+                                </span>
+                              </div>
+                              {interaction.notes && (
+                                <p className="text-gray-400 text-sm mt-1 italic">"{interaction.notes}"</p>
                               )}
-                              <span className="text-gray-500 font-mono">
-                                {interaction.date.toLocaleDateString()}
-                              </span>
                             </div>
-                            {interaction.notes && (
-                              <p className="text-gray-400 text-sm mt-1 italic">"{interaction.notes}"</p>
-                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xl font-black text-neon-pink">+{interaction.xpEarned} XP</p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-xl font-black text-pink-400">+{interaction.xpEarned} XP</p>
-                        </div>
-                      </div>
+                      </Card>
                     </motion.div>
                   ))}
                 </div>
               )}
-            </div>
+            </Card>
           </motion.div>
         )}
 
@@ -360,14 +394,13 @@ export function Relationships() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-black text-white font-mono">YOUR PEOPLE</h2>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <Button
+                variant="neon"
                 onClick={() => setShowPersonModal(true)}
-                className="brutal-card bg-cyan-500 hover:bg-cyan-600 border-cyan-400 text-black px-4 py-2 font-black flex items-center gap-2"
+                className="font-mono"
               >
-                <UserPlus size={16} /> ADD PERSON
-              </motion.button>
+                <UserPlus size={16} className="mr-2" /> ADD PERSON
+              </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -377,37 +410,38 @@ export function Relationships() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className={`brutal-card p-4 ${categoryColors[person.category].bg} ${categoryColors[person.category].border}`}
                 >
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-4xl">{person.icon}</span>
-                    <div className="flex-1">
-                      <h3 className="text-white font-bold">{person.name}</h3>
-                      <p className={`text-sm ${categoryColors[person.category].text} capitalize`}>
-                        {categoryColors[person.category].icon} {person.category}
-                      </p>
+                  <Card variant="neon" className={`p-4 h-full ${categoryColors[person.category].bg} ${categoryColors[person.category].border}`}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-4xl">{person.icon}</span>
+                      <div className="flex-1">
+                        <h3 className="text-white font-bold">{person.name}</h3>
+                        <p className={`text-sm ${categoryColors[person.category].text} capitalize`}>
+                          {categoryColors[person.category].icon} {person.category}
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="mb-4">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-gray-400 font-mono">Connection Level</span>
-                      <span className={`font-bold ${categoryColors[person.category].text}`}>{person.connectionLevel}%</span>
+                    <div className="mb-4">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-gray-400 font-mono">Connection Level</span>
+                        <span className={`font-bold ${categoryColors[person.category].text}`}>{person.connectionLevel}%</span>
+                      </div>
+                      <div className="h-3 bg-black border border-white/20 rounded-full overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${person.connectionLevel}%` }}
+                          transition={{ duration: 1 }}
+                          className="h-full bg-gradient-to-r from-neon-pink to-neon-purple shadow-[0_0_10px_rgba(255,0,255,0.5)]"
+                        />
+                      </div>
                     </div>
-                    <div className="h-3 bg-gray-800 border border-gray-700 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${person.connectionLevel}%` }}
-                        transition={{ duration: 1 }}
-                        className="h-full bg-gradient-to-r from-pink-500 to-purple-500"
-                      />
-                    </div>
-                  </div>
 
-                  <div className="flex justify-between text-sm text-gray-500">
-                    <span>{person.totalInteractions} interactions</span>
-                    <span>Last: {person.lastContact.toLocaleDateString()}</span>
-                  </div>
+                    <div className="flex justify-between text-sm text-gray-500">
+                      <span>{person.totalInteractions} interactions</span>
+                      <span>Last: {person.lastContact.toLocaleDateString()}</span>
+                    </div>
+                  </Card>
                 </motion.div>
               ))}
             </div>
@@ -419,9 +453,11 @@ export function Relationships() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Category Breakdown */}
-              <div className="brutal-card bg-gray-900 border-gray-700 p-6">
-                <h2 className="text-xl font-black text-white mb-4 font-mono">CATEGORY BREAKDOWN</h2>
-                <div className="space-y-4">
+              <Card variant="neon" className="border-neon-purple/50">
+                <CardHeader>
+                  <CardTitle className="text-neon-purple font-mono">CATEGORY BREAKDOWN</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   {categoryStats.map(stat => (
                     <div key={stat.category} className="flex items-center gap-4">
                       <span className="text-2xl">{stat.icon}</span>
@@ -430,39 +466,41 @@ export function Relationships() {
                           <span className="text-white font-medium capitalize">{stat.category}</span>
                           <span className={stat.text}>{stat.count}</span>
                         </div>
-                        <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-2 bg-black border border-white/20 rounded-full overflow-hidden">
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${totalInteractions > 0 ? (stat.count / totalInteractions) * 100 : 0}%` }}
-                            className="h-full bg-gradient-to-r from-pink-500 to-purple-500"
+                            className="h-full bg-gradient-to-r from-neon-purple to-neon-pink shadow-[0_0_5px_rgba(188,19,254,0.5)]"
                           />
                         </div>
                       </div>
                     </div>
                   ))}
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
               {/* Tips */}
-              <div className="brutal-card bg-gray-900 border-gray-700 p-6">
-                <h2 className="text-xl font-black text-white mb-4 font-mono flex items-center gap-2">
-                  <Sparkles className="text-yellow-400" /> SOCIAL TIPS
-                </h2>
-                <div className="space-y-4">
+              <Card variant="neon" className="border-neon-yellow/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-neon-yellow font-mono">
+                    <Sparkles className="w-5 h-5" /> SOCIAL TIPS
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   {[
-                    { icon: '💬', tip: 'Deep conversations earn 60+ XP', color: 'text-cyan-400' },
-                    { icon: '🎁', tip: 'Giving gifts = 75 XP + connection boost', color: 'text-pink-400' },
-                    { icon: '⭐', tip: 'Quality matters! 5-star interactions = 2.2x XP', color: 'text-yellow-400' },
-                    { icon: '🙏', tip: 'Helping others earns the most XP (90)', color: 'text-green-400' },
-                    { icon: '📞', tip: 'Even a quick call earns 35 XP', color: 'text-blue-400' },
+                    { icon: '💬', tip: 'Deep conversations earn 60+ XP', color: 'text-neon-blue' },
+                    { icon: '🎁', tip: 'Giving gifts = 75 XP + connection boost', color: 'text-neon-pink' },
+                    { icon: '⭐', tip: 'Quality matters! 5-star interactions = 2.2x XP', color: 'text-neon-yellow' },
+                    { icon: '🙏', tip: 'Helping others earns the most XP (90)', color: 'text-neon-green' },
+                    { icon: '📞', tip: 'Even a quick call earns 35 XP', color: 'text-neon-purple' },
                   ].map((item, i) => (
                     <div key={i} className="flex items-center gap-3">
                       <span className="text-2xl">{item.icon}</span>
                       <p className={item.color}>{item.tip}</p>
                     </div>
                   ))}
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
           </motion.div>
         )}
@@ -482,128 +520,132 @@ export function Relationships() {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 onClick={e => e.stopPropagation()}
-                className="brutal-card bg-gray-900 border-pink-500 p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
+                className="w-full max-w-md"
               >
-                <h2 className="text-2xl font-black text-white mb-4 font-mono flex items-center gap-2">
-                  <Heart className="text-pink-500" /> LOG INTERACTION
-                </h2>
+                <Card variant="neon" className="border-neon-pink p-6 max-h-[90vh] overflow-y-auto">
+                  <h2 className="text-2xl font-black text-white mb-4 font-mono flex items-center gap-2">
+                    <Heart className="text-neon-pink" /> LOG INTERACTION
+                  </h2>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm text-gray-400 font-mono block mb-2">INTERACTION TYPE</label>
-                    <select
-                      value={selectedType.name}
-                      onChange={e => setSelectedType(interactionTypes.find(t => t.name === e.target.value)!)}
-                      className="w-full bg-gray-800 border-2 border-gray-700 text-white p-3 font-mono focus:border-pink-500 outline-none"
-                    >
-                      {interactionTypes.map(type => (
-                        <option key={type.name} value={type.name}>
-                          {type.icon} {type.name} ({type.baseXP} XP)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm text-gray-400 font-mono block mb-2">INTERACTION TYPE</label>
+                      <select
+                        value={selectedType.name}
+                        onChange={e => setSelectedType(interactionTypes.find(t => t.name === e.target.value)!)}
+                        className="w-full bg-black/50 border-2 border-white/10 text-white p-3 font-mono focus:border-neon-pink outline-none rounded-md"
+                      >
+                        {interactionTypes.map(type => (
+                          <option key={type.name} value={type.name} className="bg-black text-white">
+                            {type.icon} {type.name} ({type.baseXP} XP)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <div>
-                    <label className="text-sm text-gray-400 font-mono block mb-2">WITH WHO?</label>
-                    <input
-                      type="text"
-                      value={personName}
-                      onChange={e => setPersonName(e.target.value)}
-                      placeholder="Enter name"
-                      list="people-list"
-                      className="w-full bg-gray-800 border-2 border-gray-700 text-white p-3 font-mono focus:border-pink-500 outline-none"
-                    />
-                    <datalist id="people-list">
-                      {relationships.map(r => (
-                        <option key={r.id} value={r.name} />
-                      ))}
-                    </datalist>
-                  </div>
+                    <div>
+                      <label className="text-sm text-gray-400 font-mono block mb-2">WITH WHO?</label>
+                      <input
+                        type="text"
+                        value={personName}
+                        onChange={e => setPersonName(e.target.value)}
+                        placeholder="Enter name"
+                        list="people-list"
+                        className="w-full bg-black/50 border-2 border-white/10 text-white p-3 font-mono focus:border-neon-pink outline-none rounded-md"
+                      />
+                      <datalist id="people-list">
+                        {relationships.map(r => (
+                          <option key={r.id} value={r.name} />
+                        ))}
+                      </datalist>
+                    </div>
 
-                  <div>
-                    <label className="text-sm text-gray-400 font-mono block mb-2">CATEGORY</label>
-                    <div className="grid grid-cols-5 gap-2">
-                      {(Object.keys(categoryColors) as Array<keyof typeof categoryColors>).map(cat => (
-                        <button
-                          key={cat}
-                          onClick={() => setSelectedCategory(cat)}
-                          className={`p-2 text-2xl border-2 transition-colors ${
-                            selectedCategory === cat
-                              ? `${categoryColors[cat].border} ${categoryColors[cat].bg}`
-                              : 'border-gray-700 hover:border-pink-500/50'
-                          }`}
-                          title={cat}
-                        >
-                          {categoryColors[cat].icon}
-                        </button>
-                      ))}
+                    <div>
+                      <label className="text-sm text-gray-400 font-mono block mb-2">CATEGORY</label>
+                      <div className="grid grid-cols-5 gap-2">
+                        {(Object.keys(categoryColors) as Array<keyof typeof categoryColors>).map(cat => (
+                          <button
+                            key={cat}
+                            onClick={() => setSelectedCategory(cat)}
+                            className={`p-2 text-2xl border-2 transition-colors rounded-md ${
+                              selectedCategory === cat
+                                ? `${categoryColors[cat].border} ${categoryColors[cat].bg}`
+                                : 'border-white/10 hover:border-neon-pink/50'
+                            }`}
+                            title={cat}
+                          >
+                            {categoryColors[cat].icon}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm text-gray-400 font-mono block mb-2">QUALITY (1-5 STARS)</label>
+                      <div className="flex gap-2">
+                        {([1, 2, 3, 4, 5] as const).map(star => (
+                          <button
+                            key={star}
+                            onClick={() => setQuality(star)}
+                            className={`flex-1 p-3 text-2xl border-2 transition-colors rounded-md ${
+                              quality >= star
+                                ? 'border-neon-yellow bg-neon-yellow/20'
+                                : 'border-white/10 hover:border-neon-yellow/50'
+                            }`}
+                          >
+                            {quality >= star ? '⭐' : '☆'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm text-gray-400 font-mono block mb-2">DURATION (MINUTES)</label>
+                      <input
+                        type="number"
+                        value={duration}
+                        onChange={e => setDuration(parseInt(e.target.value))}
+                        min="5"
+                        step="5"
+                        className="w-full bg-black/50 border-2 border-white/10 text-white p-3 font-mono focus:border-neon-pink outline-none rounded-md"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-sm text-gray-400 font-mono block mb-2">NOTES (Optional)</label>
+                      <textarea
+                        value={notes}
+                        onChange={e => setNotes(e.target.value)}
+                        placeholder="What did you talk about?"
+                        className="w-full bg-black/50 border-2 border-white/10 text-white p-3 font-mono focus:border-neon-pink outline-none resize-none rounded-md"
+                        rows={2}
+                      />
+                    </div>
+
+                    <Card variant="neon" className="bg-neon-pink/10 border-neon-pink/50 p-4">
+                      <p className="text-neon-pink font-mono text-sm">
+                        ⚡ You will earn <span className="font-black text-lg">+{calculateXP()} XP</span>
+                      </p>
+                    </Card>
+
+                    <div className="flex gap-3">
+                      <Button
+                        variant="neon"
+                        onClick={addInteraction}
+                        className="flex-1 font-mono"
+                      >
+                        LOG IT
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowAddModal(false)}
+                        className="flex-1 font-mono"
+                      >
+                        CANCEL
+                      </Button>
                     </div>
                   </div>
-
-                  <div>
-                    <label className="text-sm text-gray-400 font-mono block mb-2">QUALITY (1-5 STARS)</label>
-                    <div className="flex gap-2">
-                      {([1, 2, 3, 4, 5] as const).map(star => (
-                        <button
-                          key={star}
-                          onClick={() => setQuality(star)}
-                          className={`flex-1 p-3 text-2xl border-2 transition-colors ${
-                            quality >= star
-                              ? 'border-yellow-500 bg-yellow-500/20'
-                              : 'border-gray-700 hover:border-yellow-500/50'
-                          }`}
-                        >
-                          {quality >= star ? '⭐' : '☆'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm text-gray-400 font-mono block mb-2">DURATION (MINUTES)</label>
-                    <input
-                      type="number"
-                      value={duration}
-                      onChange={e => setDuration(parseInt(e.target.value))}
-                      min="5"
-                      step="5"
-                      className="w-full bg-gray-800 border-2 border-gray-700 text-white p-3 font-mono focus:border-pink-500 outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-sm text-gray-400 font-mono block mb-2">NOTES (Optional)</label>
-                    <textarea
-                      value={notes}
-                      onChange={e => setNotes(e.target.value)}
-                      placeholder="What did you talk about?"
-                      className="w-full bg-gray-800 border-2 border-gray-700 text-white p-3 font-mono focus:border-pink-500 outline-none resize-none"
-                      rows={2}
-                    />
-                  </div>
-
-                  <div className="brutal-card bg-pink-900/30 border-pink-500/50 p-4">
-                    <p className="text-pink-400 font-mono text-sm">
-                      ⚡ You will earn <span className="font-black text-lg">+{calculateXP()} XP</span>
-                    </p>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={addInteraction}
-                      className="flex-1 bg-pink-500 hover:bg-pink-600 text-black font-black py-3 px-4 border-2 border-pink-400 brutal-shadow"
-                    >
-                      LOG IT
-                    </button>
-                    <button
-                      onClick={() => setShowAddModal(false)}
-                      className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-black py-3 px-4 border-2 border-gray-600 brutal-shadow"
-                    >
-                      CANCEL
-                    </button>
-                  </div>
-                </div>
+                </Card>
               </motion.div>
             </motion.div>
           )}
@@ -624,76 +666,80 @@ export function Relationships() {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 onClick={e => e.stopPropagation()}
-                className="brutal-card bg-gray-900 border-cyan-500 p-6 max-w-md w-full"
+                className="w-full max-w-md"
               >
-                <h2 className="text-2xl font-black text-white mb-4 font-mono flex items-center gap-2">
-                  <UserPlus className="text-cyan-500" /> ADD PERSON
-                </h2>
+                <Card variant="neon" className="border-neon-blue p-6">
+                  <h2 className="text-2xl font-black text-white mb-4 font-mono flex items-center gap-2">
+                    <UserPlus className="text-neon-blue" /> ADD PERSON
+                  </h2>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm text-gray-400 font-mono block mb-2">NAME</label>
-                    <input
-                      type="text"
-                      value={newPersonName}
-                      onChange={e => setNewPersonName(e.target.value)}
-                      placeholder="Enter their name"
-                      className="w-full bg-gray-800 border-2 border-gray-700 text-white p-3 font-mono focus:border-cyan-500 outline-none"
-                    />
-                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm text-gray-400 font-mono block mb-2">NAME</label>
+                      <input
+                        type="text"
+                        value={newPersonName}
+                        onChange={e => setNewPersonName(e.target.value)}
+                        placeholder="Enter their name"
+                        className="w-full bg-black/50 border-2 border-white/10 text-white p-3 font-mono focus:border-neon-blue outline-none rounded-md"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="text-sm text-gray-400 font-mono block mb-2">CATEGORY</label>
-                    <div className="grid grid-cols-5 gap-2">
-                      {(Object.keys(categoryColors) as Array<keyof typeof categoryColors>).map(cat => (
-                        <button
-                          key={cat}
-                          onClick={() => setNewPersonCategory(cat)}
-                          className={`p-2 text-2xl border-2 transition-colors ${
-                            newPersonCategory === cat
-                              ? `${categoryColors[cat].border} ${categoryColors[cat].bg}`
-                              : 'border-gray-700 hover:border-cyan-500/50'
-                          }`}
-                          title={cat}
-                        >
-                          {categoryColors[cat].icon}
-                        </button>
-                      ))}
+                    <div>
+                      <label className="text-sm text-gray-400 font-mono block mb-2">CATEGORY</label>
+                      <div className="grid grid-cols-5 gap-2">
+                        {(Object.keys(categoryColors) as Array<keyof typeof categoryColors>).map(cat => (
+                          <button
+                            key={cat}
+                            onClick={() => setNewPersonCategory(cat)}
+                            className={`p-2 text-2xl border-2 transition-colors rounded-md ${
+                              newPersonCategory === cat
+                                ? `${categoryColors[cat].border} ${categoryColors[cat].bg}`
+                                : 'border-white/10 hover:border-neon-blue/50'
+                            }`}
+                            title={cat}
+                          >
+                            {categoryColors[cat].icon}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm text-gray-400 font-mono block mb-2">ICON</label>
+                      <div className="flex flex-wrap gap-2">
+                        {['🧑', '👨', '👩', '👴', '👵', '🧑‍💼', '👨‍💻', '👩‍💻', '🧑‍🎓', '👶'].map(icon => (
+                          <button
+                            key={icon}
+                            onClick={() => setNewPersonIcon(icon)}
+                            className={`text-2xl p-2 border-2 transition-colors rounded-md ${
+                              newPersonIcon === icon ? 'border-neon-blue bg-neon-blue/20' : 'border-white/10 hover:border-neon-blue/50'
+                            }`}
+                          >
+                            {icon}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <Button
+                        variant="neon"
+                        onClick={addPerson}
+                        className="flex-1 font-mono bg-neon-blue border-neon-blue hover:bg-neon-blue/80 text-black"
+                      >
+                        ADD PERSON
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowPersonModal(false)}
+                        className="flex-1 font-mono"
+                      >
+                        CANCEL
+                      </Button>
                     </div>
                   </div>
-
-                  <div>
-                    <label className="text-sm text-gray-400 font-mono block mb-2">ICON</label>
-                    <div className="flex flex-wrap gap-2">
-                      {['🧑', '👨', '👩', '👴', '👵', '🧑‍💼', '👨‍💻', '👩‍💻', '🧑‍🎓', '👶'].map(icon => (
-                        <button
-                          key={icon}
-                          onClick={() => setNewPersonIcon(icon)}
-                          className={`text-2xl p-2 border-2 transition-colors ${
-                            newPersonIcon === icon ? 'border-cyan-500 bg-cyan-500/20' : 'border-gray-700 hover:border-cyan-500/50'
-                          }`}
-                        >
-                          {icon}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={addPerson}
-                      className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-black font-black py-3 px-4 border-2 border-cyan-400 brutal-shadow"
-                    >
-                      ADD PERSON
-                    </button>
-                    <button
-                      onClick={() => setShowPersonModal(false)}
-                      className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-black py-3 px-4 border-2 border-gray-600 brutal-shadow"
-                    >
-                      CANCEL
-                    </button>
-                  </div>
-                </div>
+                </Card>
               </motion.div>
             </motion.div>
           )}

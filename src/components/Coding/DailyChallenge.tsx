@@ -154,7 +154,7 @@ export function DailyChallenge() {
 
   if (loading) {
     return (
-      <div className={`p-6 rounded-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+      <div className="p-6 rounded-2xl bg-black/50 border border-neon-pink/30 shadow-lg">
         <div className="animate-pulse">
           <div className="h-4 bg-gray-300 rounded w-1/4 mb-4"></div>
           <div className="h-6 bg-gray-300 rounded w-3/4 mb-2"></div>
@@ -166,13 +166,13 @@ export function DailyChallenge() {
 
   if (!dailyChallenge) {
     return (
-      <div className={`p-6 rounded-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg text-center`}>
-        <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-        <h3 className={`text-lg font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-          No Daily Challenge
+      <div className="p-6 rounded-2xl bg-black/50 border border-neon-purple/30 shadow-lg text-center">
+        <Calendar className="h-12 w-12 mx-auto mb-4 text-neon-purple" />
+        <h3 className="text-lg font-bold mb-2 font-cyber text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-purple">
+          NO DAILY CHALLENGE
         </h3>
-        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-          Check back tomorrow for a new challenge!
+        <p className="text-sm text-neon-blue font-mono">
+          Check back tomorrow for a new challenge
         </p>
         {error && (
           <p className="mt-2 text-xs text-red-500">
@@ -182,7 +182,7 @@ export function DailyChallenge() {
         <div className="mt-4">
           <button
             onClick={loadDailyChallenge}
-            className="px-3 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600"
+            className="px-3 py-2 rounded-md border border-neon-yellow text-neon-yellow"
           >
             Retry
           </button>
@@ -197,23 +197,19 @@ export function DailyChallenge() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`p-6 rounded-2xl ${
-        darkMode ? 'bg-gray-800' : 'bg-white'
-      } shadow-lg border-l-4 border-yellow-500 ${
-        completed ? 'bg-green-50 dark:bg-green-900/20' : ''
-      }`}
+      className={`p-6 rounded-2xl bg-black/50 shadow-lg border border-neon-yellow/40 ${completed ? 'border-neon-green/50' : ''}`}
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
-          <Calendar className="h-6 w-6 text-yellow-500" />
-          <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            Daily Challenge
+          <Calendar className="h-6 w-6 text-neon-yellow" />
+          <h3 className="text-lg font-bold font-cyber text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-purple">
+            DAILY CHALLENGE
           </h3>
         </div>
-        {completed && <CheckCircle className="h-6 w-6 text-green-500" />}
+        {completed && <CheckCircle className="h-6 w-6 text-neon-green" />}
       </div>
 
-      <h4 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+      <h4 className="text-xl font-bold mb-2 text-neon-pink font-cyber">
         {dailyChallenge.title}
       </h4>
 
@@ -221,20 +217,18 @@ export function DailyChallenge() {
         <span className={`px-3 py-1 rounded-full text-sm font-medium ${difficultyClass}`}>
           {dailyChallenge.difficulty}
         </span>
-        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-          darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'
-        }`}>
+        <span className="px-3 py-1 rounded-full text-sm font-medium border border-neon-blue text-neon-blue">
           {dailyChallenge.platform}
         </span>
         <div className="flex items-center space-x-1">
-          <Star className="h-4 w-4 text-yellow-500" />
-          <span className={`text-sm font-medium ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>
+          <Star className="h-4 w-4 text-neon-yellow" />
+          <span className="text-sm font-medium text-neon-yellow">
             {totalXp} XP
           </span>
         </div>
       </div>
 
-      <p className={`text-sm mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+      <p className="text-sm mb-4 text-neon-blue">
         {dailyChallenge.description}
       </p>
 
@@ -245,10 +239,8 @@ export function DailyChallenge() {
             onClick={() => setActiveTag(tag)}
             className={`px-2 py-1 rounded-md text-xs ${
               activeTag === tag
-                ? 'bg-yellow-500 text-white'
-                : darkMode
-                  ? 'bg-gray-700 text-gray-200'
-                  : 'bg-gray-100 text-gray-800'
+                ? 'border border-neon-yellow text-neon-yellow'
+                : 'bg-black/40 text-white'
             }`}
           >
             {tag}
@@ -268,7 +260,7 @@ export function DailyChallenge() {
               // ignore
             }
           }}
-          className="flex-1 py-2 px-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 flex items-center justify-center space-x-2"
+          className="flex-1 py-2 px-4 border border-neon-pink text-neon-pink rounded-lg flex items-center justify-center space-x-2"
           disabled={!isValidUrl(dailyChallenge.url)}
         >
           <ExternalLink size={16} />
@@ -280,7 +272,7 @@ export function DailyChallenge() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={markCompleted}
-            className="py-2 px-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600"
+            className="py-2 px-4 border border-neon-green text-neon-green rounded-lg"
             disabled={!dailyChallenge}
           >
             ✓
@@ -288,10 +280,10 @@ export function DailyChallenge() {
         )}
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div className="mt-4 pt-4 border-t border-neon-pink/30">
         <div className="flex items-center space-x-2">
-          <Clock className="h-4 w-4 text-gray-400" />
-          <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          <Clock className="h-4 w-4 text-neon-blue" />
+          <span className="text-xs text-neon-blue">
             Bonus XP expires at midnight
           </span>
         </div>
@@ -301,7 +293,7 @@ export function DailyChallenge() {
           </div>
         )}
         {!error && retryCount > 0 && (
-          <div className={`mt-2 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          <div className="mt-2 text-xs text-neon-blue">
             Retried {retryCount} time{retryCount > 1 ? 's' : ''}
           </div>
         )}

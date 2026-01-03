@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Dumbbell, Flame, Plus, X, Zap, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Dumbbell, Flame, Plus, X, Zap, AlertTriangle, RefreshCw, Activity, Calendar } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { LifeService, WorkoutSession } from '../../services/lifeService';
 import { Button } from '../ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 interface WorkoutType {
   name: string;
@@ -28,7 +34,6 @@ const workoutTypes: WorkoutType[] = [
 
 export function Fitness() {
   const { dispatch, state } = useApp();
-  const { darkMode } = state;
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -129,7 +134,7 @@ export function Fitness() {
   const totalMinutes = sessions.reduce((sum, s) => sum + s.duration, 0);
   const totalXPEarned = sessions.reduce((sum, s) => sum + s.xpEarned, 0);
 
-  if (loading) return <div className="p-8 text-center font-mono animate-pulse">LOADING FITNESS DATA...</div>;
+  if (loading) return <div className="p-8 text-center font-mono animate-pulse text-neon-blue">LOADING FITNESS DATA...</div>;
   if (error) return (
       <div className="p-8 text-center text-red-500 font-mono flex flex-col items-center">
           <AlertTriangle className="mb-2" />
@@ -139,66 +144,74 @@ export function Fitness() {
   );
 
   return (
-    <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+    <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`p-6 border-4 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-black'} brutal-shadow`}
         >
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-orange-500 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-              <Dumbbell className="h-6 w-6 text-white" />
-            </div>
-            <h3 className="font-bold font-mono text-lg uppercase">Workouts</h3>
-          </div>
-          <div className="text-4xl font-black font-mono">{totalWorkouts}</div>
+          <Card variant="neon" className="h-full">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400 font-cyber uppercase mb-1">Total Workouts</p>
+                <div className="text-3xl font-bold text-neon-blue font-mono">{totalWorkouts}</div>
+              </div>
+              <div className="p-3 bg-neon-blue/10 rounded-lg text-neon-blue border border-neon-blue/30">
+                <Dumbbell className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
 
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className={`p-6 border-4 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-black'} brutal-shadow`}
         >
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-500 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-              <Flame className="h-6 w-6 text-white" />
-            </div>
-            <h3 className="font-bold font-mono text-lg uppercase">Active Mins</h3>
-          </div>
-          <div className="text-4xl font-black font-mono">{totalMinutes}</div>
+          <Card variant="neon" className="h-full">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400 font-cyber uppercase mb-1">Active Minutes</p>
+                <div className="text-3xl font-bold text-neon-purple font-mono">{totalMinutes}</div>
+              </div>
+              <div className="p-3 bg-neon-purple/10 rounded-lg text-neon-purple border border-neon-purple/30">
+                <Flame className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
 
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className={`p-6 border-4 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-black'} brutal-shadow`}
         >
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-yellow-400 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-              <Zap className="h-6 w-6 text-black" />
-            </div>
-            <h3 className="font-bold font-mono text-lg uppercase">Fitness XP</h3>
-          </div>
-          <div className="text-4xl font-black font-mono">{totalXPEarned}</div>
+          <Card variant="neon" className="h-full">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400 font-cyber uppercase mb-1">Fitness XP</p>
+                <div className="text-3xl font-bold text-neon-yellow font-mono">{totalXPEarned}</div>
+              </div>
+              <div className="p-3 bg-neon-yellow/10 rounded-lg text-neon-yellow border border-neon-yellow/30">
+                <Zap className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
       </div>
 
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-black font-mono uppercase">Session Log</h2>
-        <button
+        <h2 className="text-2xl font-bold font-cyber text-white">
+          SESSION LOG
+        </h2>
+        <Button
+          variant="neon"
           onClick={() => setShowAddModal(true)}
-          className={`flex items-center gap-2 px-4 py-2 font-bold font-mono border-2 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${
-            darkMode 
-              ? 'bg-lime-500 text-black border-lime-400' 
-              : 'bg-black text-white border-black'
-          }`}
+          className="flex items-center gap-2"
         >
           <Plus className="h-5 w-5" />
           LOG WORKOUT
-        </button>
+        </Button>
       </div>
 
       <div className="space-y-4">
@@ -208,141 +221,139 @@ export function Fitness() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.05 }}
-            className={`p-4 border-2 flex items-center justify-between group ${
-              darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-black'
-            }`}
           >
-            <div className="flex items-center gap-4">
-              <div className={`p-3 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${
-                session.intensity === 'Intense' ? 'bg-red-500' :
-                session.intensity === 'Moderate' ? 'bg-orange-500' : 'bg-green-500'
-              }`}>
-                <Dumbbell className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <div className="font-bold font-mono text-lg">{session.type}</div>
-                <div className="text-sm font-mono opacity-60 flex gap-4">
-                  <span>{new Date(session.date).toLocaleDateString()}</span>
-                  <span>{session.duration} mins</span>
-                  <span className="uppercase">{session.intensity}</span>
+            <Card variant="cyber" className="group border-l-4 border-l-neon-blue hover:border-l-neon-purple transition-colors">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className={`p-3 rounded-lg border border-white/10 ${
+                    session.intensity === 'Intense' ? 'bg-red-500/10 text-red-500' :
+                    session.intensity === 'Moderate' ? 'bg-orange-500/10 text-orange-500' : 'bg-green-500/10 text-green-500'
+                  }`}>
+                    <Dumbbell className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="font-bold font-cyber text-lg text-white">{session.type}</div>
+                    <div className="text-sm text-gray-400 font-mono flex gap-4 items-center">
+                      <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {new Date(session.date).toLocaleDateString()}</span>
+                      <span className="flex items-center gap-1"><Activity className="w-3 h-3" /> {session.duration} mins</span>
+                      <Badge variant="outline" className="uppercase text-[10px] h-5">{session.intensity}</Badge>
+                    </div>
+                    {session.notes && (
+                      <div className="text-xs text-gray-500 mt-1 italic">"{session.notes}"</div>
+                    )}
+                  </div>
                 </div>
-                {session.notes && (
-                  <div className="text-xs font-mono mt-1 opacity-80 italic">"{session.notes}"</div>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className={`font-black font-mono text-lg ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>
-                +{session.xpEarned} XP
-              </div>
-              <button 
-                onClick={() => removeSession(session.id)}
-                className="opacity-0 group-hover:opacity-100 p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded transition-opacity"
-              >
-                <X className="h-5 w-5 text-red-500" />
-              </button>
-            </div>
+                <div className="flex items-center gap-4">
+                  <div className="font-bold font-mono text-lg text-neon-yellow">
+                    +{session.xpEarned} XP
+                  </div>
+                  <Button 
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeSession(session.id)}
+                    className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
         ))}
         {sessions.length === 0 && (
-          <div className="text-center py-12 font-mono opacity-50 border-2 border-dashed border-gray-400">
-            NO WORKOUTS RECORDED YET. GET MOVING!
-          </div>
+          <Card variant="outline" className="border-dashed border-gray-700 bg-transparent">
+            <CardContent className="p-12 text-center text-gray-500 font-mono">
+              NO WORKOUTS RECORDED YET. GET MOVING!
+            </CardContent>
+          </Card>
         )}
       </div>
 
       {/* Add Workout Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className={`w-full max-w-md border-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] ${
-              darkMode ? 'bg-gray-900 border-white' : 'bg-white border-black'
-            }`}
+            className="w-full max-w-md"
           >
-            <div className={`p-4 border-b-4 flex justify-between items-center ${
-              darkMode ? 'bg-gray-800 border-white' : 'bg-gray-100 border-black'
-            }`}>
-              <h3 className="font-black font-mono text-xl uppercase">Log Session</h3>
-              <button onClick={() => setShowAddModal(false)}>
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block font-bold font-mono mb-2 text-sm uppercase">Workout Type</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {workoutTypes.map(type => (
-                    <button
-                      key={type.name}
-                      onClick={() => setSelectedWorkout(type)}
-                      className={`p-2 border-2 text-left text-sm font-mono transition-all ${
-                        selectedWorkout.name === type.name
-                          ? 'bg-black text-white border-black translate-x-[2px] translate-y-[2px]' 
-                          : 'bg-white text-black border-black hover:bg-gray-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                      }`}
-                    >
-                      {type.name}
-                    </button>
-                  ))}
+            <Card variant="neon" className="border-2 border-neon-blue">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-white/10">
+                <CardTitle className="font-cyber text-xl text-white uppercase">Log Session</CardTitle>
+                <Button variant="ghost" size="icon" onClick={() => setShowAddModal(false)} className="h-8 w-8 text-gray-400 hover:text-white">
+                  <X className="h-5 w-5" />
+                </Button>
+              </CardHeader>
+              
+              <CardContent className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label className="font-cyber text-neon-blue uppercase text-xs">Workout Type</Label>
+                  <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto custom-scrollbar">
+                    {workoutTypes.map(type => (
+                      <button
+                        key={type.name}
+                        onClick={() => setSelectedWorkout(type)}
+                        className={`p-2 text-left text-sm font-mono transition-all border rounded-md flex items-center gap-2 ${
+                          selectedWorkout.name === type.name
+                            ? 'bg-neon-blue/20 text-white border-neon-blue shadow-[0_0_10px_rgba(0,243,255,0.3)]' 
+                            : 'bg-black/40 text-gray-400 border-white/10 hover:border-white/30'
+                        }`}
+                      >
+                        <span>{type.icon}</span>
+                        {type.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-bold font-mono mb-2 text-sm uppercase">Duration (min)</label>
-                  <input
-                    type="number"
-                    value={duration}
-                    onChange={(e) => setDuration(Number(e.target.value))}
-                    className={`w-full p-2 border-2 font-mono ${
-                      darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-black'
-                    }`}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="font-cyber text-neon-blue uppercase text-xs">Duration (min)</Label>
+                    <Input
+                      type="number"
+                      value={duration}
+                      onChange={(e) => setDuration(Number(e.target.value))}
+                      className="bg-black/40 border-white/10 text-white font-mono focus:border-neon-blue"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-cyber text-neon-blue uppercase text-xs">Intensity</Label>
+                    <select
+                      value={intensity}
+                      onChange={(e) => setIntensity(e.target.value as 'Light' | 'Moderate' | 'Intense')}
+                      className="w-full p-2 bg-black/40 border border-white/10 rounded-md text-white font-mono focus:border-neon-blue focus:outline-none"
+                    >
+                      <option value="Light">Light</option>
+                      <option value="Moderate">Moderate</option>
+                      <option value="Intense">Intense</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="font-cyber text-neon-blue uppercase text-xs">Notes</Label>
+                  <Textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="How did it feel?"
+                    className="bg-black/40 border-white/10 text-white font-mono h-20 focus:border-neon-blue resize-none"
                   />
                 </div>
-                <div>
-                  <label className="block font-bold font-mono mb-2 text-sm uppercase">Intensity</label>
-                  <select
-                    value={intensity}
-                    onChange={(e) => setIntensity(e.target.value as 'Light' | 'Moderate' | 'Intense')}
-                    className={`w-full p-2 border-2 font-mono ${
-                      darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-black'
-                    }`}
-                  >
-                    <option value="Light">Light</option>
-                    <option value="Moderate">Moderate</option>
-                    <option value="Intense">Intense</option>
-                  </select>
+
+                <div className="p-3 bg-neon-green/10 border border-neon-green/30 rounded-md text-center">
+                  <span className="text-gray-400 font-mono text-sm uppercase">Estimated XP: </span>
+                  <span className="text-xl font-bold text-neon-green font-mono">{calculateXP()}</span>
                 </div>
-              </div>
 
-              <div>
-                <label className="block font-bold font-mono mb-2 text-sm uppercase">Notes</label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="How did it feel?"
-                  className={`w-full p-2 border-2 font-mono h-20 ${
-                    darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-black'
-                  }`}
-                />
-              </div>
-
-              <div className={`p-3 border-2 font-mono text-center font-bold ${
-                darkMode ? 'bg-gray-800 border-gray-600' : 'bg-gray-100 border-black'
-              }`}>
-                Estimated XP: <span className="text-xl text-green-500">{calculateXP()}</span>
-              </div>
-
-              <button
-                onClick={addWorkout}
-                className="w-full py-3 font-black font-mono uppercase bg-green-500 text-black border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
-              >
-                Confirm Workout
-              </button>
-            </div>
+                <Button
+                  onClick={addWorkout}
+                  variant="neon"
+                  className="w-full font-cyber uppercase tracking-wider"
+                >
+                  Confirm Workout
+                </Button>
+              </CardContent>
+            </Card>
           </motion.div>
         </div>
       )}

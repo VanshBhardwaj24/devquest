@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { Clock } from 'lucide-react';
+import { StreakAnalytics } from '../Sidebar/StreakAnalytics';
 
 interface SidebarProps {
   activeTab: string;
@@ -63,7 +64,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, color: 'lime', desc: 'Home' },
     { id: 'internships', label: 'Internship Quest', icon: Briefcase, color: 'lime', desc: 'Job Hunt' },
     { id: 'placement', label: 'Placement Prep', icon: GraduationCap, color: 'orange', desc: 'Roadmap' },
-    { id: 'placement-quests', label: 'Placement Quests', icon: CheckSquare, color: 'cyan', desc: 'Daily / Weekly / Monthly' },
+    { id: 'placement-quests', label: 'Placemt', icon: CheckSquare, color: 'cyan', desc: 'Daily / Weekly / Monthly' },
     { id: 'tasks', label: 'Quests', icon: CheckSquare, color: 'cyan', desc: `${pendingTasks} pending` },
     { id: 'coding', label: 'Arena', icon: Swords, color: 'orange', desc: 'Challenges' },
     { id: 'gamification', label: 'Power-Ups', icon: Gamepad2, color: 'magenta', desc: 'Boosts' },
@@ -102,10 +103,10 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
 
   const getColorClasses = (color: string, isActive: boolean) => {
     const colors: Record<string, { active: string; hover: string; icon: string }> = {
-      lime: { active: 'bg-lime-500 text-black border-lime-400', hover: 'hover:bg-lime-500/20 hover:border-lime-500/50', icon: 'text-lime-400' },
-      cyan: { active: 'bg-cyan-500 text-black border-cyan-400', hover: 'hover:bg-cyan-500/20 hover:border-cyan-500/50', icon: 'text-cyan-400' },
-      magenta: { active: 'bg-fuchsia-500 text-black border-fuchsia-400', hover: 'hover:bg-fuchsia-500/20 hover:border-fuchsia-500/50', icon: 'text-fuchsia-400' },
-      orange: { active: 'bg-orange-500 text-black border-orange-400', hover: 'hover:bg-orange-500/20 hover:border-orange-500/50', icon: 'text-orange-400' },
+      lime: { active: 'bg-neon-blue/20 text-neon-blue border-neon-blue shadow-[0_0_10px_rgba(0,243,255,0.3)]', hover: 'hover:bg-neon-blue/10 hover:border-neon-blue/30', icon: 'text-neon-blue' },
+      cyan: { active: 'bg-neon-purple/20 text-neon-purple border-neon-purple shadow-[0_0_10px_rgba(188,19,254,0.3)]', hover: 'hover:bg-neon-purple/10 hover:border-neon-purple/30', icon: 'text-neon-purple' },
+      magenta: { active: 'bg-neon-pink/20 text-neon-pink border-neon-pink shadow-[0_0_10px_rgba(236,72,153,0.3)]', hover: 'hover:bg-neon-pink/10 hover:border-neon-pink/30', icon: 'text-neon-pink' },
+      orange: { active: 'bg-neon-yellow/20 text-neon-yellow border-neon-yellow shadow-[0_0_10px_rgba(250,204,21,0.3)]', hover: 'hover:bg-neon-yellow/10 hover:border-neon-yellow/30', icon: 'text-neon-yellow' },
     };
     return isActive ? colors[color].active : `${colors[color].hover} ${colors[color].icon}`;
   };
@@ -160,93 +161,10 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         </div>
       </div>
 
-      {/* Player Stats */}
-      <div className="p-2 sm:p-3 border-b-4 border-gray-800">
-        <div className="brutal-card bg-gray-900 p-2 sm:p-3">
-          <div className="flex items-center justify-between mb-2 sm:mb-3 gap-2">
-            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-lime-500 border border-black flex items-center justify-center font-bold text-black text-xs sm:text-sm flex-shrink-0">{level}</div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[9px] sm:text-[10px] text-gray-500 truncate">Level</p>
-                <p className="text-xs sm:text-sm text-lime-400 font-bold truncate">{user?.tier || 'Novice'}</p>
-              </div>
-            </div>
-            <div className="text-right flex-shrink-0">
-              <p className="text-[9px] sm:text-[10px] text-gray-500">XP</p>
-              <p className="text-xs sm:text-sm text-cyan-400 font-medium whitespace-nowrap">{Math.floor(progressXP / 1000)}k/{Math.floor(neededXP / 1000)}k</p>
-            </div>
-          </div>
-          
-          {/* XP Bar */}
-          <div className="h-2 sm:h-3 bg-gray-800 border border-gray-700 overflow-hidden mb-2 sm:mb-3 rounded">
-            <motion.div 
-              initial={{ width: 0 }} 
-              animate={{ width: `${progressPercent}%` }} 
-              transition={{ duration: 1 }} 
-              className="h-full bg-gradient-to-r from-lime-500 to-cyan-400"
-            />
-          </div>
-          
-          {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center">
-            <div className="bg-gray-800 p-1.5 sm:p-2 rounded">
-              <span className="text-[9px] sm:text-[10px] text-gray-500 block truncate">Boost</span>
-              <span className="text-[10px] sm:text-xs text-lime-400 font-bold">{xpMultiplier}x</span>
-            </div>
-            <div className="bg-gray-800 p-1.5 sm:p-2 rounded">
-              <span className="text-[9px] sm:text-[10px] text-gray-500 block truncate">Tasks</span>
-              <span className="text-[10px] sm:text-xs text-cyan-400 font-bold truncate">{completedTasks}/{totalTasks}</span>
-            </div>
-            <div className="bg-gray-800 p-1.5 sm:p-2 rounded flex items-center justify-center gap-0.5 sm:gap-1">
-              <Flame className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-orange-400 flex-shrink-0" />
-              <span className="text-[10px] sm:text-xs text-orange-400 font-bold">{streak}</span>
-            </div>
-          </div>
-          
-          <div className="mt-2 sm:mt-3">
-            <div className="flex items-center gap-1.5 sm:gap-2 px-1 sm:px-2 mb-1">
-              <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-cyan-400 flex-shrink-0" />
-              <span className="text-[9px] sm:text-[10px] text-gray-500 font-semibold uppercase tracking-wide truncate">In Progress</span>
-            </div>
-            <div className="space-y-1.5">
-              <div className="bg-gray-800 p-1.5 sm:p-2 rounded">
-                <div className="flex items-center justify-between">
-                  <span className="text-[9px] sm:text-[10px] text-gray-500">Pending Tasks</span>
-                  <span className="text-[9px] sm:text-[10px] text-gray-400">{pendingTasks}/{totalTasks}</span>
-                </div>
-                <div className="h-2 sm:h-2.5 bg-gray-700 border border-gray-600 rounded overflow-hidden">
-                  <motion.div 
-                    initial={{ width: 0 }} 
-                    animate={{ width: `${Math.min(100, Math.round(((totalTasks - pendingTasks) / Math.max(totalTasks, 1)) * 100))}%` }} 
-                    className="h-full bg-gradient-to-r from-cyan-400 to-lime-400"
-                  />
-                </div>
-              </div>
-              {(state.activePowerUps || []).length > 0 && (
-                <div className="bg-gray-800 p-1.5 sm:p-2 rounded">
-                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-                    <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-fuchsia-400" />
-                    <span className="text-[9px] sm:text-[10px] text-gray-500">Active Power-Ups</span>
-                  </div>
-                  <div className="space-y-1">
-                    {state.activePowerUps.slice(0, 3).map(p => {
-                      const remainingMs = Math.max(0, p.expiresAt - Date.now());
-                      const remainingMin = Math.ceil(remainingMs / 60000);
-                      return (
-                        <div key={p.id} className="flex items-center justify-between text-[9px] sm:text-[10px]">
-                          <span className="text-gray-300 truncate">{p.id}</span>
-                          <span className="text-fuchsia-400">{remainingMin}m</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
+      <StreakAnalytics />
+      
+       
+      
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-2 sm:py-3 scrollbar-hide">
         {renderTabGroup(mainTabs, 'Main')}

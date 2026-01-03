@@ -132,6 +132,14 @@ function AppContent() {
   const [retryCount, setRetryCount] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  useEffect(() => {
+    const handler = () => setActiveTab('ai');
+    window.addEventListener('open-ai', handler as EventListener);
+    return () => {
+      window.removeEventListener('open-ai', handler as EventListener);
+    };
+  }, []);
+
   // Check for level up
   useEffect(() => {
     if (user) {
@@ -172,7 +180,7 @@ function AppContent() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard onNavigate={setActiveTab} />
       case 'tasks':
         return <TaskBoard />;
       case 'coding':
@@ -208,6 +216,8 @@ function AppContent() {
         return <PlacementPrep />;
       case 'placement-quests':
         return <PlacementQuests />;
+      case 'ai':
+        return <Dashboard initialTab="ai" onNavigate={setActiveTab} />
       case 'analytics':
         return <AnalyticsDashboard />;
       case 'skills':
@@ -305,7 +315,7 @@ function AppContent() {
 
           {/* Content Area */}
           <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-            <Header onMenuClick={() => setSidebarOpen(true)} />
+            <Header onMenuClick={() => setSidebarOpen(true)} onOpenNeuralLink={() => setActiveTab('ai')} />
             
             <main className="flex-1 overflow-y-auto p-4 pb-20 lg:p-6 custom-scrollbar scroll-smooth">
               <div className="max-w-7xl mx-auto pb-20 lg:pb-0">

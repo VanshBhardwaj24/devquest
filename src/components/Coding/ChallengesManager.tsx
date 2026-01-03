@@ -303,6 +303,7 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
   const [editingItem, setEditingItem] = useState<Partial<ChallengeItem> | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [tagInput, setTagInput] = useState('');
+  const [saving, setSaving] = useState(false);
 
   // Initial Fetch
   useEffect(() => {
@@ -458,6 +459,7 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
     };
 
     try {
+      setSaving(true);
       await ChallengeService.saveChallenge(frequency, newItem);
       if (editingItem.id) {
         dispatch({ type: 'UPDATE_ITEM', payload: newItem });
@@ -471,18 +473,18 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
         const current = state.items;
         const exists = current.find(c => c.id === newItem.id);
         const updatedList = exists ? current.map(c => c.id === newItem.id ? newItem : c) : [newItem, ...current];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const payload: any = {};
-        payload[key] = updatedList;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const appPayload = { challenges: { ...(appState as any).data?.challenges, ...payload } };
-        appDataService.saveAppData(user.id, appPayload).catch(() => {});
+        const appData = await appDataService.getAppData(user.id);
+        const existing = (appData?.challenges || { daily: [], weekly: [], monthly: [] }) as { daily: any[]; weekly: any[]; monthly: any[] };
+        existing[key] = updatedList;
+        await appDataService.updateAppDataField(user.id, 'challenges', existing);
       }
       setIsDialogOpen(false);
       setEditingItem(null);
     } catch (err) {
       toast.error('Failed to save challenge');
       dispatch({ type: 'FETCH_ERROR', payload: (err as Error).message });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -495,10 +497,10 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
       if (user?.id) {
         const key = frequency.toLowerCase() as 'daily' | 'weekly' | 'monthly';
         const updatedList = state.items.filter(i => i.id !== id);
-        const payload: any = {};
-        payload[key] = updatedList;
-        const appPayload = { challenges: { ...(appState as any).data?.challenges, ...payload } };
-        appDataService.saveAppData(user.id, appPayload).catch(() => {});
+        const appData = await appDataService.getAppData(user.id);
+        const existing = (appData?.challenges || { daily: [], weekly: [], monthly: [] }) as { daily: any[]; weekly: any[]; monthly: any[] };
+        existing[key] = updatedList;
+        await appDataService.updateAppDataField(user.id, 'challenges', existing);
       }
     } catch (err) {
       toast.error('Failed to delete');
@@ -517,10 +519,10 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
       if (user?.id) {
         const key = frequency.toLowerCase() as 'daily' | 'weekly' | 'monthly';
         const updatedList = state.items.filter(i => !ids.includes(i.id));
-        const payload: any = {};
-        payload[key] = updatedList;
-        const appPayload = { challenges: { ...(appState as any).data?.challenges, ...payload } };
-        appDataService.saveAppData(user.id, appPayload).catch(() => {});
+        const appData = await appDataService.getAppData(user.id);
+        const existing = (appData?.challenges || { daily: [], weekly: [], monthly: [] }) as { daily: any[]; weekly: any[]; monthly: any[] };
+        existing[key] = updatedList;
+        await appDataService.updateAppDataField(user.id, 'challenges', existing);
       }
     } catch (err) {
       toast.error('Bulk delete failed');
@@ -554,10 +556,10 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
       if (user?.id) {
         const key = frequency.toLowerCase() as 'daily' | 'weekly' | 'monthly';
         const updatedList = state.items.map(i => i.id === updated.id ? updated : i);
-        const payload: any = {};
-        payload[key] = updatedList;
-        const appPayload = { challenges: { ...(appState as any).data?.challenges, ...payload } };
-        appDataService.saveAppData(user.id, appPayload).catch(() => {});
+        const appData = await appDataService.getAppData(user.id);
+        const existing = (appData?.challenges || { daily: [], weekly: [], monthly: [] }) as { daily: any[]; weekly: any[]; monthly: any[] };
+        existing[key] = updatedList;
+        await appDataService.updateAppDataField(user.id, 'challenges', existing);
       }
     } catch (err) {
       toast.error('Failed to update status');
@@ -639,34 +641,34 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
   // --- Main Render ---
 
   return (
-    <div className={`min-h-[600px] flex flex-col p-6 rounded-2xl ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} shadow-xl border-l-4 ${frequency === 'Daily' ? 'border-yellow-500' : frequency === 'Weekly' ? 'border-cyan-500' : 'border-fuchsia-500'}`}>
+    <div className="min-h-[600px] flex flex-col p-6 rounded-2xl bg-black/50 shadow-xl border border-neon-pink/30">
       
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${frequency === 'Daily' ? 'bg-yellow-500/10' : frequency === 'Weekly' ? 'bg-cyan-500/10' : 'bg-fuchsia-500/10'}`}>
+          <div className={`p-2 rounded-lg ${frequency === 'Daily' ? 'bg-neon-yellow/10' : frequency === 'Weekly' ? 'bg-neon-blue/10' : 'bg-neon-purple/10'}`}>
             {frequency === 'Weekly' ? (
-              <Clock className={`w-6 h-6 ${frequency === 'Weekly' ? 'text-cyan-500' : ''}`} />
+              <Clock className="w-6 h-6 text-neon-blue" />
             ) : (
-              <Calendar className={`w-6 h-6 ${frequency === 'Daily' ? 'text-yellow-500' : 'text-fuchsia-500'}`} />
+              <Calendar className={`w-6 h-6 ${frequency === 'Daily' ? 'text-neon-yellow' : 'text-neon-purple'}`} />
             )}
           </div>
           <div>
-            <h2 className={`text-2xl font-bold tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              {frequency} Challenges
+            <h2 className="text-3xl font-extrabold tracking-tight font-cyber text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-purple">
+              {frequency} CHALLENGES
             </h2>
-            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              Manage and track your {frequency.toLowerCase()} coding goals
+            <p className="text-neon-blue font-mono text-sm tracking-widest">
+              STATUS: ACTIVE | MODE: GLITCH
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-           <Button
-            variant="outline"
+          <Button
+            variant="neon"
             size="sm"
             onClick={() => dispatch({ type: 'SET_VIEW_MODE', payload: state.viewMode === 'analytics' ? 'list' : 'analytics' })}
-            className={state.viewMode === 'analytics' ? 'bg-blue-500 text-white hover:bg-blue-600' : ''}
+            className={state.viewMode === 'analytics' ? 'border-neon-blue text-neon-blue' : ''}
           >
             <BarChart2 className="w-4 h-4 mr-2" />
             Analytics
@@ -676,7 +678,7 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
               setEditingItem({});
               setIsDialogOpen(true);
             }}
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
+            variant="neon"
           >
             <Plus className="w-4 h-4 mr-2" />
             New Challenge
@@ -701,7 +703,7 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
       ) : (
         <>
           {/* Controls Bar */}
-          <div className={`p-4 rounded-xl border mb-6 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} space-y-4`}>
+          <div className="p-4 rounded-xl border mb-6 bg-black/40 border-neon-pink/30 space-y-4">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -770,13 +772,13 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                <div className="w-px h-full bg-gray-200 dark:bg-gray-700 mx-1" />
+                <div className="w-px h-full bg-neon-pink/30 mx-1" />
 
-                <div className="flex items-center gap-1 border rounded-md p-1">
+                <div className="flex items-center gap-1 border rounded-md p-1 border-neon-blue/30">
                   <Button
                     variant="ghost"
                     size="icon"
-                    className={`h-8 w-8 ${state.viewMode === 'list' ? 'bg-gray-100 dark:bg-gray-700' : ''}`}
+                    className={`h-8 w-8 ${state.viewMode === 'list' ? 'bg-black/60' : ''}`}
                     onClick={() => dispatch({ type: 'SET_VIEW_MODE', payload: 'list' })}
                   >
                     <Menu className="w-4 h-4" />
@@ -784,7 +786,7 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className={`h-8 w-8 ${state.viewMode === 'grid' ? 'bg-gray-100 dark:bg-gray-700' : ''}`}
+                    className={`h-8 w-8 ${state.viewMode === 'grid' ? 'bg-black/60' : ''}`}
                     onClick={() => dispatch({ type: 'SET_VIEW_MODE', payload: 'grid' })}
                   >
                     <Grid className="w-4 h-4" />
@@ -795,7 +797,7 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
             
             {/* Bulk Actions */}
             {state.selectedIds.size > 0 && (
-              <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-sm text-blue-600 dark:text-blue-400 animate-in slide-in-from-top-2">
+              <div className="flex items-center justify-between p-2 bg-neon-blue/10 rounded text-sm text-neon-blue animate-in slide-in-from-top-2">
                 <span className="font-medium">{state.selectedIds.size} items selected</span>
                 <div className="flex gap-2">
                   <Button size="sm" variant="ghost" onClick={() => dispatch({ type: 'SELECT_ALL', payload: false })}>
@@ -816,12 +818,12 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
                <p className="text-muted-foreground">Syncing with secure storage...</p>
             </div>
           ) : paginatedItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed rounded-xl">
-              <div className="p-4 rounded-full bg-gray-100 dark:bg-gray-800 mb-4">
-                <Search className="w-8 h-8 text-gray-400" />
+            <div className="flex flex-col items-center justify-center py-20 border-2 border-neon-purple/40 rounded-xl bg-black/30">
+              <div className="p-4 rounded-full bg-black/60 mb-4">
+                <Search className="w-8 h-8 text-neon-purple" />
               </div>
-              <h3 className="text-lg font-medium">No challenges found</h3>
-              <p className="text-gray-500 mb-4">Try adjusting your filters or create a new one.</p>
+              <h3 className="text-lg font-medium font-cyber text-neon-purple">No challenges found</h3>
+              <p className="text-neon-blue mb-4 font-mono">Adjust filters or create a new one.</p>
               <Button onClick={() => { setEditingItem({}); setIsDialogOpen(true); }}>
                 Create Challenge
               </Button>
@@ -836,8 +838,8 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.98 }}
-                    className={`group relative p-4 rounded-xl border transition-all hover:shadow-md ${
-                      darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                    className={`group relative p-4 rounded-xl border transition-all hover:shadow-neon ${
+                      darkMode ? 'bg-black/40 border-neon-pink/20' : 'bg-white border-neon-pink/20'
                     } ${item.completed ? 'opacity-75' : ''}`}
                   >
                     <div className="flex items-start gap-4">
@@ -942,29 +944,39 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
 
       {/* Edit/Create Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-black/70 border-2 border-neon-pink/40 shadow-[8px_8px_0px_#000]">
           <DialogHeader>
-            <DialogTitle>{editingItem?.id ? 'Edit Challenge' : 'Create New Challenge'}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="font-cyber text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-purple">
+              {editingItem?.id ? 'Edit Challenge' : 'Create New Challenge'}
+            </DialogTitle>
+            <DialogDescription className="text-neon-blue font-mono uppercase text-xs tracking-widest">
               {editingItem?.id ? 'Update the details of your coding challenge.' : 'Add a new challenge to your tracking list.'}
             </DialogDescription>
           </DialogHeader>
           
           <div className="grid gap-6 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="title" className="text-right">Title</Label>
+              <Label htmlFor="title" className="text-right text-neon-blue">Title</Label>
               <Input
                 id="title"
                 value={editingItem?.title || ''}
-                onChange={(e) => setEditingItem(prev => ({ ...prev, title: e.target.value }))}
-                className={formErrors.title ? 'border-red-500' : ''}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setEditingItem(prev => ({ ...prev, title: v }));
+                  const errs = { ...formErrors };
+                  if (!v || v.trim().length < 3) errs.title = 'Title must be at least 3 characters long.';
+                  else if (v.length > 100) errs.title = 'Title must be less than 100 characters.';
+                  else delete errs.title;
+                  setFormErrors(errs);
+                }}
+                className={`${formErrors.title ? 'border-red-500' : 'border-neon-pink/40'} bg-black/60`}
               />
               {formErrors.title && <span className="text-xs text-red-500">{formErrors.title}</span>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>Platform</Label>
+                <Label className="text-neon-blue">Platform</Label>
                 <Select 
                   value={editingItem?.platform || 'LeetCode'} 
                   onValueChange={(v) => setEditingItem(prev => ({ ...prev, platform: v as Platform }))}
@@ -980,7 +992,7 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label>Difficulty</Label>
+                <Label className="text-neon-blue">Difficulty</Label>
                 <Select 
                   value={editingItem?.difficulty || 'Easy'} 
                   onValueChange={(v) => setEditingItem(prev => ({ ...prev, difficulty: v as Difficulty }))}
@@ -998,27 +1010,35 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
             </div>
 
             <div className="grid gap-2">
-              <Label>URL</Label>
+              <Label className="text-neon-blue">URL</Label>
               <Input
                 value={editingItem?.url || ''}
-                onChange={(e) => setEditingItem(prev => ({ ...prev, url: e.target.value }))}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setEditingItem(prev => ({ ...prev, url: v }));
+                  const errs = { ...formErrors };
+                  if (v && !isValidUrl(v)) errs.url = 'Please enter a valid URL (http/https).';
+                  else delete errs.url;
+                  setFormErrors(errs);
+                }}
                 placeholder="https://leetcode.com/problems/..."
-                className={formErrors.url ? 'border-red-500' : ''}
+                className={`${formErrors.url ? 'border-red-500' : 'border-neon-pink/40'} bg-black/60`}
               />
               {formErrors.url && <span className="text-xs text-red-500">{formErrors.url}</span>}
             </div>
 
             <div className="grid gap-2">
-              <Label>Description</Label>
+              <Label className="text-neon-blue">Description</Label>
               <Textarea
                 value={editingItem?.description || ''}
                 onChange={(e) => setEditingItem(prev => ({ ...prev, description: e.target.value }))}
                 rows={3}
+                className="bg-black/60 border-neon-pink/40"
               />
             </div>
 
             <div className="grid gap-2">
-              <Label>Tags</Label>
+              <Label className="text-neon-blue">Tags</Label>
               <div className="flex gap-2">
                 <Input
                   value={tagInput}
@@ -1033,6 +1053,7 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
                     }
                   }}
                   placeholder="Add a tag..."
+                  className="bg-black/60 border-neon-pink/40"
                 />
                 <Button 
                   type="button" 
@@ -1042,13 +1063,14 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
                       setTagInput('');
                     }
                   }}
+                  variant="neon"
                 >
                   Add
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2 mt-2">
                 {editingItem?.tags?.map((tag, i) => (
-                  <Badge key={i} variant="secondary" className="gap-1 pr-1">
+                  <Badge key={i} variant="secondary" className="gap-1 pr-1 bg-black/60 border-neon-pink/40">
                     {tag}
                     <X 
                       className="w-3 h-3 cursor-pointer hover:text-red-500" 
@@ -1060,20 +1082,31 @@ export function ChallengesManager({ frequency }: { frequency: Frequency }) {
             </div>
 
             <div className="grid gap-2">
-               <Label>XP Reward</Label>
+               <Label className="text-neon-blue">XP Reward</Label>
                <Input
                  type="number"
                  value={editingItem?.xp || 50}
-                 onChange={(e) => setEditingItem(prev => ({ ...prev, xp: parseInt(e.target.value) || 0 }))}
+                 onChange={(e) => {
+                   const v = parseInt(e.target.value) || 0;
+                   setEditingItem(prev => ({ ...prev, xp: v }));
+                   const errs = { ...formErrors };
+                   if (v < 0 || v > 1000) errs.xp = 'XP must be between 0 and 1000.';
+                   else delete errs.xp;
+                   setFormErrors(errs);
+                 }}
                  min={0}
                  max={1000}
+                 className={`${formErrors.xp ? 'border-red-500' : 'border-neon-pink/40'} bg-black/60`}
                />
+               {formErrors.xp && <span className="text-xs text-red-500">{formErrors.xp}</span>}
             </div>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave}>Save Changes</Button>
+            <Button onClick={handleSave} disabled={saving || Object.keys(formErrors).length > 0} variant="neon">
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

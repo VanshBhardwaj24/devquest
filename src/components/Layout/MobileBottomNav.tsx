@@ -25,8 +25,11 @@ export function MobileBottomNav({ activeTab, onTabChange }: MobileBottomNavProps
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#0d0d0d] border-t-4 border-lime-500/30 lg:hidden">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-t border-neon-blue/20 lg:hidden shadow-[0_-4px_20px_rgba(0,243,255,0.1)]">
+      {/* Grainy Noise Overlay */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")' }} />
+      
+      <div className="flex items-center justify-around h-16 px-2 relative z-10">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -36,7 +39,7 @@ export function MobileBottomNav({ activeTab, onTabChange }: MobileBottomNavProps
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               whileTap={{ scale: 0.9 }}
-              className="relative flex flex-col items-center justify-center flex-1 h-full gap-1"
+              className="relative flex flex-col items-center justify-center flex-1 h-full gap-1 group"
             >
               <div className="relative">
                 <motion.div
@@ -45,22 +48,22 @@ export function MobileBottomNav({ activeTab, onTabChange }: MobileBottomNavProps
                 >
                   <Icon
                     size={22}
-                    className={isActive ? 'text-lime-400' : 'text-gray-500'}
+                    className={isActive ? 'text-neon-blue drop-shadow-[0_0_5px_rgba(0,243,255,0.5)]' : 'text-gray-500 group-hover:text-gray-400'}
                   />
                 </motion.div>
                 {tab.badge && (
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="absolute -top-2 -right-2 bg-lime-500 border-2 border-black rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-black text-black"
+                    className="absolute -top-2 -right-2 bg-neon-pink border border-black rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-black text-black shadow-[0_0_5px_rgba(236,72,153,0.5)]"
                   >
                     {typeof tab.badge === 'number' ? tab.badge : tab.badge}
                   </motion.div>
                 )}
               </div>
               <span
-                className={`text-[10px] font-bold ${
-                  isActive ? 'text-lime-400' : 'text-gray-500'
+                className={`text-[10px] font-bold font-mono ${
+                  isActive ? 'text-neon-blue' : 'text-gray-500 group-hover:text-gray-400'
                 }`}
               >
                 {tab.label}
@@ -68,7 +71,7 @@ export function MobileBottomNav({ activeTab, onTabChange }: MobileBottomNavProps
               {isActive && (
                 <motion.div
                   layoutId="activeTab"
-                  className="absolute bottom-0 left-0 right-0 h-1 bg-lime-500"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-neon-blue shadow-[0_0_10px_rgba(0,243,255,0.5)]"
                   initial={false}
                 />
               )}

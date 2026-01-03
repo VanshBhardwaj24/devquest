@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Target, Clock, CheckCircle, Zap } from 'lucide-react';
+import { Target, Clock, CheckCircle, Zap, Crosshair } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
-import { Card } from '../ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, AreaChart, Area } from 'recharts';
 
 interface Mission {
@@ -23,13 +24,14 @@ interface Mission {
 
 export function DailyMissions() {
   const { state, dispatch } = useApp();
-  const { tasks, codingStats, user, darkMode } = state;
+  const { tasks, codingStats, user, darkMode, skills } = state;
   
   const completedTasks = tasks?.filter(t => t.completed).length || 0;
   const streak = codingStats?.currentStreak || user?.streak || 0;
   const codingProblems = (codingStats?.easyCount || 0) + (codingStats?.mediumCount || 0) + (codingStats?.hardCount || 0);
 
-  const missions: Mission[] = useMemo(() => [
+  const missions: Mission[] = useMemo(() => {
+    const baseMissions: Mission[] = [
     {
       id: '1',
       title: 'Complete 3 Tasks',
@@ -97,7 +99,7 @@ export function DailyMissions() {
       coinReward: 250,
       timeLeft: '12h 30m',
       completed: (codingProblems % 5) === 0 && codingProblems >= 5,
-      icon: '⚔️',
+      icon: '🚀',
       rarity: 'epic',
     },
     {
@@ -113,8 +115,43 @@ export function DailyMissions() {
       completed: streak >= 7,
       icon: '👑',
       rarity: 'epic',
-    },
-  ], [completedTasks, codingProblems, streak]);
+    }
+  ];
+
+    // Dynamic Skill Mission
+    if (skills && skills.length > 0) {
+      // Find a focus skill (lowest level not maxed)
+      const focusSkill = [...skills]
+        .sort((a, b) => a.level - b.level)
+        .find(s => (s.maxLevel ? s.level < s.maxLevel : true));
+
+      if (focusSkill) {
+        const today = new Date().toLocaleDateString('en-CA');
+        const relevantTasks = tasks ? tasks.filter(t => 
+            t.completed && 
+            t.relatedSkillId === focusSkill.id && 
+            new Date(t.completedAt || '').toLocaleDateString('en-CA') === today
+        ) : [];
+
+        baseMissions.push({
+          id: 'skill-focus',
+          title: `Train ${focusSkill.name}`,
+          description: `Complete a task related to ${focusSkill.name}`,
+          type: 'special',
+          progress: Math.min(relevantTasks.length, 1),
+          target: 1,
+          xpReward: 200,
+          coinReward: 100,
+          timeLeft: '12h 30m',
+          completed: relevantTasks.length >= 1,
+          icon: focusSkill.icon || '🧠',
+          rarity: 'epic'
+        });
+      }
+    }
+
+    return baseMissions;
+  }, [completedTasks, codingProblems, streak, tasks, skills]);
 
   const completedMissions = missions.filter(m => m.completed).length;
   const totalRewards = missions.filter(m => m.completed).reduce((sum, m) => sum + m.xpReward + m.coinReward, 0);
@@ -152,140 +189,117 @@ export function DailyMissions() {
   };
 
   return (
-    <Card variant="brutal" className={`p-4 sm:p-6 ${darkMode ? 'bg-zinc-900 border-white' : 'bg-white border-black'}`}>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className={`text-lg sm:text-xl font-black flex items-center gap-2 uppercase ${darkMode ? 'text-white' : 'text-black'}`}>
-          <Target className="text-red-500" size={20} />
-          Daily Missions
-        </h3>
-        <div className="text-right">
-          <div className="text-sm font-bold bg-red-500 text-white px-2 py-0.5 border border-black inline-block shadow-[2px_2px_0px_0px_#000]">{completedMissions}/{missions.length}</div>
-          <div className="text-xs text-gray-500 mt-1 font-bold uppercase">Completed</div>
+    <Card variant="cyber" className="overflow-hidden">
+      <CardHeader className="bg-black/40 border-b border-white/5 pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm uppercase text-gray-400 flex items-center gap-2">
+            <Crosshair className="text-neon-pink" size={16} />
+            Daily Objectives
+          </CardTitle>
+          <div className="flex items-center gap-2">
+             <Badge variant="outline" className="border-neon-blue text-neon-blue bg-neon-blue/10">
+               {completedMissions}/{missions.length} Complete
+             </Badge>
+          </div>
         </div>
-      </div>
+      </CardHeader>
 
-      {/* Progress Overview */}
-      <div className={`mb-6 p-3 border-2 border-black shadow-[4px_4px_0px_0px_#000] ${darkMode ? 'bg-zinc-800' : 'bg-gray-50'}`}>
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-bold uppercase">Daily Progress</span>
-          <span className="text-xs font-bold">{Math.floor((completedMissions / missions.length) * 100)}%</span>
+      <CardContent className="p-4 space-y-4">
+        {/* Progress Overview */}
+        <div className="p-4 bg-black/60 border border-white/10 rounded-lg">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Mission Progress</span>
+            <span className="text-xs font-mono text-neon-blue">{Math.floor((completedMissions / missions.length) * 100)}%</span>
+          </div>
+          <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${(completedMissions / missions.length) * 100}%` }}
+              className="h-full bg-gradient-to-r from-neon-pink to-neon-blue shadow-[0_0_10px_rgba(236,72,153,0.5)]"
+            />
+          </div>
+          
+          <div className="mt-4 flex items-center justify-between">
+             <div className="text-[10px] text-gray-500 uppercase">Rewards Earned</div>
+             <div className="text-xs font-mono font-bold text-neon-yellow">+{totalRewards} XP/Coins</div>
+          </div>
         </div>
-        <div className="h-4 bg-gray-300 dark:bg-gray-700 border-2 border-black">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${(completedMissions / missions.length) * 100}%` }}
-            className="h-full bg-red-500"
-          />
-        </div>
-        <div className="mt-2 h-10">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={overviewSpark}>
-              <XAxis dataKey="name" hide />
-              <Tooltip contentStyle={{ fontFamily: 'monospace' }} />
-              <Area type="monotone" dataKey="pct" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.2} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="mt-2 flex items-center justify-between text-xs font-bold">
-          <span className="uppercase opacity-70">Total Rewards</span>
-          <span className="text-green-600 dark:text-green-400">+{totalRewards} XP & Coins</span>
-        </div>
-      </div>
 
-      {/* Missions List */}
-      <div className="space-y-4 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
-        {missions.map((mission, index) => (
-          <motion.div
-            key={mission.id}
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: index * 0.1 }}
-            className={`p-3 border-2 border-black shadow-[4px_4px_0px_0px_#000] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#000] ${
-              mission.completed 
-                ? 'bg-green-100 dark:bg-green-900/20' 
-                : darkMode ? 'bg-zinc-800' : 'bg-white'
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              <div className="text-2xl border-2 border-black p-1 bg-white dark:bg-gray-700">{mission.icon}</div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <h4 className={`font-bold text-sm uppercase ${mission.completed ? 'line-through opacity-70' : ''} ${darkMode ? 'text-white' : 'text-black'}`}>
-                    {mission.title}
-                  </h4>
-                  {mission.completed && (
-                    <CheckCircle className="text-green-500" size={16} />
-                  )}
+        {/* Missions List */}
+        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+          {missions.map((mission, index) => (
+            <motion.div
+              key={mission.id}
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: index * 0.1 }}
+              className={`group p-3 border rounded-lg transition-all ${
+                mission.completed 
+                  ? 'bg-green-500/10 border-green-500/30' 
+                  : 'bg-black/40 border-white/5 hover:border-neon-purple/50'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div className={`text-xl p-2 rounded-lg bg-black/50 border border-white/10 ${mission.completed ? 'grayscale opacity-50' : ''}`}>
+                  {mission.icon}
                 </div>
-                <p className="text-xs opacity-70 mb-2 font-mono">{mission.description}</p>
-                
-                {/* Progress Bar */}
-                <div className="mb-2">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] font-bold">{mission.progress}/{mission.target}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] bg-purple-200 text-purple-800 border border-black px-1 font-bold flex items-center gap-1">
-                        <Zap size={10} /> {mission.xpReward} XP
-                      </span>
-                      <span className="text-[10px] bg-yellow-200 text-yellow-800 border border-black px-1 font-bold flex items-center gap-1">
-                        💰 {mission.coinReward}
-                      </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <h4 className={`font-bold text-sm font-cyber uppercase ${mission.completed ? 'text-green-400 line-through decoration-green-500/50' : 'text-white group-hover:text-neon-purple transition-colors'}`}>
+                      {mission.title}
+                    </h4>
+                    {mission.completed && (
+                      <CheckCircle className="text-green-500" size={14} />
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mb-2 font-mono">{mission.description}</p>
+                  
+                  {/* Progress Bar */}
+                  {!mission.completed && (
+                    <div className="mb-2">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] text-gray-400 font-mono">{mission.progress}/{mission.target}</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(mission.progress / mission.target) * 100}%` }}
+                          className="h-full bg-neon-purple"
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <div className="h-2 bg-gray-300 dark:bg-gray-700 border border-black">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(mission.progress / mission.target) * 100}%` }}
-                      className={`h-full ${
-                        mission.completed ? 'bg-green-500' : 'bg-blue-500'
-                      }`}
-                    />
-                  </div>
-                  <div className="h-8 mt-2">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={[{ name: 'P', v: mission.progress }, { name: 'T', v: mission.target }]}>
-                        <XAxis dataKey="name" hide />
-                        <Tooltip contentStyle={{ fontFamily: 'monospace' }} />
-                        <Bar dataKey="v" fill={mission.completed ? '#22c55e' : '#3b82f6'} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
+                  )}
 
-                {/* Time Left */}
-                <div className="flex items-center justify-between mt-2">
-                  <div className="flex items-center gap-1 text-[10px] font-bold opacity-60">
-                    <Clock size={10} />
-                    <span>{mission.timeLeft} left</span>
-                  </div>
-                  {mission.completed && (
-                    claimedMissions.has(mission.id) ? (
-                      <span className="text-[10px] font-bold bg-green-500 text-white px-2 py-0.5 border border-black uppercase">Claimed</span>
-                    ) : (
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-[10px] px-1 py-0 h-5 border-purple-500/30 text-purple-400 bg-purple-500/10">
+                        +{mission.xpReward} XP
+                      </Badge>
+                      <Badge variant="outline" className="text-[10px] px-1 py-0 h-5 border-yellow-500/30 text-yellow-400 bg-yellow-500/10">
+                        +{mission.coinReward} G
+                      </Badge>
+                    </div>
+
+                    {mission.completed && !claimedMissions.has(mission.id) && (
                       <Button
-                        variant="brutal"
+                        variant="neon"
                         size="sm"
                         onClick={() => claimReward(mission)}
-                        className="h-6 text-[10px] px-2 bg-yellow-400 hover:bg-yellow-500 border-black text-black"
+                        className="h-6 text-[10px] px-3"
                       >
-                        CLAIM REWARD
+                        CLAIM
                       </Button>
-                    )
-                  )}
+                    )}
+                    {claimedMissions.has(mission.id) && (
+                      <span className="text-[10px] text-gray-500 font-mono uppercase">Claimed</span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Daily Reset Timer */}
-      <div className={`mt-6 p-3 border-2 border-black text-center ${darkMode ? 'bg-zinc-800' : 'bg-gray-100'}`}>
-        <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase">
-          <Clock size={12} />
-          <span>New missions in <span className="text-red-500">12h 30m</span></span>
+            </motion.div>
+          ))}
         </div>
-      </div>
+      </CardContent>
     </Card>
   );
 }

@@ -21,40 +21,44 @@ export function StatsOverview({ stats: externalStats }: StatsOverviewProps) {
       title: 'Total XP',
       value: (externalStats?.xp ?? user?.xp ?? 0).toLocaleString(),
       icon: Zap,
-      bg: 'bg-purple-500',
-      text: 'text-white',
+      color: 'text-neon-purple',
+      borderColor: 'border-neon-purple',
+      bg: 'bg-neon-purple/10',
       change: externalStats ? `Level ${externalStats.level}` : '+150 this week',
     },
     {
       title: 'Current Level',
       value: externalStats?.level ?? user?.level ?? 1,
       icon: TrendingUp,
-      bg: 'bg-green-500',
-      text: 'text-black',
+      color: 'text-neon-green',
+      borderColor: 'border-neon-green',
+      bg: 'bg-neon-green/10',
       change: user?.tier || 'Novice',
     },
     {
       title: 'Active Tasks',
       value: externalStats?.pendingTasks ?? tasks.filter(t => !t.completed).length,
       icon: Target,
-      bg: 'bg-orange-500',
-      text: 'text-black',
+      color: 'text-neon-orange',
+      borderColor: 'border-neon-orange',
+      bg: 'bg-neon-orange/10',
       change: externalStats ? `${externalStats.completedTasks} done` : '+3 this week',
     },
     {
       title: 'Streak Days',
       value: externalStats?.streak ?? user?.streak ?? 0,
       icon: Calendar,
-      bg: 'bg-blue-500',
-      text: 'text-white',
+      color: 'text-neon-blue',
+      borderColor: 'border-neon-blue',
+      bg: 'bg-neon-blue/10',
       change: 'Keep it up!',
     },
   ];
 
   return (
-    <Card variant="brutal" className={`p-6 ${darkMode ? 'bg-zinc-900 border-white text-white' : 'bg-white border-black text-black'}`}>
-      <h2 className="text-2xl font-black mb-6 uppercase tracking-tight flex items-center gap-2">
-        <TrendingUp className={darkMode ? "text-white" : "text-black"} />
+    <Card variant="cyber" className="p-6">
+      <h2 className="text-2xl font-black mb-6 uppercase tracking-tight flex items-center gap-2 font-cyber text-white">
+        <TrendingUp className="text-neon-blue" />
         Your Progress
       </h2>
       
@@ -67,26 +71,24 @@ export function StatsOverview({ stats: externalStats }: StatsOverviewProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              whileHover={{ scale: 1.02, rotate: -1 }}
-              className={`p-4 border-2 border-black transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${
-                darkMode ? 'bg-zinc-800 border-zinc-500' : 'bg-white'
-              }`}
+              whileHover={{ scale: 1.02 }}
+              className={`p-4 border rounded-xl bg-black/40 backdrop-blur-sm transition-all duration-300 group hover:bg-black/60 ${stat.borderColor} hover:shadow-[0_0_15px_rgba(0,0,0,0.5)]`}
             >
               <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${stat.bg}`}>
-                  <Icon className={`h-5 w-5 ${stat.text}`} />
+                <div className={`p-3 rounded-lg border ${stat.borderColor} ${stat.bg} ${stat.color} shadow-[0_0_10px_rgba(0,0,0,0.2)]`}>
+                  <Icon className="h-5 w-5" />
                 </div>
                 <div className="text-right">
-                  <div className={`text-3xl font-black ${darkMode ? 'text-white' : 'text-black'}`}>
+                  <div className="text-3xl font-black text-white font-mono tracking-tighter">
                     {stat.value}
                   </div>
                 </div>
               </div>
               <div className="flex justify-between items-end">
-                <div className={`text-xs font-bold uppercase tracking-wider ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                <div className="text-xs font-bold uppercase tracking-wider text-gray-400 font-cyber">
                   {stat.title}
                 </div>
-                <div className={`text-xs font-mono bg-black text-white px-1 py-0.5 ${darkMode ? 'bg-white text-black' : ''}`}>
+                <div className={`text-xs font-mono px-2 py-0.5 rounded border ${stat.borderColor} ${stat.bg} ${stat.color}`}>
                   {stat.change}
                 </div>
               </div>

@@ -103,25 +103,29 @@ export const appDataService = {
         return this.getAppDataFromLocalStorage();
       }
 
-      if (!data) return null;
+      if (!data) {
+        return this.getAppDataFromLocalStorage();
+      }
+
+      const local = this.getAppDataFromLocalStorage();
 
       return {
-        timeBasedStreak: data.time_based_streak as any,
-        dailyReset: data.daily_reset as any,
-        activityTimer: data.activity_timer as any,
-        accountabilityData: data.accountability_data as any,
-        internshipMilestones: data.internship_milestones as any,
-        nonNegotiables: data.non_negotiables as any,
-        profileStats: data.profile_stats as any,
-        integrationData: data.integration_data as any,
-        appPreferences: data.app_preferences as any,
-        contacts: (data as any).contacts as any,
-        bucketList: (data as any).bucket_list as any,
-        mindfulness: (data as any).mindfulness as any,
-        projects: (data as any).projects as any,
-        skills: (data as any).skills as any,
-        challenges: (data as any).challenges as any,
-        lifeMap: (data as any).life_map as any,
+        timeBasedStreak: (data.time_based_streak as any) ?? local?.timeBasedStreak,
+        dailyReset: (data.daily_reset as any) ?? local?.dailyReset,
+        activityTimer: (data.activity_timer as any) ?? local?.activityTimer,
+        accountabilityData: (data.accountability_data as any) ?? local?.accountabilityData,
+        internshipMilestones: (data.internship_milestones as any) ?? local?.internshipMilestones,
+        nonNegotiables: (data.non_negotiables as any) ?? local?.nonNegotiables,
+        profileStats: (data.profile_stats as any) ?? local?.profileStats,
+        integrationData: (data.integration_data as any) ?? local?.integrationData,
+        appPreferences: (data.app_preferences as any) ?? local?.appPreferences,
+        contacts: ((data as any).contacts as any) ?? local?.contacts,
+        bucketList: ((data as any).bucket_list as any) ?? local?.bucketList,
+        mindfulness: ((data as any).mindfulness as any) ?? local?.mindfulness,
+        projects: ((data as any).projects as any) ?? local?.projects,
+        skills: ((data as any).skills as any) ?? local?.skills,
+        challenges: ((data as any).challenges as any) ?? local?.challenges,
+        lifeMap: ((data as any).life_map as any) ?? local?.lifeMap,
       };
     } catch (error) {
       // Log error safely (stringify to avoid React conversion issues)

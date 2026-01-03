@@ -316,21 +316,25 @@ export function TaskBoard() {
     return () => clearInterval(interval);
   }, [tasks, penalizedTasks, dispatch, overduePenaltiesEnabled]);
 
+  const parseDueDate = (v: any): Date | null => {
+    const d = v instanceof Date ? v : new Date(v as any);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
   const filteredTasks = tasks.filter(task => {
     const matchesFilter = filter === 'all' || (filter === 'in-progress' ? !task.completed : task.priority === filter);
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const dv = task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate as unknown as string);
+    const dv = parseDueDate(task.dueDate);
     const matchesTime =
       timeView === 'all' ? true :
-      timeView === 'daily' ? sameDay(dv) :
-      timeView === 'weekly' ? inWeek(dv) :
-      sameMonth(dv);
+      dv ? (timeView === 'daily' ? sameDay(dv) : timeView === 'weekly' ? inWeek(dv) : sameMonth(dv)) : false;
     return matchesFilter && matchesSearch && matchesTime;
   });
 
   // Time-range tasks for charts/stats (independent of search/filter)
   const timeTasks = tasks.filter(t => {
-    const dv = t.dueDate instanceof Date ? t.dueDate : new Date(t.dueDate as unknown as string);
+    const dv = parseDueDate(t.dueDate);
+    if (!dv) return false;
     if (timeView === 'daily') return sameDay(dv);
     if (timeView === 'weekly') return inWeek(dv);
     if (timeView === 'monthly') return sameMonth(dv);
@@ -368,9 +372,18 @@ export function TaskBoard() {
     });
     return keys.map(k => ({ name: k, count: map[k] }));
   })();
-  const dailySet = tasks.filter(t => sameDay(t.dueDate));
-  const weeklySet = tasks.filter(t => inWeek(t.dueDate));
-  const monthlySet = tasks.filter(t => sameMonth(t.dueDate));
+  const dailySet = tasks.filter(t => {
+    const dv = parseDueDate(t.dueDate);
+    return dv ? sameDay(dv) : false;
+  });
+  const weeklySet = tasks.filter(t => {
+    const dv = parseDueDate(t.dueDate);
+    return dv ? inWeek(dv) : false;
+  });
+  const monthlySet = tasks.filter(t => {
+    const dv = parseDueDate(t.dueDate);
+    return dv ? sameMonth(dv) : false;
+  });
   const dailyProgress = dailySet.length ? Math.round((dailySet.filter(t => t.completed).length / dailySet.length) * 100) : 0;
   const weeklyProgress = weeklySet.length ? Math.round((weeklySet.filter(t => t.completed).length / weeklySet.length) * 100) : 0;
   const monthlyProgress = monthlySet.length ? Math.round((monthlySet.filter(t => t.completed).length / monthlySet.length) * 100) : 0;
@@ -627,14 +640,15 @@ export function TaskBoard() {
           )}
         </AnimatePresence>
 
-        {/* Header with HP/Gold - Neo Brutalist */}
-        <div className="mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+        {/* Header - Glitch Theme */}
+        <div className="mb-4 sm:mb-6 relative">
+          <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: 'url(\"https://grainy-gradients.vercel.app/noise.svg\")' }} />
+          <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white font-mono truncate">
-                QUEST_BOARD <span className="text-lime-400">⚔️</span>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white font-cyber tracking-wide truncate">
+                QUEST_BOARD <span className="text-neon-blue drop-shadow-[0_0_6px_rgba(0,243,255,0.5)]">⚔️</span>
               </h1>
-              <p className="text-xs sm:text-sm text-gray-500 font-mono">// Complete quests to survive. HP drains at night!</p>
+              <p className="text-xs sm:text-sm text-neon-purple/70 font-mono">/* Complete quests to survive. HP drains at night! */</p>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -860,28 +874,28 @@ export function TaskBoard() {
               <option value="Bonus">✨ Bonus</option>
             </select>
             <motion.button
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: 1.05, y: -1 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowAddTask(true)}
-              className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2"
+              className="px-3 sm:px-4 py-1.5 sm:py-2 bg-black/50 border border-neon-purple/30 hover:border-neon-purple text-neon-purple rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 transition-colors"
             >
               <Plus size={14} className="sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">New Quest</span>
               <span className="sm:hidden">New</span>
             </motion.button>
             <motion.button
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: 1.05, y: -1 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => dispatch({ type: 'SET_OVERDUE_PENALTIES', payload: !overduePenaltiesEnabled })}
-              className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border text-xs sm:text-sm ${overduePenaltiesEnabled ? 'bg-red-500/20 border-red-500/40 text-red-300' : 'bg-gray-800 border-gray-700 text-gray-300'}`}
+              className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border text-xs sm:text-sm transition-colors ${overduePenaltiesEnabled ? 'bg-black/50 border-neon-red/30 text-neon-red' : 'bg-black/50 border-gray-700 text-gray-300 hover:border-neon-blue hover:text-neon-blue'}`}
             >
               {overduePenaltiesEnabled ? 'Penalties: On' : 'Penalties: Off'}
             </motion.button>
             <motion.button
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: 1.05, y: -1 }}
               whileTap={{ scale: 0.95 }}
               onClick={resetCompleted}
-              className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border text-xs sm:text-sm bg-gray-800 border-gray-700 text-gray-300"
+              className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border text-xs sm:text-sm bg-black/50 border-gray-700 text-gray-300 hover:border-neon-green hover:text-neon-green transition-colors"
             >
               Reset Completed
             </motion.button>

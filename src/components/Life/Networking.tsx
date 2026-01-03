@@ -2,14 +2,15 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../ui/button';
-import { Card, CardContent } from '../ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
-import { Linkedin, Mail, Plus, Briefcase } from 'lucide-react';
+import { Linkedin, Mail, Plus, Briefcase, User, Search, Filter, SortAsc, SortDesc, Trash2, Edit, MessageCircle, TrendingUp, TrendingDown, Users, Calendar } from 'lucide-react';
 import { Contact } from '../../types';
 import { Progress } from '../ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import toast from 'react-hot-toast';
 import { appDataService } from '../../services/appDataService';
+import { Badge } from '../ui/badge';
 
 export function Networking() {
   const { state, dispatch } = useApp();
@@ -21,6 +22,7 @@ export function Networking() {
   const [companyFilter, setCompanyFilter] = useState('');
   const [sortBy, setSortBy] = useState('last_desc');
   const [loading, setLoading] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
   const [newContact, setNewContact] = useState<Partial<Contact>>({
     name: '',
     role: '',
@@ -51,6 +53,9 @@ export function Networking() {
         const normalized = stored.map(c => ({ ...c, lastContactedDate: new Date(c.lastContactedDate) }));
         if (normalized.length > 0) {
           setContacts(normalized as Contact[]);
+          if (user) {
+            dispatch({ type: 'SET_USER', payload: { ...user, contacts: normalized as Contact[] } });
+          }
         }
       } catch (e) {
         void e;
@@ -61,6 +66,19 @@ export function Networking() {
     };
     loadBackend();
   }, [authUser?.id]);
+
+  const persistContacts = async (list: Contact[]) => {
+    if (!authUser?.id) return;
+    try {
+      const serializable = list.map(c => ({
+        ...c,
+        lastContactedDate: c.lastContactedDate instanceof Date ? c.lastContactedDate.toISOString() : c.lastContactedDate,
+      }));
+      await appDataService.updateAppDataField(authUser.id, 'contacts', serializable);
+    } catch {
+      toast.error('Could not persist contacts');
+    }
+  };
 
   useEffect(() => {
     if (!authUser?.id) return;
@@ -123,18 +141,13 @@ export function Networking() {
     setContacts(updated);
     
     // Save to appDataService
-    if (authUser) {
-      try {
-        await appDataService.updateAppDataField(authUser.id, 'contacts', updated);
-      } catch (error) {
-        console.error('Error saving contact:', error);
-      }
-    }
+    await persistContacts(updated);
     
     if (user) {
       dispatch({ type: 'SET_USER', payload: { ...user, contacts: updated } });
     }
     setNewContact({ relationshipScore: 50, lastContactedDate: new Date() });
+    setShowAddForm(false);
     toast.success('Contact added');
   };
 
@@ -154,6 +167,7 @@ export function Networking() {
       email: c.email,
     });
     setEditingId(id);
+    setShowAddForm(true);
   };
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -180,14 +194,17 @@ export function Networking() {
     if (user) {
       dispatch({ type: 'SET_USER', payload: { ...user, contacts: updated } });
     }
+    void persistContacts(updated);
     setNewContact({ relationshipScore: 50, lastContactedDate: new Date() });
     setEditingId(null);
+    setShowAddForm(false);
     toast.success('Contact updated');
   };
 
   const cancelEdit = () => {
     setNewContact({ relationshipScore: 50, lastContactedDate: new Date() });
     setEditingId(null);
+    setShowAddForm(false);
   };
 
   const removeContact = (id: string) => {
@@ -196,6 +213,7 @@ export function Networking() {
     if (user) {
       dispatch({ type: 'SET_USER', payload: { ...user, contacts: updated } });
     }
+    void persistContacts(updated);
     toast.success('Contact removed');
   };
 
@@ -205,6 +223,7 @@ export function Networking() {
     if (user) {
       dispatch({ type: 'SET_USER', payload: { ...user, contacts: updated } });
     }
+    void persistContacts(updated);
     toast.success('Contacted updated');
   };
 
@@ -214,241 +233,336 @@ export function Networking() {
     if (user) {
       dispatch({ type: 'SET_USER', payload: { ...user, contacts: updated } });
     }
+    void persistContacts(updated);
+  };
+  
+  const nudgeScoreDown = (id: string, delta: number) => {
+    const updated = contacts.map(c => c.id === id ? { ...c, relationshipScore: Math.max(0, Math.min(100, c.relationshipScore - delta)) } : c);
+    setContacts(updated);
+    if (user) {
+      dispatch({ type: 'SET_USER', payload: { ...user, contacts: updated } });
+    }
+    void persistContacts(updated);
   };
   return (
-    <div className={`p-4 md:p-8 ${darkMode ? 'text-white' : 'text-gray-900'} min-h-screen`}>
-      <div className="max-w-6xl mx-auto space-y-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-4xl font-black font-mono uppercase tracking-tight mb-2">
-              Network <span className="text-fuchsia-500">Graph</span>
+    <div className={`p-4 md:p-8 ${darkMode ? 'text-white' : 'text-gray-900'} min-h-screen relative`}>
+      <div className="max-w-7xl mx-auto space-y-8">
+        
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pb-6 border-b border-white/10">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-extrabold tracking-tight font-cyber text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-purple">
+              NETWORK MATRIX
             </h1>
-            <p className="text-gray-500 font-mono">Manage professional relationships and opportunities.</p>
+            <p className="text-neon-blue font-mono text-sm tracking-widest flex items-center gap-2">
+              <span className="w-2 h-2 bg-neon-green rounded-full animate-pulse" />
+              CONNECTION STATUS: ONLINE
+            </p>
           </div>
-          <Button onClick={addContact} className="bg-fuchsia-500 text-black font-bold font-mono border-2 border-black brutal-shadow">
-            <Plus className="w-4 h-4 mr-2" /> Add Contact
+          <Button 
+            onClick={() => setShowAddForm(!showAddForm)} 
+            variant="neon"
+            className="group"
+          >
+            <Plus className="w-4 h-4 mr-2 group-hover:rotate-90 transition-transform" /> 
+            {showAddForm ? 'Close Uplink' : 'New Connection'}
           </Button>
         </div>
 
-        {/* Add/Edit Contact Form - Always Visible */}
-        {
-          <div className={`p-6 border-4 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-black'} brutal-shadow`}>
-            <h2 className="text-xl font-bold font-mono mb-4">
-              {editingId ? 'Edit Contact' : 'Add New Contact'}
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-mono uppercase text-gray-500">Name *</label>
-                <Input 
-                  value={newContact.name}
-                  onChange={(e) => setNewContact({...newContact, name: e.target.value})}
-                  placeholder="Contact name"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-mono uppercase text-gray-500">Company *</label>
-                <Input 
-                  value={newContact.company}
-                  onChange={(e) => setNewContact({...newContact, company: e.target.value})}
-                  placeholder="Company name"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-mono uppercase text-gray-500">Role</label>
-                <Input 
-                  value={newContact.role}
-                  onChange={(e) => setNewContact({...newContact, role: e.target.value})}
-                  placeholder="Job title"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-mono uppercase text-gray-500">Email</label>
-                <Input 
-                  value={newContact.email}
-                  onChange={(e) => setNewContact({...newContact, email: e.target.value})}
-                  placeholder="email@example.com"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-mono uppercase text-gray-500">LinkedIn</label>
-                <Input 
-                  value={newContact.linkedin}
-                  onChange={(e) => setNewContact({...newContact, linkedin: e.target.value})}
-                  placeholder="LinkedIn profile URL"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-mono uppercase text-gray-500">Twitter</label>
-                <Input 
-                  value={newContact.twitter}
-                  onChange={(e) => setNewContact({...newContact, twitter: e.target.value})}
-                  placeholder="Twitter handle"
-                  className="mt-1"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="text-xs font-mono uppercase text-gray-500">Notes</label>
-                <textarea 
-                  value={newContact.notes}
-                  onChange={(e) => setNewContact({...newContact, notes: e.target.value})}
-                  placeholder="Meeting notes, conversation topics, etc."
-                  className="w-full mt-1 p-2 border border-gray-300 rounded font-mono text-sm"
-                  rows={3}
-                />
-              </div>
-            </div>
-            <div className="flex gap-2 mt-4">
-              {editingId ? (
-                <>
-                  <Button onClick={saveEdit} className="bg-cyan-500 text-black">
-                    Save Changes
-                  </Button>
-                  <Button onClick={cancelEdit} variant="outline">
-                    Cancel
-                  </Button>
-                </>
-              ) : (
-                <Button onClick={addContact} className="bg-fuchsia-500 text-black">
-                  Add Contact
-                </Button>
-              )}
-            </div>
-          </div>
-        }
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-           {/* Stats */}
-           <Card className={`border-4 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-black'} brutal-shadow lg:col-span-3`}>
-             <CardContent className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className="text-3xl font-black font-mono text-lime-500">{totalContacts}</div>
-                  <div className="text-xs font-mono uppercase text-gray-500">Total Contacts</div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card variant="neon" className="bg-black/40">
+             <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-mono text-gray-500 uppercase">Total Nodes</p>
+                  <p className="text-2xl font-bold text-neon-blue font-cyber">{totalContacts}</p>
                 </div>
-                <div className="text-center">
-                  <div className="text-3xl font-black font-mono text-cyan-400">{thisMonth}</div>
-                  <div className="text-xs font-mono uppercase text-gray-500">This Month</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-black font-mono text-fuchsia-500">{pendingActions}</div>
-                  <div className="text-xs font-mono uppercase text-gray-500">Needs Attention</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-black font-mono text-orange-500">{avgScore}%</div>
-                  <div className="text-xs font-mono uppercase text-gray-500">Avg Relationship</div>
-                </div>
+                <Users className="w-8 h-8 text-neon-blue/20" />
              </CardContent>
-           </Card>
-
-           {/* Contact List */}
-           <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
-             <div className="md:col-span-2 flex items-center gap-3 mb-2">
-               <div className="relative flex-1">
-                 <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name, company, role" className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-black'}`} />
-               </div>
-               <div className="w-40">
-                 <Select value={warmth} onValueChange={(v: string) => setWarmth(v)}>
-                   <SelectTrigger>
-                     <SelectValue placeholder="Warmth" />
-                   </SelectTrigger>
-                   <SelectContent>
-                     <SelectItem value="all">All</SelectItem>
-                     <SelectItem value="hot">Hot</SelectItem>
-                     <SelectItem value="warm">Warm</SelectItem>
-                     <SelectItem value="cold">Cold</SelectItem>
-                   </SelectContent>
-                 </Select>
-               </div>
-               <div className="w-40">
-                 <Input placeholder="Company filter" value={companyFilter} onChange={(e) => setCompanyFilter(e.target.value)} />
-               </div>
-               <div className="w-44">
-                 <Select value={sortBy} onValueChange={(v: string) => setSortBy(v)}>
-                   <SelectTrigger>
-                     <SelectValue placeholder="Sort" />
-                   </SelectTrigger>
-                   <SelectContent>
-                     <SelectItem value="last_desc">Recent</SelectItem>
-                     <SelectItem value="last_asc">Oldest</SelectItem>
-                     <SelectItem value="name_asc">Name A-Z</SelectItem>
-                     <SelectItem value="name_desc">Name Z-A</SelectItem>
-                   </SelectContent>
-                 </Select>
-               </div>
-             </div>
-             {loading ? (
-               Array.from({ length: 6 }).map((_, i) => (
-                 <div key={i} className={`p-6 border-4 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-black'} brutal-shadow h-40 animate-pulse`} />
-               ))
-             ) : sorted.map((contact) => (
-               <div key={contact.id} className={`p-6 border-4 relative group ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-black'} brutal-shadow hover:border-fuchsia-500 transition-colors`}>
-                 <div className="flex justify-between items-start mb-4">
-                   <div className="flex items-center gap-3">
-                     <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 border-black ${darkMode ? 'bg-gray-800' : 'bg-gray-200'} overflow-hidden`}>
-                       {contact.avatar ? (
-                         <img src={contact.avatar} alt={contact.name} className="w-full h-full object-cover" />
-                       ) : (
-                         <span className="font-bold font-mono">{contact.name.charAt(0)}</span>
-                       )}
-                     </div>
-                     <div>
-                       <h3 className="font-bold font-mono text-lg">{contact.name}</h3>
-                       <p className="text-xs font-mono text-gray-500 flex items-center gap-1">
-                         <Briefcase className="w-3 h-3" /> {contact.role} @ {contact.company}
-                       </p>
-                     </div>
-                   </div>
-                   <div className="text-right">
-                      <div className={`px-2 py-1 text-xs font-mono font-bold uppercase border border-black inline-block mb-1 ${
-                        contact.relationshipScore >= 80 ? 'bg-lime-400 text-black' : 
-                        contact.relationshipScore >= 50 ? 'bg-yellow-400 text-black' : 'bg-red-400 text-black'
-                      }`}>
-                        {contact.relationshipScore >= 80 ? 'HOT' : contact.relationshipScore >= 50 ? 'WARM' : 'COLD'}
-                      </div>
-                   </div>
-                 </div>
-
-                 <div className="mb-4">
-                    <div className="flex justify-between text-xs font-mono text-gray-500 mb-1">
-                      <span>Relationship Score</span>
-                      <span>{contact.relationshipScore}%</span>
-                    </div>
-                    <Progress value={contact.relationshipScore} className="h-2 border border-black" indicatorClassName="bg-fuchsia-500" />
-                 </div>
-
-                 <p className="text-sm text-gray-500 font-mono mb-4 bg-black/5 p-2 border-l-2 border-black">
-                   "{contact.notes}"
-                 </p>
-
-                 <div className="flex justify-between items-center text-xs font-mono text-gray-400">
-                    <span>Last: {new Date(contact.lastContactedDate).toLocaleDateString()}</span>
-                    <div className="flex gap-2">
-                       <button className="p-2 hover:bg-black hover:text-white transition-colors border border-transparent hover:border-gray-700" onClick={() => markContactedNow(contact.id)}>
-                         {contact.linkedin && <Linkedin className="w-4 h-4" />}
-                         {!contact.linkedin && <Mail className="w-4 h-4" />}
-                       </button>
-                       <Button variant="outline" className={`${darkMode ? 'border-gray-700 text-white' : 'border-black text-black'} px-3`} onClick={() => nudgeScore(contact.id, 5)}>
-                         +5
-                       </Button>
-                       <Button variant="outline" className={`${darkMode ? 'border-gray-700 text-white' : 'border-black text-black'} px-3`} onClick={() => nudgeScore(contact.id, -5)}>
-                         -5
-                       </Button>
-                       <Button variant="outline" className={`${darkMode ? 'border-gray-700 text-white' : 'border-black text-black'} px-3`} onClick={() => startEdit(contact.id)}>
-                         Edit
-                       </Button>
-                       <Button variant="destructive" className="px-3" onClick={() => removeContact(contact.id)}>
-                         Remove
-                       </Button>
-                    </div>
-                 </div>
-               </div>
-             ))}
-           </div>
+          </Card>
+          <Card variant="neon" className="bg-black/40">
+             <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-mono text-gray-500 uppercase">Active (Mo)</p>
+                  <p className="text-2xl font-bold text-neon-green font-cyber">{thisMonth}</p>
+                </div>
+                <Calendar className="w-8 h-8 text-neon-green/20" />
+             </CardContent>
+          </Card>
+          <Card variant="neon" className="bg-black/40">
+             <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-mono text-gray-500 uppercase">Pending</p>
+                  <p className="text-2xl font-bold text-neon-pink font-cyber">{pendingActions}</p>
+                </div>
+                <MessageCircle className="w-8 h-8 text-neon-pink/20" />
+             </CardContent>
+          </Card>
+          <Card variant="neon" className="bg-black/40">
+             <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-mono text-gray-500 uppercase">Avg Signal</p>
+                  <p className="text-2xl font-bold text-neon-yellow font-cyber">{avgScore}%</p>
+                </div>
+                <TrendingUp className="w-8 h-8 text-neon-yellow/20" />
+             </CardContent>
+          </Card>
         </div>
+
+        {/* Add/Edit Contact Form */}
+        {showAddForm && (
+          <Card variant="neon" className="border-neon-pink/50 relative overflow-hidden animate-in slide-in-from-top-4 duration-300">
+            <div className="absolute inset-0 bg-neon-pink/5 pointer-events-none" />
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-neon-pink font-cyber">
+                <User className="w-5 h-5" />
+                {editingId ? 'RECONFIGURE NODE' : 'ESTABLISH NEW UPLINK'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-mono uppercase text-neon-blue">Identity *</label>
+                  <Input 
+                    value={newContact.name}
+                    onChange={(e) => setNewContact({...newContact, name: e.target.value})}
+                    placeholder="Contact name"
+                    className="bg-black/50 border-white/10 focus:border-neon-pink"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-mono uppercase text-neon-blue">Organization *</label>
+                  <Input 
+                    value={newContact.company}
+                    onChange={(e) => setNewContact({...newContact, company: e.target.value})}
+                    placeholder="Company name"
+                    className="bg-black/50 border-white/10 focus:border-neon-pink"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-mono uppercase text-gray-500">Designation</label>
+                  <Input 
+                    value={newContact.role}
+                    onChange={(e) => setNewContact({...newContact, role: e.target.value})}
+                    placeholder="Job title"
+                    className="bg-black/50 border-white/10 focus:border-neon-blue"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-mono uppercase text-gray-500">Comms Frequency</label>
+                  <Input 
+                    value={newContact.email}
+                    onChange={(e) => setNewContact({...newContact, email: e.target.value})}
+                    placeholder="email@example.com"
+                    className="bg-black/50 border-white/10 focus:border-neon-blue"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-mono uppercase text-gray-500">Neural Link (LinkedIn)</label>
+                  <Input 
+                    value={newContact.linkedin}
+                    onChange={(e) => setNewContact({...newContact, linkedin: e.target.value})}
+                    placeholder="LinkedIn profile URL"
+                    className="bg-black/50 border-white/10 focus:border-neon-blue"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-mono uppercase text-gray-500">Subspace Channel (Twitter)</label>
+                  <Input 
+                    value={newContact.twitter}
+                    onChange={(e) => setNewContact({...newContact, twitter: e.target.value})}
+                    placeholder="Twitter handle"
+                    className="bg-black/50 border-white/10 focus:border-neon-blue"
+                  />
+                </div>
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-xs font-mono uppercase text-gray-500">Data Logs</label>
+                  <textarea 
+                    value={newContact.notes}
+                    onChange={(e) => setNewContact({...newContact, notes: e.target.value})}
+                    placeholder="Meeting notes, conversation topics, etc."
+                    className="w-full p-3 bg-black/50 border border-white/10 rounded-md font-mono text-sm focus:border-neon-purple focus:ring-1 focus:ring-neon-purple outline-none min-h-[100px]"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6 justify-end">
+                {editingId ? (
+                  <>
+                    <Button onClick={cancelEdit} variant="ghost" className="hover:bg-red-500/10 hover:text-red-500">
+                      Abort
+                    </Button>
+                    <Button onClick={saveEdit} variant="neon" className="min-w-[120px]">
+                      Save Config
+                    </Button>
+                  </>
+                ) : (
+                  <Button onClick={addContact} variant="neon" className="w-full md:w-auto min-w-[150px]">
+                    Initialize Link
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Filters & Controls */}
+        <div className="flex flex-col md:flex-row gap-4 p-4 bg-black/40 border border-white/5 rounded-lg backdrop-blur-sm">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <Input 
+              value={search} 
+              onChange={(e) => setSearch(e.target.value)} 
+              placeholder="Search nodes..." 
+              className="pl-10 bg-black/50 border-white/10 focus:border-neon-blue" 
+            />
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
+            <Select value={warmth} onValueChange={(v: string) => setWarmth(v)}>
+              <SelectTrigger className="w-[120px] bg-black/50 border-white/10">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Signals</SelectItem>
+                <SelectItem value="hot">Strong</SelectItem>
+                <SelectItem value="warm">Stable</SelectItem>
+                <SelectItem value="cold">Weak</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input 
+              placeholder="Filter Org" 
+              value={companyFilter} 
+              onChange={(e) => setCompanyFilter(e.target.value)}
+              className="w-[150px] bg-black/50 border-white/10"
+            />
+            <Select value={sortBy} onValueChange={(v: string) => setSortBy(v)}>
+              <SelectTrigger className="w-[120px] bg-black/50 border-white/10">
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="last_desc">Recent</SelectItem>
+                <SelectItem value="last_asc">Oldest</SelectItem>
+                <SelectItem value="name_asc">A-Z</SelectItem>
+                <SelectItem value="name_desc">Z-A</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Contact List */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-64 bg-white/5 rounded-lg animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sorted.map((contact) => (
+              <Card key={contact.id} variant="neon" className="group hover:border-neon-blue/50 transition-all duration-300">
+                <CardContent className="p-5 space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-gray-800 to-black border border-white/10 flex items-center justify-center overflow-hidden relative group-hover:shadow-[0_0_15px_rgba(0,243,255,0.3)] transition-shadow">
+                        {contact.avatar ? (
+                          <img src={contact.avatar} alt={contact.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="font-bold font-cyber text-neon-blue text-lg">{contact.name.charAt(0)}</span>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-bold font-cyber text-white group-hover:text-neon-blue transition-colors truncate max-w-[150px]">{contact.name}</h3>
+                        <p className="text-xs font-mono text-gray-400 flex items-center gap-1 truncate max-w-[150px]">
+                          <Briefcase className="w-3 h-3 text-neon-purple" /> {contact.role}
+                        </p>
+                        <p className="text-xs font-mono text-gray-500 truncate max-w-[150px]">
+                           @ {contact.company}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className={`
+                      ${contact.relationshipScore >= 80 ? 'border-neon-green text-neon-green bg-neon-green/10' : 
+                        contact.relationshipScore >= 50 ? 'border-neon-yellow text-neon-yellow bg-neon-yellow/10' : 
+                        'border-neon-red text-neon-red bg-neon-red/10'} 
+                      font-mono text-[10px] uppercase tracking-wider
+                    `}>
+                      {contact.relationshipScore >= 80 ? 'STRONG' : contact.relationshipScore >= 50 ? 'STABLE' : 'WEAK'}
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-1">
+                     <div className="flex justify-between text-[10px] font-mono text-gray-500 uppercase">
+                       <span>Link Strength</span>
+                       <span>{contact.relationshipScore}%</span>
+                     </div>
+                     <Progress value={contact.relationshipScore} className="h-1 bg-white/10" indicatorClassName={`
+                       ${contact.relationshipScore >= 80 ? 'bg-neon-green' : 
+                         contact.relationshipScore >= 50 ? 'bg-neon-yellow' : 'bg-neon-red'}
+                     `} />
+                  </div>
+
+                  {contact.notes && (
+                    <div className="p-3 bg-black/40 border border-white/5 rounded text-xs text-gray-400 font-mono italic line-clamp-2 min-h-[3rem]">
+                      "{contact.notes}"
+                    </div>
+                  )}
+
+                  <div className="pt-2 flex items-center justify-between border-t border-white/5">
+                     <span className="text-[10px] font-mono text-gray-600">
+                       Last: {new Date(contact.lastContactedDate).toLocaleDateString()}
+                     </span>
+                     <div className="flex gap-1">
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-7 w-7 text-gray-400 hover:text-neon-blue hover:bg-neon-blue/10"
+                          onClick={() => markContactedNow(contact.id)}
+                          title="Log Contact"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-7 w-7 text-gray-400 hover:text-neon-green hover:bg-neon-green/10"
+                          onClick={() => nudgeScore(contact.id, 5)}
+                          title="Boost Score"
+                        >
+                          <TrendingUp className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-7 w-7 text-gray-400 hover:text-neon-red hover:bg-neon-red/10"
+                          onClick={() => nudgeScoreDown(contact.id, 5)}
+                          title="Lower Score"
+                        >
+                          <TrendingDown className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-7 w-7 text-gray-400 hover:text-neon-purple hover:bg-neon-purple/10"
+                          onClick={() => startEdit(contact.id)}
+                          title="Edit"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-500/10"
+                          onClick={() => removeContact(contact.id)}
+                          title="Remove"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

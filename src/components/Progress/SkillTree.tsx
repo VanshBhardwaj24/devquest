@@ -1,150 +1,24 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Input } from '../ui/input';
 import { 
-  Zap, Trophy, Target, Crown, Star, Lock, Unlock, Flame, Brain, Code, 
-  Database, Globe, Users, MessageSquare, Heart, Sparkles, TrendingUp,
-  Award, Gift, Coins, Gem, Shield, Sword, Hammer, Wrench, Cpu,
-  BookOpen, GraduationCap, Lightbulb, Rocket, Compass, MapPin
+  Zap, Target, Brain, Code, Activity, Layout, Star
 } from 'lucide-react';
-import { useApp } from '../../contexts/AppContext';
-import { appDataService } from '../../services/appDataService';
-import { ResponsiveContainer, AreaChart, Area, LineChart, Line, CartesianGrid, XAxis, Tooltip } from 'recharts';
+import { useApp, Skill } from '../../contexts/AppContext';
 
 interface SkillNode {
   id: string;
   name: string;
   description: string;
   icon: React.ReactNode;
-  category: 'technical' | 'creative' | 'business' | 'personal';
+  category: string;
   level: number;
   xp: number;
   maxXp: number;
-  costMultiplier: number;
-  prerequisites: string[];
-  synergies: string[];
   isUnlocked: boolean;
   isMastered: boolean;
-  rewards: {
-    xp: number;
-    coins: number;
-    title?: string;
-    ability?: string;
-  };
-  nextLevelRewards: {
-    xp: number;
-    coins: number;
-    title?: string;
-    ability?: string;
-  };
-  // New components
-  masteryPath: MasteryPath[];
-  challenges: SkillChallenge[];
-  resources: SkillResource[];
-  achievements: SkillAchievement[];
-  stats: SkillStats;
-  progression: SkillProgression;
-  practiceLog?: string[];
-}
-
-interface MasteryPath {
-  id: string;
-  name: string;
-  description: string;
-  requirements: string[];
-  rewards: {
-    title: string;
-    bonus: string;
-    value: number;
-  };
-  completed: boolean;
-  progress: number;
-  maxProgress: number;
-}
-
-interface SkillChallenge {
-  id: string;
-  title: string;
-  description: string;
-  difficulty: 'easy' | 'medium' | 'hard' | 'expert';
-  requirements: string[];
-  rewards: {
-    xp: number;
-    coins: number;
-    item?: string;
-  };
-  completed: boolean;
-  attempts: number;
-  maxAttempts: number;
-  timeLimit?: number;
-}
-
-interface SkillResource {
-  id: string;
-  title: string;
-  type: 'article' | 'video' | 'course' | 'book' | 'tool';
-  url: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  duration: number;
-  rating: number;
-  tags: string[];
-  completed: boolean;
-  bookmarked: boolean;
-}
-
-interface SkillAchievement {
-  id: string;
-  name: string;
-  description: string;
-  icon: React.ReactNode;
-  requirements: string[];
-  progress: number;
-  maxProgress: number;
-  unlocked: boolean;
-  unlockedAt?: Date;
-  rarity: 'common' | 'rare' | 'epic' | 'legendary';
-}
-
-interface SkillStats {
-  totalPracticeTime: number;
-  practiceSessions: number;
-  averageSessionTime: number;
-  longestStreak: number;
-  currentStreak: number;
-  totalXpEarned: number;
-  masteryPoints: number;
-  efficiency: number;
-}
-
-interface SkillProgression {
-  milestones: ProgressMilestone[];
-  recommendations: ProgressRecommendation[];
-  nextSteps: string[];
-  estimatedTime: number;
-  difficulty: 'easy' | 'medium' | 'hard';
-}
-
-interface ProgressMilestone {
-  id: string;
-  title: string;
-  description: string;
-  level: number;
-  unlocked: boolean;
-  unlockedAt?: Date;
-  rewards: string[];
-}
-
-interface ProgressRecommendation {
-  type: 'practice' | 'resource' | 'challenge' | 'break';
-  title: string;
-  description: string;
-  priority: 'low' | 'medium' | 'high';
-  estimatedTime: number;
-  benefits: string[];
 }
 
 interface SkillTree {
@@ -156,744 +30,168 @@ interface SkillTree {
   isUnlocked: boolean;
 }
 
-const calculateLevelUpCost = (baseCost: number, level: number, multiplier: number = 1.5): number => {
-  return Math.floor(baseCost * Math.pow(multiplier, level - 1));
-};
-
-const calculateMaxXp = (level: number): number => {
-  return 100 * Math.pow(1.2, level - 1);
-};
-
-const SKILL_TREES: SkillTree[] = [
-  {
-    id: 'technical',
-    name: 'Technical Mastery',
-    description: 'Programming, systems, and technology skills',
-    requiredLevel: 1,
-    isUnlocked: true,
-    nodes: [
-      {
-        id: 'programming',
-        name: 'Programming Fundamentals',
-        description: 'Master the art of code and algorithms',
-        icon: <Code className="w-6 h-6" />,
-        category: 'technical',
-        level: 1,
-        xp: 0,
-        maxXp: 100,
-        costMultiplier: 1.5,
-        prerequisites: [],
-        synergies: ['algorithms', 'databases'],
-        isUnlocked: true,
-        isMastered: false,
-        rewards: { xp: 50, coins: 100, title: 'Code Apprentice' },
-        nextLevelRewards: { xp: 75, coins: 150, title: 'Code Journeyman' },
-        masteryPath: [
-          {
-            id: 'code_apprentice',
-            name: 'Code Apprentice',
-            description: 'Complete 10 coding exercises',
-            requirements: ['exercises_completed >= 10'],
-            rewards: { title: 'Code Apprentice', bonus: 'xp_multiplier', value: 0.1 },
-            completed: false,
-            progress: 0,
-            maxProgress: 10
-          }
-        ],
-        challenges: [
-          {
-            id: 'first_program',
-            title: 'First Program',
-            description: 'Write your first working program',
-            difficulty: 'easy',
-            requirements: [],
-            rewards: { xp: 25, coins: 50 },
-            completed: false,
-            attempts: 0,
-            maxAttempts: 3
-          }
-        ],
-        resources: [
-          {
-            id: 'basic_syntax',
-            title: 'Basic Programming Syntax',
-            type: 'article',
-            url: '#',
-            difficulty: 'beginner',
-            duration: 30,
-            rating: 4.5,
-            tags: ['basics', 'syntax'],
-            completed: false,
-            bookmarked: false
-          }
-        ],
-        achievements: [
-          {
-            id: 'first_line',
-            name: 'First Line of Code',
-            description: 'Write your first line of code',
-            icon: <Star className="w-4 h-4" />,
-            requirements: ['code_written'],
-            progress: 0,
-            maxProgress: 1,
-            unlocked: false,
-            rarity: 'common'
-          }
-        ],
-        stats: {
-          totalPracticeTime: 0,
-          practiceSessions: 0,
-          averageSessionTime: 0,
-          longestStreak: 0,
-          currentStreak: 0,
-          totalXpEarned: 0,
-          masteryPoints: 0,
-          efficiency: 1.0
-        },
-        progression: {
-          milestones: [
-            {
-              id: 'level_5',
-              title: 'Level 5 Milestone',
-              description: 'Reach level 5 in programming',
-              level: 5,
-              unlocked: false,
-              rewards: ['bonus_xp', 'new_abilities']
-            }
-          ],
-          recommendations: [
-            {
-              type: 'practice',
-              title: 'Daily Coding Practice',
-              description: 'Practice coding for 30 minutes daily',
-              priority: 'high',
-              estimatedTime: 30,
-              benefits: ['skill_improvement', 'consistency_bonus']
-            }
-          ],
-          nextSteps: ['Complete basic exercises', 'Read syntax guide'],
-          estimatedTime: 120,
-          difficulty: 'easy'
-        }
-      },
-      {
-        id: 'algorithms',
-        name: 'Algorithm Design',
-        description: 'Complex problem-solving and optimization',
-        icon: <Brain className="w-6 h-6" />,
-        category: 'technical',
-        level: 0,
-        xp: 0,
-        maxXp: 100,
-        costMultiplier: 1.8,
-        prerequisites: ['programming'],
-        synergies: ['programming', 'databases'],
-        isUnlocked: false,
-        isMastered: false,
-        rewards: { xp: 100, coins: 200, title: 'Algorithm Master' },
-        nextLevelRewards: { xp: 150, coins: 300, ability: 'Pattern Recognition' }
-      },
-      {
-        id: 'databases',
-        name: 'Database Architecture',
-        description: 'Data storage, retrieval, and management',
-        icon: <Database className="w-6 h-6" />,
-        category: 'technical',
-        level: 0,
-        xp: 0,
-        maxXp: 100,
-        costMultiplier: 1.6,
-        prerequisites: ['programming'],
-        synergies: ['programming', 'algorithms'],
-        isUnlocked: false,
-        isMastered: false,
-        rewards: { xp: 80, coins: 180, title: 'Data Architect' },
-        nextLevelRewards: { xp: 120, coins: 270, ability: 'Query Optimization' }
-      }
-    ]
-  },
-  {
-    id: 'creative',
-    name: 'Creative Arts',
-    description: 'Design, art, and creative expression',
-    requiredLevel: 3,
-    isUnlocked: false,
-    nodes: [
-      {
-        id: 'design',
-        name: 'Visual Design',
-        description: 'Create beautiful and functional designs',
-        icon: <Sparkles className="w-6 h-6" />,
-        category: 'creative',
-        level: 0,
-        xp: 0,
-        maxXp: 100,
-        costMultiplier: 1.4,
-        prerequisites: [],
-        synergies: ['writing', 'music'],
-        isUnlocked: false,
-        isMastered: false,
-        rewards: { xp: 60, coins: 120, title: 'Design Novice' },
-        nextLevelRewards: { xp: 90, coins: 180, ability: 'Color Theory' }
-      },
-      {
-        id: 'writing',
-        name: 'Creative Writing',
-        description: 'Craft compelling stories and content',
-        icon: <BookOpen className="w-6 h-6" />,
-        category: 'creative',
-        level: 0,
-        xp: 0,
-        maxXp: 100,
-        costMultiplier: 1.3,
-        prerequisites: [],
-        synergies: ['design', 'music'],
-        isUnlocked: false,
-        isMastered: false,
-        rewards: { xp: 50, coins: 100, title: 'Storyteller' },
-        nextLevelRewards: { xp: 75, coins: 150, ability: 'Narrative Structure' }
-      }
-    ]
-  },
-  {
-    id: 'business',
-    name: 'Business & Leadership',
-    description: 'Entrepreneurship, management, and strategy',
-    requiredLevel: 5,
-    isUnlocked: false,
-    nodes: [
-      {
-        id: 'leadership',
-        name: 'Team Leadership',
-        description: 'Inspire and guide teams to success',
-        icon: <Users className="w-6 h-6" />,
-        category: 'business',
-        level: 0,
-        xp: 0,
-        maxXp: 100,
-        costMultiplier: 1.7,
-        prerequisites: [],
-        synergies: ['strategy', 'communication'],
-        isUnlocked: false,
-        isMastered: false,
-        rewards: { xp: 100, coins: 250, title: 'Team Leader' },
-        nextLevelRewards: { xp: 150, coins: 375, ability: 'Motivation Techniques' }
-      },
-      {
-        id: 'strategy',
-        name: 'Strategic Planning',
-        description: 'Develop winning business strategies',
-        icon: <Target className="w-6 h-6" />,
-        category: 'business',
-        level: 0,
-        xp: 0,
-        maxXp: 100,
-        costMultiplier: 1.9,
-        prerequisites: ['leadership'],
-        synergies: ['leadership', 'communication'],
-        isUnlocked: false,
-        isMastered: false,
-        rewards: { xp: 120, coins: 300, title: 'Strategist' },
-        nextLevelRewards: { xp: 180, coins: 450, ability: 'Market Analysis' }
-      }
-    ]
+const getSkillIcon = (id: string) => {
+  switch (id) {
+    case 'coding': return <Code className="w-6 h-6" />;
+    case 'design': return <Layout className="w-6 h-6" />;
+    case 'logic': return <Brain className="w-6 h-6" />;
+    case 'focus': return <Target className="w-6 h-6" />;
+    case 'speed': return <Zap className="w-6 h-6" />;
+    case 'stamina': return <Activity className="w-6 h-6" />;
+    default: return <Star className="w-6 h-6" />;
   }
-];
+};
+
+const mapSkillToNode = (skill: Skill): SkillNode => ({
+  id: skill.id,
+  name: skill.name,
+  description: skill.description || `Master the art of ${skill.name}`,
+  icon: getSkillIcon(skill.id),
+  category: skill.category,
+  level: skill.level,
+  xp: 0, // Simplified for now
+  maxXp: 100 * Math.pow(1.2, skill.level),
+  isUnlocked: true,
+  isMastered: skill.level >= skill.maxLevel,
+});
 
 export function SkillTree() {
   const { state, dispatch } = useApp();
-  const { authUser, xpSystem } = state;
-  const [skillTrees, setSkillTrees] = useState<SkillTree[]>(SKILL_TREES);
-  const [selectedTree, setSelectedTree] = useState<string>('technical');
-  const [userLevel, setUserLevel] = useState(1);
-  const [totalCoins, setTotalCoins] = useState(1000);
-  const [selectedNode, setSelectedNode] = useState<SkillNode | null>(null);
-  const [timeView, setTimeView] = useState<'all' | 'daily' | 'weekly' | 'monthly'>('all');
-  const today = new Date();
-  const sameDay = (d: Date) => d.toDateString() === today.toDateString();
-  const sameMonth = (d: Date) => d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
-  const weekBounds = (() => {
-    const start = new Date(today); const day = start.getDay(); const diff = start.getDate() - day + (day === 0 ? -6 : 1);
-    start.setDate(diff); start.setHours(0,0,0,0);
-    const end = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23,59,59,999);
-    return { start, end };
-  })();
-  const inWeek = (d: Date) => d >= weekBounds.start && d <= weekBounds.end;
+  const { skills } = state;
+  const [selectedTreeId, setSelectedTreeId] = useState<string>('Technical');
 
-  useEffect(() => {
-    if (authUser) {
-      loadSkillData();
-    }
-  }, [authUser]);
-
-  const loadSkillData = async () => {
-    try {
-      const appData = await appDataService.getAppData(authUser!.id);
-      const savedSkills = appData?.skills || {};
-      
-      // Update skill trees with saved progress
-      const updatedTrees = SKILL_TREES.map(tree => {
-        const savedTree = savedSkills[tree.id];
-        if (!savedTree) return tree;
-        
-        return {
-          ...tree,
-          nodes: tree.nodes.map(node => {
-            const savedNode = savedTree.nodes?.find((n: any) => n.id === node.id);
-            if (!savedNode) return node;
-            
-            return {
-              ...node,
-              level: savedNode.level || 0,
-              xp: savedNode.xp || 0,
-              isUnlocked: savedNode.isUnlocked || node.isUnlocked,
-              isMastered: savedNode.isMastered || false,
-              practiceLog: Array.isArray(savedNode.practiceLog) ? savedNode.practiceLog : node.practiceLog || []
-            };
-          })
-        };
-      });
-      
-      setSkillTrees(updatedTrees);
-      
-      // Calculate user level based on total skill levels
-      const totalLevels = updatedTrees.reduce((acc, tree) => 
-        acc + tree.nodes.reduce((sum, node) => sum + node.level, 0), 0
-      );
-      setUserLevel(Math.max(1, Math.floor(totalLevels / 3)));
-      
-      setTotalCoins(appData?.coins || 1000);
-    } catch (error) {
-      console.error('Error loading skill data:', error);
-    }
-  };
-
-  const saveSkillData = async (updatedTrees: SkillTree[]) => {
-    try {
-      const skillData = updatedTrees.reduce((acc, tree) => {
-        acc[tree.id] = {
-          nodes: tree.nodes.map(({ id, level, xp, isUnlocked, isMastered, practiceLog }) => ({
-            id, level, xp, isUnlocked, isMastered, practiceLog: practiceLog || []
-          }))
-        };
-        return acc;
-      }, {} as any);
-      
-      await appDataService.updateAppDataField(authUser!.id, 'skills', skillData);
-      setSkillTrees(updatedTrees);
-    } catch (error) {
-      console.error('Error saving skill data:', error);
-    }
-  };
-
-  const canLevelUp = (node: SkillNode): boolean => {
-    if (node.level >= 10) return false; // Max level
-    if (!node.isUnlocked) return false;
+  const skillTrees = useMemo(() => {
+    // Get unique categories
+    const categories = Array.from(new Set(skills.map(s => s.category)));
     
-    const cost = calculateLevelUpCost(100, node.level, node.costMultiplier);
-    return totalCoins >= cost && node.xp >= node.maxXp;
-  };
+    // Create a tree for each category
+    return categories.map(category => ({
+      id: category,
+      name: `${category} Mastery`,
+      description: `Develop your ${category.toLowerCase()} capabilities`,
+      nodes: skills.filter(s => s.category === category).map(mapSkillToNode),
+      requiredLevel: 1,
+      isUnlocked: true
+    }));
+  }, [skills]);
 
-  const levelUpSkill = async (treeId: string, nodeId: string) => {
-    const tree = skillTrees.find(t => t.id === treeId);
-    const node = tree?.nodes.find(n => n.id === nodeId);
-    
-    if (!node || !canLevelUp(node)) return;
-    
-    const cost = calculateLevelUpCost(100, node.level, node.costMultiplier);
-    
-    // Update node
-    const updatedTrees = skillTrees.map(t => {
-      if (t.id !== treeId) return t;
-      
-      return {
-        ...t,
-        nodes: t.nodes.map(n => {
-          if (n.id !== nodeId) return n;
-          
-          const newLevel = n.level + 1;
-          const isMastered = newLevel >= 10;
-          
-          return {
-            ...n,
-            level: newLevel,
-            xp: 0,
-            maxXp: calculateMaxXp(newLevel),
-            isMastered
-          };
-        })
-      };
+  // Ensure selectedTreeId is valid
+  const effectiveSelectedTreeId = skillTrees.some(t => t.id === selectedTreeId) 
+    ? selectedTreeId 
+    : skillTrees[0]?.id || 'Technical';
+
+  const selectedTree = skillTrees.find(t => t.id === effectiveSelectedTreeId);
+
+  const handleUpgradeSkill = (skillId: string) => {
+    dispatch({
+      type: 'UPDATE_SKILL',
+      payload: { id: skillId, amount: 1 }
     });
-    
-    // Update coins and XP
-    const newCoins = totalCoins - cost;
-    setTotalCoins(newCoins);
-    
-    // Award rewards
-    dispatch({ type: 'ADD_XP', payload: { 
-      amount: node.nextLevelRewards.xp, 
-      source: `Skill Level Up: ${node.name}` 
-    }});
-    
-    dispatch({ type: 'ADD_NOTIFICATION', payload: {
-      id: Date.now().toString(),
-      type: 'achievement',
-      title: 'Skill Leveled Up!',
-      message: `${node.name} is now level ${node.level + 1}! ${node.nextLevelRewards.title ? `New title: ${node.nextLevelRewards.title}` : ''}`,
-      timestamp: new Date(),
-      read: false,
-      priority: 'high'
-    }});
-    
-    // Unlock dependent skills
-    const unlockedTrees = updatedTrees.map(t => {
-      if (t.id !== treeId) return t;
-      
-      return {
-        ...t,
-        nodes: t.nodes.map(n => {
-          if (n.prerequisites.includes(nodeId)) {
-            return { ...n, isUnlocked: true };
-          }
-          return n;
-        })
-      };
-    });
-    
-    await saveSkillData(unlockedTrees);
-    
-    // Update user level
-    const totalLevels = unlockedTrees.reduce((acc, tree) => 
-      acc + tree.nodes.reduce((sum, node) => sum + node.level, 0), 0
+  };
+
+  if (!selectedTree) {
+    return (
+      <div className="text-center p-8 text-gray-400">
+        <p>No skill trees available.</p>
+      </div>
     );
-    setUserLevel(Math.max(1, Math.floor(totalLevels / 3)));
-  };
-
-  const practiceSkill = async (treeId: string, nodeId: string) => {
-    const tree = skillTrees.find(t => t.id === treeId);
-    const node = tree?.nodes.find(n => n.id === nodeId);
-    
-    if (!node || !node.isUnlocked) return;
-    
-    const xpGain = Math.floor(Math.random() * 20) + 10;
-    const ts = new Date().toISOString();
-    
-    const updatedTrees = skillTrees.map(t => {
-      if (t.id !== treeId) return t;
-      
-      return {
-        ...t,
-        nodes: t.nodes.map(n => {
-          if (n.id !== nodeId) return n;
-          
-          const newXp = Math.min(n.xp + xpGain, n.maxXp);
-          return { ...n, xp: newXp, practiceLog: [...(n.practiceLog || []), ts] };
-        })
-      };
-    });
-    
-    dispatch({ type: 'ADD_XP', payload: { amount: xpGain, source: `Practice: ${node.name}` } });
-    
-    dispatch({ type: 'ADD_NOTIFICATION', payload: {
-      id: Date.now().toString(),
-      type: 'skill-up',
-      title: 'Skill Practice!',
-      message: `Gained ${xpGain} XP in ${node.name}`,
-      timestamp: new Date(),
-      read: false,
-      priority: 'low'
-    }});
-    
-    await saveSkillData(updatedTrees);
-  };
-
-  const currentTree = skillTrees.find(t => t.id === selectedTree);
-  const totalStats = useMemo(() => {
-    return skillTrees.reduce((acc, tree) => ({
-      totalSkills: acc.totalSkills + tree.nodes.length,
-      unlockedSkills: acc.unlockedSkills + tree.nodes.filter(n => n.isUnlocked).length,
-      masteredSkills: acc.masteredSkills + tree.nodes.filter(n => n.isMastered).length,
-      totalLevels: acc.totalLevels + tree.nodes.reduce((sum, node) => sum + node.level, 0)
-    }), { totalSkills: 0, unlockedSkills: 0, masteredSkills: 0, totalLevels: 0 });
-  }, [skillTrees]);
-  const treePracticeTimeline = useMemo(() => {
-    const map: Record<string, number> = {};
-    if (!currentTree) return [];
-    currentTree.nodes.forEach(n => {
-      (n.practiceLog || []).forEach(iso => {
-        const d = new Date(iso);
-        const key = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        map[key] = (map[key] || 0) + 1;
-      });
-    });
-    const keys = Object.keys(map);
-    keys.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-    return keys.map(k => ({ name: k, count: map[k] }));
-  }, [currentTree]);
-  const practiceCounts = useMemo(() => {
-    if (!currentTree) return { daily: 0, weekly: 0, monthly: 0 };
-    const logs = currentTree.nodes.flatMap(n => n.practiceLog || []);
-    const daily = logs.filter(l => sameDay(new Date(l))).length;
-    const weekly = logs.filter(l => inWeek(new Date(l))).length;
-    const monthly = logs.filter(l => sameMonth(new Date(l))).length;
-    return { daily, weekly, monthly };
-  }, [currentTree]);
-  const practiceTargets = { daily: 2, weekly: 10, monthly: 40 };
-  const practicePercents = {
-    daily: Math.min(100, Math.round((practiceCounts.daily / practiceTargets.daily) * 100)),
-    weekly: Math.min(100, Math.round((practiceCounts.weekly / practiceTargets.weekly) * 100)),
-    monthly: Math.min(100, Math.round((practiceCounts.monthly / practiceTargets.monthly) * 100)),
-  };
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Skill Tree</h2>
-        <div className="flex gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">Level {userLevel}</div>
-            <div className="text-sm text-gray-600">Your Level</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-yellow-600">{totalCoins}</div>
-            <div className="text-sm text-gray-600">Coins</div>
-          </div>
-          <div className="text-center">
-            <Select value={timeView} onValueChange={(val) => setTimeView(val as 'all' | 'daily' | 'weekly' | 'monthly')}>
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="Time view" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Time</SelectItem>
-                <SelectItem value="daily">Today</SelectItem>
-                <SelectItem value="weekly">This Week</SelectItem>
-                <SelectItem value="monthly">This Month</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold font-cyber text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-neon-purple">
+            SKILL TREES
+          </h2>
+          <p className="text-gray-400">Unlock and master new abilities</p>
+        </div>
+        
+        <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 max-w-full">
+          {skillTrees.map(tree => (
+            <Button
+              key={tree.id}
+              variant={effectiveSelectedTreeId === tree.id ? "neon" : "outline"}
+              onClick={() => setSelectedTreeId(tree.id)}
+              className={effectiveSelectedTreeId !== tree.id ? "border-white/10 text-gray-400 hover:text-white hover:border-neon-blue/50" : ""}
+            >
+              {tree.id}
+            </Button>
+          ))}
         </div>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{totalStats.totalSkills}</div>
-            <div className="text-sm text-gray-600">Total Skills</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">{totalStats.unlockedSkills}</div>
-            <div className="text-sm text-gray-600">Unlocked</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-purple-600">{totalStats.masteredSkills}</div>
-            <div className="text-sm text-gray-600">Mastered</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-orange-600">{totalStats.totalLevels}</div>
-            <div className="text-sm text-gray-600">Total Levels</div>
-          </CardContent>
-        </Card>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {[{ label: 'Daily', pct: practicePercents.daily, count: practiceCounts.daily }, { label: 'Weekly', pct: practicePercents.weekly, count: practiceCounts.weekly }, { label: 'Monthly', pct: practicePercents.monthly, count: practiceCounts.monthly }].map((x, i) => (
-          <Card key={i}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-xs font-mono uppercase">{x.label} Practice</div>
-                <div className="text-xs font-mono">{x.count}</div>
-              </div>
-              <div className="h-2 bg-gray-200 dark:bg-gray-800 rounded overflow-hidden">
-                <div className="h-full bg-lime-500" style={{ width: `${x.pct}%` }} />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      {currentTree && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-6 h-6" />
-              Practice Timeline
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div style={{ height: 180 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={treePracticeTimeline}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="name" stroke="#6b7280" tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={{ borderRadius: 0, fontFamily: 'monospace' }} />
-                  <Line type="monotone" dataKey="count" name="Sessions" stroke="#10b981" dot={false} strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
+      <Card variant="cyber" className="min-h-[600px] relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/grid.png')] opacity-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/50 to-black/80 pointer-events-none" />
+        
+        <CardHeader className="relative z-10 border-b border-white/10 bg-black/40 backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl text-white flex items-center gap-3">
+                {selectedTree.name}
+                <Badge variant="outline" className="border-neon-blue text-neon-blue">
+                  Level {Math.floor(selectedTree.nodes.reduce((acc, node) => acc + node.level, 0) / Math.max(1, selectedTree.nodes.length))}
+                </Badge>
+              </CardTitle>
+              <p className="text-gray-400 mt-1">{selectedTree.description}</p>
             </div>
-          </CardContent>
-        </Card>
-      )}
+            <div className="text-right hidden md:block">
+              <div className="text-sm text-gray-500 uppercase tracking-wider">Total Mastery</div>
+              <div className="text-xl font-mono text-neon-yellow">
+                {Math.round(selectedTree.nodes.reduce((acc, node) => acc + (node.level / 150) * 100, 0) / Math.max(1, selectedTree.nodes.length))}%
+              </div>
+            </div>
+          </div>
+        </CardHeader>
 
-      {/* Tree Selection */}
-      <div className="flex gap-4 items-center">
-        <Select value={selectedTree} onValueChange={setSelectedTree}>
-          <SelectTrigger className="w-64">
-            <SelectValue placeholder="Select skill tree" />
-          </SelectTrigger>
-          <SelectContent>
-            {skillTrees.map(tree => (
-              <SelectItem 
-                key={tree.id} 
-                value={tree.id}
-                disabled={userLevel < tree.requiredLevel}
-              >
-                {tree.name} {userLevel < tree.requiredLevel && `(Req: Lvl ${tree.requiredLevel})`}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {currentTree && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="w-6 h-6" />
-              {currentTree.name}
-            </CardTitle>
-            <p className="text-gray-600">{currentTree.description}</p>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-6">
-              {(timeView === 'all' ? currentTree.nodes : currentTree.nodes.filter(node => {
-                const log = node.practiceLog || [];
-                if (timeView === 'daily') return log.some(iso => sameDay(new Date(iso)));
-                if (timeView === 'weekly') return log.some(iso => inWeek(new Date(iso)));
-                return log.some(iso => sameMonth(new Date(iso)));
-              })).map(node => (
-                <Card key={node.id} className={`border-2 ${node.isUnlocked ? 'border-blue-500' : 'border-gray-300'} ${node.isMastered ? 'bg-gradient-to-r from-purple-50 to-pink-50' : ''}`}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <div className={`p-3 rounded-lg ${node.isUnlocked ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>
-                        {node.icon}
-                      </div>
-                      
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="text-lg font-semibold">{node.name}</h3>
-                          <div className="flex gap-2">
-                            <Badge variant={node.isUnlocked ? 'default' : 'secondary'}>
-                              Level {node.level}
-                            </Badge>
-                            {node.isMastered && (
-                              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500">
-                                <Crown className="w-3 h-3 mr-1" />
-                                MASTERED
-                              </Badge>
-                            )}
-                            {!node.isUnlocked && (
-                              <Badge variant="outline">
-                                <Lock className="w-3 h-3 mr-1" />
-                                Locked
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <p className="text-gray-600 mb-3">{node.description}</p>
-                        
-                        {node.isUnlocked && (
-                          <div className="space-y-3">
-                            <div>
-                              <div className="flex justify-between text-sm mb-1">
-                                <span>Progress</span>
-                                <span>{node.xp}/{node.maxXp} XP</span>
-                              </div>
-                              <Progress value={(node.xp / node.maxXp) * 100} className="h-2" />
-                            </div>
-                            <div>
-                              <div className="flex justify-between text-xs mb-1">
-                                <span>Recent Practice</span>
-                                <span>{(node.practiceLog || []).length}</span>
-                              </div>
-                              <div style={{ height: 60 }}>
-                                <ResponsiveContainer width="100%" height="100%">
-                                  <AreaChart data={(() => {
-                                    const now = new Date();
-                                    const days = Array.from({ length: 7 }).map((_, i) => {
-                                      const d = new Date(now); d.setDate(now.getDate() - (6 - i));
-                                      const key = d.toDateString();
-                                      const count = (node.practiceLog || []).filter(iso => new Date(iso).toDateString() === key).length;
-                                      return { name: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), count };
-                                    });
-                                    return days;
-                                  })()}>
-                                    <XAxis dataKey="name" hide />
-                                    <Tooltip contentStyle={{ borderRadius: 0, fontFamily: 'monospace' }} />
-                                    <Area type="monotone" dataKey="count" stroke="#22d3ee" fill="#22d3ee33" />
-                                  </AreaChart>
-                                </ResponsiveContainer>
-                              </div>
-                            </div>
-                            
-                            <div className="flex gap-2">
-                              <Button 
-                                size="sm" 
-                                onClick={() => practiceSkill(currentTree.id, node.id)}
-                                disabled={node.xp >= node.maxXp}
-                              >
-                                <Flame className="w-4 h-4 mr-1" />
-                                Practice (+10-30 XP)
-                              </Button>
-                              
-                              {node.level < 10 && (
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  onClick={() => levelUpSkill(currentTree.id, node.id)}
-                                  disabled={!canLevelUp(node)}
-                                >
-                                  <Trophy className="w-4 h-4 mr-1" />
-                                  Level Up ({calculateLevelUpCost(100, node.level, node.costMultiplier)} coins)
-                                </Button>
-                              )}
-                            </div>
-                            
-                            {node.level < 10 && node.xp >= node.maxXp && (
-                              <div className="text-sm text-green-600 font-medium">
-                                Ready to level up! Cost: {calculateLevelUpCost(100, node.level, node.costMultiplier)} coins
-                              </div>
-                            )}
-                            
-                            {node.nextLevelRewards.title && node.level < 10 && (
-                              <div className="text-sm text-purple-600">
-                                Next reward: {node.nextLevelRewards.title}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        
-                        {!node.isUnlocked && node.prerequisites.length > 0 && (
-                          <div className="text-sm text-gray-500">
-                            Requires: {node.prerequisites.map(prereq => 
-                              currentTree.nodes.find(n => n.id === prereq)?.name || prereq
-                            ).join(', ')}
-                          </div>
-                        )}
-                      </div>
+        <CardContent className="relative z-10 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {selectedTree.nodes.map((node) => (
+              <div key={node.id} className="relative group">
+                <div className={`absolute -inset-0.5 bg-gradient-to-r ${
+                  node.isMastered ? 'from-neon-yellow to-neon-orange' : 'from-neon-blue to-neon-purple'
+                } rounded-xl opacity-20 group-hover:opacity-50 blur transition duration-500`} />
+                
+                <div className="relative p-5 bg-black/80 border border-white/10 rounded-xl hover:border-neon-blue/50 transition-all duration-300">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={`p-3 rounded-lg ${
+                      node.isMastered ? 'bg-neon-yellow/10 text-neon-yellow' : 'bg-neon-blue/10 text-neon-blue'
+                    }`}>
+                      {node.icon}
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                    <Badge variant="outline" className={
+                      node.isMastered ? 'border-neon-yellow text-neon-yellow' : 'border-neon-blue text-neon-blue'
+                    }>
+                      Lvl {node.level}
+                    </Badge>
+                  </div>
+
+                  <h3 className="text-lg font-bold text-white mb-2 font-cyber">{node.name}</h3>
+                  <p className="text-sm text-gray-400 mb-4 h-10 line-clamp-2">{node.description}</p>
+
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-xs text-gray-500 uppercase">
+                      <span>Progress</span>
+                      <span>{Math.round((node.level / 150) * 100)}%</span>
+                    </div>
+                    <Progress value={(node.level / 150) * 100} className="h-1" />
+                    
+                    <Button 
+                      className="w-full mt-2 font-cyber" 
+                      variant={node.isMastered ? "outline" : "neon"}
+                      disabled={node.isMastered}
+                      onClick={() => handleUpgradeSkill(node.id)}
+                    >
+                      {node.isMastered ? 'MASTERED' : 'UPGRADE'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

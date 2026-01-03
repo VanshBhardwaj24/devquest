@@ -201,30 +201,30 @@ export function WeeklyChallenge() {
     .reduce((sum, c) => sum + c.xpReward, 0);
 
   return (
-    <div className={`p-6 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} min-h-screen`}>
+    <div className="p-6 bg-black/50 min-h-screen">
       <div className="max-w-7xl mx-auto">
         {/* Enhanced Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
-                Challenge Arena 🏆
+              <h1 className="text-4xl font-extrabold tracking-tight font-cyber text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-purple mb-2">
+                WEEKLY CHALLENGE ARENA
               </h1>
-              <p className={`text-lg ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                Take on epic challenges to boost your skills and earn massive XP rewards
+              <p className="text-lg text-neon-blue font-mono">
+                Earn XP and level up with glitch-mode intensity
               </p>
             </div>
             <div className="flex items-center space-x-4">
               <motion.div
                 whileHover={{ scale: 1.05 }}
-                className={`p-4 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}
+                className="p-4 rounded-xl bg-black/40 border border-neon-yellow/40 shadow-lg"
               >
                 <div className="text-center">
-                  <Trophy className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
-                  <div className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  <Trophy className="h-8 w-8 text-neon-yellow mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-neon-yellow font-cyber">
                     {completedChallenges}
                   </div>
-                  <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <div className="text-sm text-neon-blue">
                     Completed
                   </div>
                 </div>
@@ -239,15 +239,15 @@ export function WeeklyChallenge() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ scale: 1.05 }}
-            className={`p-4 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg border-l-4 border-green-500`}
+            className="p-4 rounded-xl bg-black/40 shadow-lg border border-neon-green/40"
           >
             <div className="flex items-center space-x-3">
-              <CheckCircle className="h-8 w-8 text-green-500" />
+              <CheckCircle className="h-8 w-8 text-neon-green" />
               <div>
-                <div className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <div className="text-2xl font-bold text-neon-green font-cyber">
                   {completedChallenges}
                 </div>
-                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <div className="text-sm text-neon-blue">
                   Completed
                 </div>
               </div>
@@ -259,15 +259,15 @@ export function WeeklyChallenge() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             whileHover={{ scale: 1.05 }}
-            className={`p-4 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg border-l-4 border-blue-500`}
+            className="p-4 rounded-xl bg-black/40 shadow-lg border border-neon-blue/40"
           >
             <div className="flex items-center space-x-3">
-              <Play className="h-8 w-8 text-blue-500" />
+              <Play className="h-8 w-8 text-neon-blue" />
               <div>
-                <div className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <div className="text-2xl font-bold text-neon-blue font-cyber">
                   {inProgressChallenges}
                 </div>
-                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <div className="text-sm text-neon-blue">
                   In Progress
                 </div>
               </div>
@@ -279,15 +279,15 @@ export function WeeklyChallenge() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             whileHover={{ scale: 1.05 }}
-            className={`p-4 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg border-l-4 border-yellow-500`}
+            className="p-4 rounded-xl bg-black/40 shadow-lg border border-neon-yellow/40"
           >
             <div className="flex items-center space-x-3">
-              <Trophy className="h-8 w-8 text-yellow-500" />
+              <Trophy className="h-8 w-8 text-neon-yellow" />
               <div>
-                <div className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <div className="text-2xl font-bold text-neon-yellow font-cyber">
                   {totalXPFromChallenges.toLocaleString()}
                 </div>
-                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <div className="text-sm text-neon-blue">
                   Total XP
                 </div>
               </div>
@@ -299,15 +299,15 @@ export function WeeklyChallenge() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
             whileHover={{ scale: 1.05 }}
-            className={`p-4 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg border-l-4 border-purple-500`}
+            className="p-4 rounded-xl bg-black/40 shadow-lg border border-neon-purple/40"
           >
             <div className="flex items-center space-x-3">
-              <Clock className="h-8 w-8 text-purple-500" />
+              <Clock className="h-8 w-8 text-neon-purple" />
               <div>
-                <div className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <div className="text-2xl font-bold text-neon-purple font-cyber">
                   {Math.floor(Math.random() * 5) + 1}
                 </div>
-                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <div className="text-sm text-neon-blue">
                   Days Left
                 </div>
               </div>
@@ -319,15 +319,15 @@ export function WeeklyChallenge() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
             whileHover={{ scale: 1.05 }}
-            className={`p-4 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg border-l-4 border-orange-500`}
+            className="p-4 rounded-2xl bg-black/40 shadow-lg border border-neon-pink/40"
           >
             <div className="flex items-center space-x-3">
-              <TrendingUp className="h-8 w-8 text-orange-500" />
+              <TrendingUp className="h-8 w-8 text-neon-pink" />
               <div>
-                <div className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <div className="text-2xl font-bold text-neon-pink font-cyber">
                   {Math.floor((completedChallenges / challenges.length) * 100)}%
                 </div>
-                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <div className="text-sm text-neon-blue">
                   Success Rate
                 </div>
               </div>
@@ -339,15 +339,15 @@ export function WeeklyChallenge() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
             whileHover={{ scale: 1.05 }}
-            className={`p-4 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg border-l-4 border-red-500`}
+            className="p-4 rounded-xl bg-black/40 shadow-lg border border-neon-blue/40"
           >
             <div className="flex items-center space-x-3">
-              <Award className="h-8 w-8 text-red-500" />
+              <Award className="h-8 w-8 text-neon-blue" />
               <div>
-                <div className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <div className="text-2xl font-bold text-neon-blue font-cyber">
                   #{Math.floor(Math.random() * 100) + 1}
                 </div>
-                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <div className="text-sm text-neon-blue">
                   Global Rank
                 </div>
               </div>
@@ -364,12 +364,10 @@ export function WeeklyChallenge() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               whileHover={{ scale: 1.02, y: -5 }}
-              className={`p-6 rounded-2xl ${
-                darkMode ? 'bg-gray-800' : 'bg-white'
-              } shadow-lg cursor-pointer border-2 ${
+              className={`p-6 rounded-2xl bg-black/40 shadow-lg cursor-pointer border ${
                 selectedChallenge?.id === challenge.id
-                  ? 'border-purple-500'
-                  : 'border-transparent hover:border-purple-300'
+                  ? 'border-neon-purple'
+                  : 'border-neon-purple/30 hover:border-neon-purple/60'
               } transition-all duration-300`}
               onClick={() => setSelectedChallenge(challenge)}
             >
@@ -378,7 +376,7 @@ export function WeeklyChallenge() {
                 <div className="flex items-center space-x-3">
                   {getStatusIcon(challenge.status)}
                   <div>
-                    <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    <h3 className="text-lg font-bold text-neon-pink font-cyber">
                       {challenge.title}
                     </h3>
                     <div className="flex items-center space-x-2 mt-1">
@@ -386,7 +384,7 @@ export function WeeklyChallenge() {
                         {challenge.difficulty}
                       </span>
                       <span className={`px-2 py-1 rounded-full text-xs ${
-                        darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
+                        'bg-black/40 text-white'
                       }`}>
                         {challenge.category}
                       </span>
@@ -396,12 +394,12 @@ export function WeeklyChallenge() {
                 
                 <div className="text-right">
                   <div className="flex items-center space-x-1">
-                    <Star className="h-4 w-4 text-yellow-500" />
-                    <span className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    <Star className="h-4 w-4 text-neon-yellow" />
+                    <span className="font-bold text-neon-yellow font-cyber">
                       {challenge.xpReward.toLocaleString()}
                     </span>
                   </div>
-                  <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <div className="text-xs text-neon-blue">
                     XP Reward
                   </div>
                 </div>

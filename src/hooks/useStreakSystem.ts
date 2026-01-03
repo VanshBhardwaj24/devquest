@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useMemo } from 'react';
-import { useApp } from '../contexts/AppContext.refactored';
+import { useApp } from '../contexts/AppContext';
 import { 
   calculateTimeBasedStreak, 
   getTodayDateString,
@@ -47,7 +47,7 @@ export interface StreakReward {
 }
 
 export const useStreakSystem = (): StreakData & StreakActions => {
-  const { state, dispatch, actions } = useApp();
+  const { state, dispatch } = useApp();
 
   // Calculate streak data
   const streakData = useMemo((): StreakData => {
@@ -93,60 +93,58 @@ export const useStreakSystem = (): StreakData & StreakActions => {
   // Update streak for activity
   const updateStreak = useCallback((activityType: 'coding' | 'task' | 'general') => {
     const timestamp = new Date();
-    dispatch(actions.updateTimeBasedStreak(activityType, timestamp));
-    
-    // Check for milestone rewards
+    dispatch({ type: 'UPDATE_TIME_BASED_STREAK', payload: { activityType, timestamp } });
     const rewards = getStreakRewardsForMilestone(streakData.currentStreak);
     rewards.forEach(reward => {
       if (reward.xpReward > 0) {
-        dispatch(actions.addXP(reward.xpReward, `streak_milestone_${reward.milestone}`));
-      }
-      if (reward.goldReward > 0) {
-        // Add gold logic here
-        console.log(`Streak milestone ${reward.milestone}: +${reward.goldReward} Gold`);
+        dispatch({ type: 'ADD_XP', payload: { amount: reward.xpReward, source: `streak_milestone_${reward.milestone}` } });
       }
     });
-  }, [dispatch, actions, streakData.currentStreak]);
+  }, [dispatch, streakData.currentStreak]);
 
   // Check streak status and apply penalties if needed
   const checkStreakStatus = useCallback(() => {
     if (streakData.streakBroken && !streakData.protection.hasShield) {
       const punishment = calculateInactivityPunishment(streakData.daysInactive, state.xpSystem.currentXP);
-      
       if (punishment.shouldPunish) {
-        dispatch(actions.addXP(-punishment.xpPenalty, 'streak_penalty'));
-        console.warn(`Streak broken! Penalty: -${punishment.xpPenalty} XP`);
-        
-        // Add notification
-        dispatch(actions.addNotification({
-          type: 'streak',
-          title: 'Streak Broken 💔',
-          message: `Your ${streakData.currentStreak}-day streak has been broken. ${punishment.description}`,
-          priority: 'high',
-        }));
+        dispatch({ type: 'ADD_XP', payload: { amount: -punishment.xpPenalty, source: 'streak_penalty' } });
+        dispatch({
+          type: 'ADD_NOTIFICATION',
+          payload: {
+            id: Date.now().toString(),
+            type: 'streak',
+            title: 'Streak Broken 💔',
+            message: `Your ${streakData.currentStreak}-day streak has been broken. ${punishment.description}`,
+            timestamp: new Date(),
+            read: false,
+            priority: 'high',
+          },
+        });
       }
     }
-  }, [dispatch, actions, streakData, state.xpSystem.currentXP]);
+  }, [dispatch, streakData, state.xpSystem.currentXP]);
 
   // Protect streak with power-up
   const protectStreak = useCallback((type: string, duration: number) => {
-    dispatch(actions.activatePowerUp(type, duration));
-    console.log(`Streak protected with ${type} for ${duration} minutes`);
-  }, [dispatch, actions]);
+    dispatch({ type: 'ACTIVATE_POWER_UP', payload: { id: type, expiresAt: Date.now() + duration * 60_000 } });
+  }, [dispatch]);
 
   // Reset streak manually
   const resetStreak = useCallback((reason: string) => {
-    dispatch(actions.updateStreak(0));
-    console.log(`Streak reset: ${reason}`);
-    
-    // Add notification
-    dispatch(actions.addNotification({
-      type: 'system',
-      title: 'Streak Reset',
-      message: `Streak has been reset: ${reason}`,
-      priority: 'medium',
-    }));
-  }, [dispatch, actions]);
+    dispatch({ type: 'UPDATE_STREAK', payload: 0 });
+    dispatch({
+      type: 'ADD_NOTIFICATION',
+      payload: {
+        id: Date.now().toString(),
+        type: 'system',
+        title: 'Streak Reset',
+        message: `Streak has been reset: ${reason}`,
+        timestamp: new Date(),
+        read: false,
+        priority: 'medium',
+      },
+    });
+  }, [dispatch]);
 
   // Calculate streak bonus multiplier
   const calculateStreakBonus = useCallback((baseAmount: number): number => {

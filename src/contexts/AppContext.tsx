@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 /* eslint-disable react-refresh/only-export-components */
 import { User, Task, Achievement, Milestone, CareerStats, SystemLog, ShopItem, Project, MindfulnessStats } from '../types';
+import type { Skill } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { profileService } from '../services/profileService';
 import { taskService } from '../services/taskService';
@@ -91,6 +92,43 @@ interface ActivityTimer {
   lastActivityTimestamp: Date | null;
 }
 
+interface AIAssistantState {
+  chatHistory: { id: string; role: 'user' | 'assistant'; content: string; timestamp: Date }[];
+  activeContext: string;
+  isEnabled: boolean;
+  tokensUsed: number;
+}
+
+interface SecurityState {
+  firewallStatus: 'active' | 'warning' | 'breached';
+  threatLevel: 'low' | 'medium' | 'high' | 'critical';
+  lastScan: Date;
+  activeProtocols: string[];
+  breachAttempts: number;
+}
+
+interface InventoryItem {
+  id: string;
+  name: string;
+  type: 'consumable' | 'equipment' | 'collectible' | 'key_item';
+  quantity: number;
+  description: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  icon: string;
+  effects?: { [key: string]: number };
+}
+
+interface Quest {
+  id: string;
+  title: string;
+  description: string;
+  status: 'active' | 'completed' | 'failed' | 'locked';
+  rewards: { xp: number; gold: number; items: string[] };
+  steps: { id: string; description: string; completed: boolean }[];
+  deadline?: Date;
+  minLevel: number;
+}
+
 interface AppState {
   user: User | null;
   tasks: Task[];
@@ -173,7 +211,14 @@ interface AppState {
   systemLogs: SystemLog[];
   activePowerUps: { id: string; expiresAt: number }[];
   ownedPowerUps: { [key: string]: number };
+  skills: Skill[];
+  aiAssistant: AIAssistantState;
+  security: SecurityState;
+  inventory: InventoryItem[];
+  quests: Quest[];
 }
+
+export { Skill };
 
 type AppAction =
   | { type: 'SET_USER'; payload: User }
@@ -228,7 +273,16 @@ type AppAction =
   | { type: 'ADD_PROJECT'; payload: Project }
   | { type: 'UPDATE_PROJECT'; payload: Project }
   | { type: 'BUY_SHOP_ITEM'; payload: { itemId: string; cost: number } }
-  | { type: 'SET_OVERDUE_PENALTIES'; payload: boolean };
+  | { type: 'SET_OVERDUE_PENALTIES'; payload: boolean }
+  | { type: 'UPDATE_SKILL'; payload: { id: string; amount: number } }
+  | { type: 'ADD_INVENTORY_ITEM'; payload: InventoryItem }
+  | { type: 'REMOVE_INVENTORY_ITEM'; payload: string }
+  | { type: 'UPDATE_INVENTORY_ITEM'; payload: { id: string; updates: Partial<InventoryItem> } }
+  | { type: 'UPDATE_SECURITY_STATUS'; payload: Partial<SecurityState> }
+  | { type: 'ADD_CHAT_MESSAGE'; payload: { role: 'user' | 'assistant'; content: string } }
+  | { type: 'START_QUEST'; payload: string }
+  | { type: 'UPDATE_QUEST_STEP'; payload: { questId: string; stepId: string; completed: boolean } }
+  | { type: 'COMPLETE_QUEST'; payload: string };
 
 // Unified XP calculation functions - Single source of truth
 const getXPForLevel = (level: number): number => {
@@ -558,6 +612,42 @@ const initialState: AppState = {
   systemLogs: [],
   activePowerUps: [],
   ownedPowerUps: {},
+  skills: [
+    { id: 'coding', name: 'Coding', level: 20, maxLevel: 150, category: 'Technical' },
+    { id: 'design', name: 'Design', level: 10, maxLevel: 150, category: 'Creative' },
+    { id: 'logic', name: 'Logic', level: 15, maxLevel: 150, category: 'Technical' },
+    { id: 'focus', name: 'Focus', level: 25, maxLevel: 150, category: 'Mental' },
+    { id: 'speed', name: 'Speed', level: 10, maxLevel: 150, category: 'Physical' },
+    { id: 'stamina', name: 'Stamina', level: 30, maxLevel: 150, category: 'Physical' },
+  ],
+  aiAssistant: {
+    chatHistory: [],
+    activeContext: 'general',
+    isEnabled: true,
+    tokensUsed: 0
+  },
+  security: {
+    firewallStatus: 'active',
+    threatLevel: 'low',
+    lastScan: new Date(),
+    activeProtocols: ['Encrypted Storage', 'Biometric Auth'],
+    breachAttempts: 0
+  },
+  inventory: [],
+  quests: [
+    {
+      id: 'quest-1',
+      title: 'The Awakening',
+      description: 'Complete your profile setup and first daily task.',
+      status: 'active',
+      rewards: { xp: 500, gold: 100, items: [] },
+      steps: [
+        { id: 'step-1', description: 'Complete Profile', completed: false },
+        { id: 'step-2', description: 'Finish 1 Task', completed: false }
+      ],
+      minLevel: 1
+    }
+  ]
 };
 
 export const AppContext = createContext<{
@@ -2115,6 +2205,216 @@ function appReducer(state: AppState, action: AppAction): AppState {
         systemLogs: [logEntry, ...state.systemLogs].slice(0, 50),
         notifications: notificationUpdates,
         showConfetti: leveledUp ? true : state.showConfetti
+      };
+    }
+
+    case 'UPDATE_SKILL': {
+      const { id, amount } = action.payload;
+      const skillIndex = state.skills.findIndex(s => s.id === id);
+      
+      if (skillIndex === -1) return state;
+
+      const skill = state.skills[skillIndex];
+      // Clamp level between 0 and maxLevel
+      const newLevel = Math.max(0, Math.min(skill.maxLevel, skill.level + amount));
+      
+      if (newLevel === skill.level) return state;
+
+      // Calculate cost: 50 Gold per level
+      const cost = 50 * amount;
+      
+      // Check if user has enough gold (only for upgrades)
+      if (amount > 0 && (!state.user || (state.user.gold || 0) < cost)) {
+         return {
+           ...state,
+           notifications: [
+             {
+               id: Date.now().toString(),
+               type: 'warning',
+               title: 'Insufficient Funds 🚫',
+               message: `Need ${cost} Gold to upgrade ${skill.name}`,
+               timestamp: new Date(),
+               read: false,
+               priority: 'high'
+             },
+             ...state.notifications.slice(0, 9)
+           ]
+         };
+      }
+
+      const updatedSkill = { ...skill, level: newLevel };
+      const updatedSkills = [...state.skills];
+      updatedSkills[skillIndex] = updatedSkill;
+
+      const isUpgrade = amount > 0;
+      const logEntry: SystemLog = {
+        id: Date.now().toString() + '-skill-update',
+        message: `SYSTEM: ${skill.name} matrix ${isUpgrade ? 'upgraded' : 'adjusted'} to ${newLevel}/${skill.maxLevel}`,
+        type: isUpgrade ? 'success' : 'warning',
+        timestamp: new Date(),
+        source: 'MATRIX_CORE'
+      };
+
+      const notificationUpdates = [...state.notifications];
+      if (isUpgrade) {
+        notificationUpdates.push({
+          id: Date.now().toString(),
+          type: 'skill-up',
+          title: `Matrix Updated: ${skill.name} 🔼`,
+          message: `Attribute increased to ${newLevel} (-${cost} Gold)`,
+          timestamp: new Date(),
+          priority: 'medium'
+        });
+      }
+
+      const updatedUser = state.user ? {
+        ...state.user,
+        gold: (state.user.gold || 0) - (isUpgrade ? cost : 0)
+      } : state.user;
+
+      return {
+        ...state,
+        user: updatedUser,
+        skills: updatedSkills,
+        systemLogs: [logEntry, ...state.systemLogs].slice(0, 50),
+        notifications: notificationUpdates,
+        showConfetti: isUpgrade && newLevel % 10 === 0 // Show confetti on milestones
+      };
+    }
+
+    case 'ADD_INVENTORY_ITEM': {
+      const newItem = action.payload;
+      return {
+        ...state,
+        inventory: [...state.inventory, newItem],
+        notifications: [
+          {
+            id: Date.now().toString(),
+            type: 'achievement',
+            title: 'New Item Acquired! 📦',
+            message: `Added ${newItem.name} to inventory`,
+            timestamp: new Date(),
+            read: false,
+            priority: 'medium'
+          },
+          ...state.notifications
+        ]
+      };
+    }
+
+    case 'REMOVE_INVENTORY_ITEM': {
+      return {
+        ...state,
+        inventory: state.inventory.filter(item => item.id !== action.payload)
+      };
+    }
+    
+    case 'UPDATE_INVENTORY_ITEM': {
+      const { id, updates } = action.payload;
+      return {
+        ...state,
+        inventory: state.inventory.map(item => 
+          item.id === id ? { ...item, ...updates } : item
+        )
+      };
+    }
+
+    case 'UPDATE_SECURITY_STATUS': {
+      return {
+        ...state,
+        security: {
+          ...state.security,
+          ...action.payload
+        }
+      };
+    }
+
+    case 'ADD_CHAT_MESSAGE': {
+      const { role, content } = action.payload;
+      return {
+        ...state,
+        aiAssistant: {
+          ...state.aiAssistant,
+          chatHistory: [
+            ...state.aiAssistant.chatHistory,
+            {
+              id: Date.now().toString(),
+              role,
+              content,
+              timestamp: new Date()
+            }
+          ],
+          tokensUsed: state.aiAssistant.tokensUsed + content.length // Simplified token counting
+        }
+      };
+    }
+
+    case 'START_QUEST': {
+      const questId = action.payload;
+      return {
+        ...state,
+        quests: state.quests.map(q => 
+          q.id === questId ? { ...q, status: 'active' } : q
+        ),
+        notifications: [
+          {
+            id: Date.now().toString(),
+            type: 'info',
+            title: 'New Quest Started! ⚔️',
+            message: 'Check your quest log for details',
+            timestamp: new Date(),
+            read: false,
+            priority: 'high'
+          },
+          ...state.notifications
+        ]
+      };
+    }
+
+    case 'UPDATE_QUEST_STEP': {
+      const { questId, stepId, completed } = action.payload;
+      return {
+        ...state,
+        quests: state.quests.map(q => {
+          if (q.id !== questId) return q;
+          return {
+            ...q,
+            steps: q.steps.map(s => 
+              s.id === stepId ? { ...s, completed } : s
+            )
+          };
+        })
+      };
+    }
+
+    case 'COMPLETE_QUEST': {
+      const questId = action.payload;
+      const quest = state.quests.find(q => q.id === questId);
+      if (!quest || quest.status === 'completed') return state;
+
+      return {
+        ...state,
+        user: state.user ? {
+          ...state.user,
+          xp: (state.user.xp || 0) + quest.rewards.xp,
+          gold: (state.user.gold || 0) + quest.rewards.gold
+        } : state.user,
+        quests: state.quests.map(q => 
+          q.id === questId ? { ...q, status: 'completed' } : q
+        ),
+        notifications: [
+          {
+            id: Date.now().toString(),
+            type: 'achievement',
+            title: 'Quest Completed! 🏆',
+            message: `${quest.title} - +${quest.rewards.xp} XP, +${quest.rewards.gold} Gold`,
+            timestamp: new Date(),
+            read: false,
+            priority: 'high'
+          },
+          ...state.notifications
+        ],
+        showConfetti: true
       };
     }
      

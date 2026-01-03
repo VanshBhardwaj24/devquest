@@ -28,9 +28,9 @@ const CATEGORIES = [
 ];
 
 const PRIORITY_COLORS = {
-  low: 'bg-green-100 text-green-800',
-  medium: 'bg-yellow-100 text-yellow-800',
-  high: 'bg-red-100 text-red-800'
+  low: 'bg-neon-green/10 text-neon-green border-neon-green/30',
+  medium: 'bg-neon-yellow/10 text-neon-yellow border-neon-yellow/30',
+  high: 'bg-neon-pink/10 text-neon-pink border-neon-pink/30'
 };
 
 export function BucketList() {
@@ -298,28 +298,28 @@ export function BucketList() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card variant="neon">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
-            <div className="text-sm text-gray-600">Total Dreams</div>
+            <div className="text-2xl font-bold text-neon-blue font-mono">{stats.total}</div>
+            <div className="text-sm text-gray-400 font-cyber">Total Dreams</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card variant="neon">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
-            <div className="text-sm text-gray-600">Completed</div>
+            <div className="text-2xl font-bold text-neon-green font-mono">{stats.completed}</div>
+            <div className="text-sm text-gray-400 font-cyber">Completed</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card variant="neon">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-orange-600">{stats.active}</div>
-            <div className="text-sm text-gray-600">In Progress</div>
+            <div className="text-2xl font-bold text-neon-orange font-mono">{stats.active}</div>
+            <div className="text-sm text-gray-400 font-cyber">In Progress</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card variant="neon">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-purple-600">{stats.completionRate}%</div>
-            <div className="text-sm text-gray-600">Completion Rate</div>
+            <div className="text-2xl font-bold text-neon-purple font-mono">{stats.completionRate}%</div>
+            <div className="text-sm text-gray-400 font-cyber">Completion Rate</div>
           </CardContent>
         </Card>
       </div>
@@ -526,9 +526,9 @@ export function BucketList() {
       </div>
 
       {/* Add New Item */}
-      <Card>
+      <Card variant="neon">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-neon-blue">
             <Plus className="w-5 h-5" />
             Add New Dream
           </CardTitle>
@@ -539,14 +539,15 @@ export function BucketList() {
               placeholder="Dream title..."
               value={newItem.title || ''}
               onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
+              className="bg-black/50 border-white/10 text-white placeholder:text-gray-500"
             />
             <select
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 bg-black/50 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-neon-blue text-white"
               value={newItem.category || 'Personal Growth'}
               onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
             >
               {CATEGORIES.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
+                <option key={cat} value={cat} className="bg-black text-white">{cat}</option>
               ))}
             </select>
           </div>
@@ -555,6 +556,7 @@ export function BucketList() {
             value={newItem.description || ''}
             onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
             rows={3}
+            className="bg-black/50 border-white/10 text-white placeholder:text-gray-500"
           />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Input
@@ -562,31 +564,34 @@ export function BucketList() {
               type="date"
               value={newItem.targetDate ? new Date(newItem.targetDate).toISOString().split('T')[0] : ''}
               onChange={(e) => setNewItem({ ...newItem, targetDate: e.target.value ? new Date(e.target.value) : undefined })}
+              className="bg-black/50 border-white/10 text-white"
             />
             <Input
               placeholder="Location (optional)"
               value={newItem.location || ''}
               onChange={(e) => setNewItem({ ...newItem, location: e.target.value })}
+              className="bg-black/50 border-white/10 text-white placeholder:text-gray-500"
             />
             <Input
               placeholder="Estimated cost (optional)"
               type="number"
               value={newItem.estimatedCost || ''}
               onChange={(e) => setNewItem({ ...newItem, estimatedCost: e.target.value ? parseFloat(e.target.value) : undefined })}
+              className="bg-black/50 border-white/10 text-white placeholder:text-gray-500"
             />
           </div>
           <div className="flex items-center gap-4">
             <select
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 bg-black/50 border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-neon-blue text-white"
               value={newItem.priority || 'medium'}
               onChange={(e) => setNewItem({ ...newItem, priority: e.target.value as 'low' | 'medium' | 'high' })}
             >
-              <option value="low">Low Priority</option>
-              <option value="medium">Medium Priority</option>
-              <option value="high">High Priority</option>
+              <option value="low" className="bg-black text-white">Low Priority</option>
+              <option value="medium" className="bg-black text-white">Medium Priority</option>
+              <option value="high" className="bg-black text-white">High Priority</option>
             </select>
-            <Button onClick={addItem} disabled={!newItem.title?.trim()}>
-              <Plus className="w-4 h-4 mr-2" />
+            <Button onClick={addItem} disabled={!newItem.title?.trim()} variant="neon" className="gap-2">
+              <Plus className="w-4 h-4" />
               Add Dream
             </Button>
           </div>
@@ -632,7 +637,7 @@ export function BucketList() {
       {/* Bucket List Items */}
       <div className="space-y-4">
         {filteredAndSortedItems.map(item => (
-          <Card key={item.id} className={`transition-all ${item.completed ? 'opacity-75' : ''}`}>
+          <Card key={item.id} variant="neon" className={`transition-all ${item.completed ? 'opacity-75 border-green-500/30' : ''}`}>
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
                 <button
@@ -640,43 +645,43 @@ export function BucketList() {
                   className="mt-1 flex-shrink-0"
                 >
                   {item.completed ? (
-                    <CheckCircle className="w-6 h-6 text-green-600" />
+                    <CheckCircle className="w-6 h-6 text-neon-green" />
                   ) : (
-                    <Circle className="w-6 h-6 text-gray-400" />
+                    <Circle className="w-6 h-6 text-gray-500 hover:text-neon-blue transition-colors" />
                   )}
                 </button>
                 
                 <div className="flex-1">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className={`text-lg font-semibold ${item.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                      <h3 className={`text-lg font-bold font-cyber ${item.completed ? 'line-through text-gray-500' : 'text-white'}`}>
                         {item.title}
                       </h3>
                       {item.description && (
-                        <p className="text-gray-600 mt-1">{item.description}</p>
+                        <p className="text-gray-400 mt-1 font-mono text-sm">{item.description}</p>
                       )}
                       
                       <div className="flex flex-wrap gap-2 mt-3">
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-xs border-white/10 text-gray-400 font-mono">
                           {item.category}
                         </Badge>
-                        <Badge className={`text-xs ${PRIORITY_COLORS[item.priority]}`}>
+                        <Badge className={`text-xs font-mono ${PRIORITY_COLORS[item.priority]}`}>
                           {item.priority} priority
                         </Badge>
                         {item.targetDate && (
-                          <Badge variant="outline" className="text-xs flex items-center gap-1">
+                          <Badge variant="outline" className="text-xs flex items-center gap-1 border-white/10 text-gray-400 font-mono">
                             <Calendar className="w-3 h-3" />
                             {new Date(item.targetDate).toLocaleDateString()}
                           </Badge>
                         )}
                         {item.location && (
-                          <Badge variant="outline" className="text-xs flex items-center gap-1">
+                          <Badge variant="outline" className="text-xs flex items-center gap-1 border-white/10 text-gray-400 font-mono">
                             <MapPin className="w-3 h-3" />
                             {item.location}
                           </Badge>
                         )}
                         {item.estimatedCost && (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs border-white/10 text-gray-400 font-mono">
                             ${item.estimatedCost}
                           </Badge>
                         )}
@@ -688,7 +693,7 @@ export function BucketList() {
                         variant="ghost"
                         size="sm"
                         onClick={() => deleteItem(item.id)}
-                        className="text-red-600 hover:text-red-700"
+                        className="text-red-500 hover:text-red-400 hover:bg-red-950/30"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -701,17 +706,17 @@ export function BucketList() {
         ))}
         
         {filteredAndSortedItems.length === 0 && (
-          <Card>
+          <Card variant="neon" className="border-dashed border-gray-800">
             <CardContent className="p-8 text-center">
-              <Star className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                {filter === 'completed' ? 'No completed dreams yet' : 
-                 filter === 'active' ? 'No active dreams' : 
-                 'No dreams yet'}
+              <Star className="w-12 h-12 text-gray-700 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-500 mb-2 font-cyber">
+                {filter === 'completed' ? 'NO COMPLETED DREAMS DETECTED' : 
+                 filter === 'active' ? 'NO ACTIVE DREAMS DETECTED' : 
+                 'DATABASE EMPTY'}
               </h3>
-              <p className="text-gray-500">
-                {filter === 'all' ? 'Start adding your dreams and goals to your bucket list!' : 
-                 'Try changing the filter to see more items.'}
+              <p className="text-gray-600 font-mono text-sm">
+                {filter === 'all' ? 'INITIATE DREAM SEQUENCE. ADD GOALS TO DATABASE.' : 
+                 'ADJUST FILTERS TO VIEW DATA.'}
               </p>
             </CardContent>
           </Card>

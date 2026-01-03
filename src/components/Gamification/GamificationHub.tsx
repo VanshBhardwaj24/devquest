@@ -1490,6 +1490,135 @@ const GamificationStats = ({ stats }: {
   );
 };
 
+// Glitch-themed sub-components for Power-Ups
+const PowerUpsMarketHeader = ({ coins, onAll }: { coins: number; onAll: () => void }) => (
+  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div>
+      <h2 className="text-3xl font-extrabold tracking-tight font-cyber text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-purple">
+        POWER-UPS MARKET
+      </h2>
+      <p className="text-sm text-gray-400 font-mono">Activate boosters to multiply XP and progress.</p>
+    </div>
+    <div className="flex items-center gap-4 bg-black/20 p-3 rounded-xl backdrop-blur-sm border border-white/10 relative overflow-hidden">
+      <div className="absolute inset-0 bg-neon-purple/5 animate-pulse-slow pointer-events-none" />
+      <div className="text-right relative z-10">
+        <p className="text-[10px] text-gray-400 uppercase tracking-widest">Available Gold</p>
+        <p className="text-2xl font-bold text-neon-yellow font-mono">{coins.toLocaleString()} 🪙</p>
+      </div>
+      <div className="h-8 w-[1px] bg-white/10 relative z-10" />
+      <Button variant="glitch" size="sm" onClick={onAll} className="relative z-10">All</Button>
+    </div>
+  </div>
+);
+
+const RarityLegendGlitch = () => (
+  <div className="flex flex-wrap gap-2">
+    {['common', 'rare', 'epic', 'legendary'].map((rarity) => (
+      <span
+        key={rarity}
+        className={`px-2 py-1 border-2 border-black text-xs font-bold font-mono uppercase shadow-[3px_3px_0px_0px_rgba(255,255,255,0.08)]
+          ${rarity === 'common' ? 'bg-zinc-700 text-gray-300' :
+            rarity === 'rare' ? 'bg-blue-900 text-blue-300' :
+            rarity === 'epic' ? 'bg-purple-900 text-purple-300' :
+            'bg-yellow-900 text-yellow-300'}
+        `}
+      >
+        {rarity}
+      </span>
+    ))}
+  </div>
+);
+
+const CategoryTabsGlitch = ({ categories, active, onSelect }: { categories: string[]; active: string; onSelect: (c: string) => void }) => (
+  <div className="flex flex-wrap gap-2">
+    {categories.map(cat => (
+      <Button
+        key={cat}
+        variant={active === cat ? 'glitch' : 'ghost'}
+        size="sm"
+        onClick={() => onSelect(cat)}
+      >
+        {cat.toUpperCase()}
+      </Button>
+    ))}
+  </div>
+);
+
+const PowerUpTileGlitch = ({
+  powerUp,
+  owned,
+  coins,
+  onActivate,
+  onBuy,
+}: {
+  powerUp: PowerUpType;
+  owned: number;
+  coins: number;
+  onActivate: () => void;
+  onBuy: () => void;
+}) => (
+  <motion.div
+    whileHover={{ y: -4 }}
+    className={`p-4 border-2 cursor-pointer transition-all relative overflow-hidden
+      ${powerUp.active 
+        ? 'bg-fuchsia-500/20 border-fuchsia-500' 
+        : powerUp.rarity === 'legendary' ? 'bg-yellow-900/20 border-yellow-500/50' :
+          powerUp.rarity === 'epic' ? 'bg-purple-900/20 border-purple-500/50' :
+          powerUp.rarity === 'rare' ? 'bg-blue-900/20 border-blue-500/50' :
+          'bg-zinc-800 border-zinc-700'}
+    `}
+  >
+    <div className="absolute inset-0 opacity-5 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+    <div className="flex items-start justify-between mb-3 relative z-10">
+      <div className="text-3xl">{powerUp.icon}</div>
+      <div className="flex items-center gap-1">
+        {powerUp.active && <div className="w-2 h-2 bg-fuchsia-400 animate-pulse" />}
+        <span className={`text-xs px-2 py-0.5 border border-black font-mono uppercase font-bold ${
+          powerUp.rarity === 'legendary' ? 'bg-yellow-500/20 text-yellow-300' :
+          powerUp.rarity === 'epic' ? 'bg-purple-500/20 text-purple-300' :
+          powerUp.rarity === 'rare' ? 'bg-blue-500/20 text-blue-300' :
+          'bg-zinc-600 text-gray-300'
+        }`}>
+          {powerUp.rarity}
+        </span>
+      </div>
+    </div>
+    
+    <h3 className="font-bold text-white mb-1 font-mono uppercase relative z-10">{powerUp.name}</h3>
+    <p className="text-xs text-gray-400 mb-3 font-mono relative z-10">{powerUp.description}</p>
+    
+    <div className="flex items-center justify-between font-mono relative z-10">
+      <span className="text-sm text-gray-500">Owned: {owned}</span>
+      {powerUp.active ? (
+        <span className="text-sm font-bold text-fuchsia-400">Active ({powerUp.remainingTime}m)</span>
+      ) : (
+        <div className="flex gap-2">
+          {owned > 0 ? (
+            <Button variant="glitch" size="sm" onClick={onActivate}>
+              ACTIVATE
+            </Button>
+          ) : (
+            <Button
+              variant={coins >= powerUp.cost ? 'neon' : 'ghost'}
+              size="sm"
+              onClick={onBuy}
+              disabled={coins < powerUp.cost}
+            >
+              BUY <Coins size={10} /> {powerUp.cost}
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+
+    {powerUp.duration > 0 && (
+      <div className="mt-2 text-xs text-gray-500 flex items-center gap-1 font-mono relative z-10">
+        <Timer size={10} /> Duration: {powerUp.duration} min
+      </div>
+    )}
+  </motion.div>
+);
+
 // Using PowerUp type from powerUps.ts
 
 interface DailyReward {
@@ -2598,126 +2727,27 @@ export function GamificationHub() {
 
   const renderPowerUps = () => (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-3xl font-extrabold tracking-tight font-cyber text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-purple">
-            POWER-UPS MARKET
-          </h2>
-          <p className="text-sm text-gray-400 font-mono">Activate boosters to multiply XP and progress.</p>
-        </div>
-        <div className="flex items-center gap-4 bg-black/20 p-3 rounded-xl backdrop-blur-sm border border-white/10">
-          <div className="text-right">
-            <p className="text-[10px] text-gray-400 uppercase tracking-widest">Available Gold</p>
-            <p className="text-2xl font-bold text-neon-yellow font-mono">{coins.toLocaleString()} 🪙</p>
-          </div>
-          <div className="h-8 w-[1px] bg-white/10" />
-          <Button variant="neon" size="sm" onClick={() => setPowerCategory('all')}>All</Button>
-        </div>
-      </div>
+      <PowerUpsMarketHeader coins={coins} onAll={() => setPowerCategory('all')} />
 
-      {/* Rarity Legend */}
-      <div className="flex flex-wrap gap-2">
-        {['common', 'rare', 'epic', 'legendary'].map((rarity) => (
-          <span key={rarity} className={`px-2 py-1 border-2 border-black text-xs font-bold font-mono uppercase ${
-            rarity === 'common' ? 'bg-zinc-700 text-gray-300' :
-            rarity === 'rare' ? 'bg-blue-900 text-blue-300' :
-            rarity === 'epic' ? 'bg-purple-900 text-purple-300' :
-            'bg-yellow-900 text-yellow-300'
-          }`}>
-            {rarity}
-          </span>
-        ))}
-      </div>
+      <RarityLegendGlitch />
       
-      {/* Category Filters */}
-      <div className="flex flex-wrap gap-2">
-        {powerCategories.map(cat => (
-          <Button
-            key={cat}
-            variant={powerCategory === cat ? 'neon' : 'ghost'}
-            size="sm"
-            onClick={() => setPowerCategory(cat)}
-          >
-            {cat.toUpperCase()}
-          </Button>
-        ))}
-      </div>
+      <CategoryTabsGlitch categories={powerCategories} active={powerCategory} onSelect={setPowerCategory} />
 
       {/* Power-Ups Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {(powerCategory === 'all' ? powerUps : powerUps.filter(p => (p.category || 'general') === powerCategory)).map((powerUp) => (
-          <motion.div
+          <PowerUpTileGlitch
             key={powerUp.id}
-            whileHover={{ y: -4 }}
-            className={`p-4 border-2 cursor-pointer transition-all ${
-              powerUp.active 
-                ? 'bg-fuchsia-500/20 border-fuchsia-500' 
-                : powerUp.rarity === 'legendary' ? 'bg-yellow-900/20 border-yellow-500/50' :
-                  powerUp.rarity === 'epic' ? 'bg-purple-900/20 border-purple-500/50' :
-                  powerUp.rarity === 'rare' ? 'bg-blue-900/20 border-blue-500/50' :
-                  'bg-zinc-800 border-zinc-700'
-            }`}
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div className="text-3xl">{powerUp.icon}</div>
-              <div className="flex items-center gap-1">
-                {powerUp.active && <div className="w-2 h-2 bg-fuchsia-400 animate-pulse" />}
-                <span className={`text-xs px-2 py-0.5 border border-black font-mono uppercase font-bold ${
-                  powerUp.rarity === 'legendary' ? 'bg-yellow-500/20 text-yellow-300' :
-                  powerUp.rarity === 'epic' ? 'bg-purple-500/20 text-purple-300' :
-                  powerUp.rarity === 'rare' ? 'bg-blue-500/20 text-blue-300' :
-                  'bg-zinc-600 text-gray-300'
-                }`}>
-                  {powerUp.rarity}
-                </span>
-              </div>
-            </div>
-            
-            <h3 className="font-bold text-white mb-1 font-mono uppercase">{powerUp.name}</h3>
-            <p className="text-xs text-gray-400 mb-3 font-mono">{powerUp.description}</p>
-            
-            <div className="flex items-center justify-between font-mono">
-              <span className="text-sm text-gray-500">Owned: {(state.ownedPowerUps?.[powerUp.id] || 0)}</span>
-              {powerUp.active ? (
-                <span className="text-sm font-bold text-fuchsia-400">Active ({powerUp.remainingTime}m)</span>
-              ) : (
-                <div className="flex gap-2">
-                  {(state.ownedPowerUps?.[powerUp.id] || 0) > 0 ? (
-                    <Button
-                      variant="glitch"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        dispatch({ type: 'ACTIVATE_POWERUP', payload: { powerUpId: powerUp.id, duration: powerUp.duration } });
-                      }}
-                    >
-                      ACTIVATE
-                    </Button>
-                  ) : (
-                    <Button
-                      variant={coins >= powerUp.cost ? 'neon' : 'ghost'}
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (coins >= powerUp.cost) {
-                          dispatch({ type: 'BUY_POWERUP', payload: { powerUpId: powerUp.id, cost: powerUp.cost } });
-                        }
-                      }}
-                      disabled={coins < powerUp.cost}
-                    >
-                      BUY <Coins size={10} /> {powerUp.cost}
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {powerUp.duration > 0 && (
-              <div className="mt-2 text-xs text-gray-500 flex items-center gap-1 font-mono">
-                <Timer size={10} /> Duration: {powerUp.duration} min
-              </div>
-            )}
-          </motion.div>
+            powerUp={powerUp}
+            owned={(state.ownedPowerUps?.[powerUp.id] || 0)}
+            coins={coins}
+            onActivate={() => dispatch({ type: 'ACTIVATE_POWERUP', payload: { powerUpId: powerUp.id, duration: powerUp.duration } })}
+            onBuy={() => {
+              if (coins >= powerUp.cost) {
+                dispatch({ type: 'BUY_POWERUP', payload: { powerUpId: powerUp.id, cost: powerUp.cost } });
+              }
+            }}
+          />
         ))}
       </div>
 

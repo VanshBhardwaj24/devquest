@@ -332,15 +332,15 @@ const LIFE_AREAS: LifeArea[] = [
 ];
 
 const getColorClasses = (color: string) => {
-  const colorMap: Record<string, { bg: string; text: string }> = {
-    blue: { bg: 'bg-blue-100', text: 'text-blue-600' },
-    pink: { bg: 'bg-pink-100', text: 'text-pink-600' },
-    green: { bg: 'bg-green-100', text: 'text-green-600' },
-    yellow: { bg: 'bg-yellow-100', text: 'text-yellow-600' },
-    purple: { bg: 'bg-purple-100', text: 'text-purple-600' },
-    orange: { bg: 'bg-orange-100', text: 'text-orange-600' }
+  const colorMap: Record<string, { bg: string; text: string; border: string }> = {
+    blue: { bg: 'bg-neon-blue/10', text: 'text-neon-blue', border: 'border-neon-blue/30' },
+    pink: { bg: 'bg-neon-pink/10', text: 'text-neon-pink', border: 'border-neon-pink/30' },
+    green: { bg: 'bg-neon-green/10', text: 'text-neon-green', border: 'border-neon-green/30' },
+    yellow: { bg: 'bg-neon-yellow/10', text: 'text-neon-yellow', border: 'border-neon-yellow/30' },
+    purple: { bg: 'bg-neon-purple/10', text: 'text-neon-purple', border: 'border-neon-purple/30' },
+    orange: { bg: 'bg-neon-orange/10', text: 'text-neon-orange', border: 'border-neon-orange/30' }
   };
-  return colorMap[color] || { bg: 'bg-gray-100', text: 'text-gray-600' };
+  return colorMap[color] || { bg: 'bg-zinc-900', text: 'text-zinc-400', border: 'border-zinc-800' };
 };
 
 const ACHIEVEMENTS: Achievement[] = [
@@ -684,36 +684,36 @@ export function LifeMap() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Life Map</h2>
+        <h2 className="text-3xl font-bold font-cyber text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-neon-purple">Life Map</h2>
         <div className="flex gap-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">Level {userLevel}</div>
-            <div className="text-sm text-gray-600">Life Level</div>
+            <div className="text-2xl font-bold text-neon-purple">Level {userLevel}</div>
+            <div className="text-sm text-zinc-400">Life Level</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{journey.completedGoals}</div>
-            <div className="text-sm text-gray-600">Goals Completed</div>
+            <div className="text-2xl font-bold text-neon-green">{journey.completedGoals}</div>
+            <div className="text-sm text-zinc-400">Goals Completed</div>
           </div>
         </div>
       </div>
 
       {/* Journey Progress */}
-      <Card>
+      <Card variant="neon">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Rocket className="w-6 h-6" />
+            <Rocket className="w-6 h-6 text-neon-blue" />
             {journey.name}
           </CardTitle>
-          <p className="text-gray-600">{journey.description}</p>
+          <p className="text-zinc-400">{journey.description}</p>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span>Journey Progress</span>
-              <span>{Math.round(journey.journeyProgress)}%</span>
+              <span className="text-zinc-300">Journey Progress</span>
+              <span className="text-neon-blue font-mono">{Math.round(journey.journeyProgress)}%</span>
             </div>
-            <Progress value={journey.journeyProgress} className="h-3" />
-            <div className="text-sm text-gray-600">
+            <Progress value={journey.journeyProgress} className="h-3 bg-black/50" />
+            <div className="text-sm text-zinc-500">
               {journey.completedGoals} of {journey.totalGoals} goals completed
             </div>
           </div>
@@ -723,9 +723,9 @@ export function LifeMap() {
       {/* Extreme Gamification Components */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Life Mastery Progress */}
-        <Card className="bg-gradient-to-br from-purple-900/20 to-pink-900/20 border-2 border-purple-500">
+        <Card className="bg-gradient-to-br from-purple-900/20 to-pink-900/20 border border-neon-purple">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-purple-400">
+            <CardTitle className="flex items-center gap-2 text-neon-purple">
               <Crown className="w-5 h-5" />
               Life Mastery
             </CardTitle>
@@ -733,30 +733,30 @@ export function LifeMap() {
           <CardContent>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Mastery Level</span>
-                <span className="text-lg font-bold text-purple-400">Master {userLevel}</span>
+                <span className="text-sm font-medium text-zinc-300">Mastery Level</span>
+                <span className="text-lg font-bold text-neon-purple">Master {userLevel}</span>
               </div>
-              <div className="h-3 bg-black border-2 border-purple-500/30 rounded-full">
+              <div className="h-3 bg-black border border-neon-purple/30 rounded-full">
                 <div 
-                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-neon-purple to-neon-pink rounded-full transition-all duration-500 shadow-[0_0_10px_var(--neon-purple)]"
                   style={{ width: `${(userLevel / 100) * 100}%` }}
                 />
               </div>
-              <div className="text-xs text-gray-400">
+              <div className="text-xs text-zinc-400">
                 {journey.completedGoals} goals mastered • {Math.round(journey.journeyProgress)}% life complete
               </div>
               <div className="flex items-center gap-2 text-xs">
-                <Flame className="w-3 h-3 text-orange-400" />
-                <span className="text-orange-400">30 day mastery streak</span>
+                <Flame className="w-3 h-3 text-neon-orange" />
+                <span className="text-neon-orange">30 day mastery streak</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Achievement Hunter */}
-        <Card className="bg-gradient-to-br from-yellow-900/20 to-orange-900/20 border-2 border-yellow-500">
+        <Card className="bg-gradient-to-br from-yellow-900/20 to-orange-900/20 border border-neon-yellow">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-yellow-400">
+            <CardTitle className="flex items-center gap-2 text-neon-yellow">
               <Trophy className="w-5 h-5" />
               Achievement Hunter
             </CardTitle>
@@ -764,18 +764,18 @@ export function LifeMap() {
           <CardContent>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Achievements</span>
-                <span className="text-lg font-bold text-yellow-400">{journey.completedGoals * 3}</span>
+                <span className="text-sm font-medium text-zinc-300">Achievements</span>
+                <span className="text-lg font-bold text-neon-yellow">{journey.completedGoals * 3}</span>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="text-center p-2 bg-yellow-500/20 border border-yellow-500/50 rounded">
-                    <Medal className="w-6 h-6 mx-auto text-yellow-400 mb-1" />
-                    <div className="text-xs text-yellow-400">Tier {i}</div>
+                  <div key={i} className="text-center p-2 bg-neon-yellow/10 border border-neon-yellow/30 rounded">
+                    <Medal className="w-6 h-6 mx-auto text-neon-yellow mb-1" />
+                    <div className="text-xs text-neon-yellow">Tier {i}</div>
                   </div>
                 ))}
               </div>
-              <div className="text-xs text-gray-400">
+              <div className="text-xs text-zinc-400">
                 Next achievement: Complete 5 more goals
               </div>
             </div>
@@ -783,9 +783,9 @@ export function LifeMap() {
         </Card>
 
         {/* Life Quest System */}
-        <Card className="bg-gradient-to-br from-blue-900/20 to-cyan-900/20 border-2 border-blue-500">
+        <Card className="bg-gradient-to-br from-blue-900/20 to-cyan-900/20 border border-neon-blue">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-blue-400">
+            <CardTitle className="flex items-center gap-2 text-neon-blue">
               <Target className="w-5 h-5" />
               Daily Quests
             </CardTitle>
@@ -793,29 +793,29 @@ export function LifeMap() {
           <CardContent>
             <div className="space-y-3">
               <div className="space-y-2">
-                <div className="flex items-center justify-between p-2 bg-blue-500/20 border border-blue-500/50 rounded">
+                <div className="flex items-center justify-between p-2 bg-neon-blue/10 border border-neon-blue/30 rounded">
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span className="text-sm">Complete 1 goal</span>
+                    <CheckCircle className="w-4 h-4 text-neon-green" />
+                    <span className="text-sm text-zinc-200">Complete 1 goal</span>
                   </div>
-                  <span className="text-xs text-green-400">+50 XP</span>
+                  <span className="text-xs text-neon-green">+50 XP</span>
                 </div>
-                <div className="flex items-center justify-between p-2 bg-gray-700/50 border border-gray-600/50 rounded">
+                <div className="flex items-center justify-between p-2 bg-black/40 border border-zinc-800 rounded">
                   <div className="flex items-center gap-2">
-                    <Circle className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm">Progress 3 areas</span>
+                    <Circle className="w-4 h-4 text-zinc-500" />
+                    <span className="text-sm text-zinc-400">Progress 3 areas</span>
                   </div>
-                  <span className="text-xs text-blue-400">+100 XP</span>
+                  <span className="text-xs text-neon-blue">+100 XP</span>
                 </div>
-                <div className="flex items-center justify-between p-2 bg-gray-700/50 border border-gray-600/50 rounded">
+                <div className="flex items-center justify-between p-2 bg-black/40 border border-zinc-800 rounded">
                   <div className="flex items-center gap-2">
-                    <Circle className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm">Master new skill</span>
+                    <Circle className="w-4 h-4 text-zinc-500" />
+                    <span className="text-sm text-zinc-400">Master new skill</span>
                   </div>
-                  <span className="text-xs text-purple-400">+200 XP</span>
+                  <span className="text-xs text-neon-purple">+200 XP</span>
                 </div>
               </div>
-              <div className="text-xs text-gray-400">
+              <div className="text-xs text-zinc-500">
                 1/3 quests completed • Reset in 8h 23m
               </div>
             </div>
@@ -823,9 +823,9 @@ export function LifeMap() {
         </Card>
 
         {/* Life Streak Guardian */}
-        <Card className="bg-gradient-to-br from-red-900/20 to-orange-900/20 border-2 border-red-500">
+        <Card className="bg-gradient-to-br from-red-900/20 to-orange-900/20 border border-neon-red">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-400">
+            <CardTitle className="flex items-center gap-2 text-neon-red">
               <AlertTriangle className="w-5 h-5" />
               Streak Guardian
             </CardTitle>
@@ -833,18 +833,18 @@ export function LifeMap() {
           <CardContent>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Life Streak</span>
-                <span className="text-lg font-bold text-red-400">47 days</span>
+                <span className="text-sm font-medium text-zinc-300">Life Streak</span>
+                <span className="text-lg font-bold text-neon-red">47 days</span>
               </div>
-              <div className="p-3 bg-red-500/20 border border-red-500/50 rounded">
+              <div className="p-3 bg-neon-red/10 border border-neon-red/30 rounded">
                 <div className="flex items-center gap-2 mb-2">
-                  <Timer className="w-4 h-4 text-red-400" />
-                  <span className="text-sm font-medium text-red-400">STREAK AT RISK!</span>
+                  <Timer className="w-4 h-4 text-neon-red" />
+                  <span className="text-sm font-medium text-neon-red">STREAK AT RISK!</span>
                 </div>
-                <div className="text-xs text-gray-300">
+                <div className="text-xs text-zinc-300">
                   Complete a goal in 4h 32m to keep your streak alive
                 </div>
-                <Button className="w-full mt-2 bg-red-600 hover:bg-red-700 text-white text-xs">
+                <Button className="w-full mt-2 bg-red-600 hover:bg-red-700 text-white text-xs border-none">
                   PROTECT STREAK (200 XP)
                 </Button>
               </div>
@@ -853,9 +853,9 @@ export function LifeMap() {
         </Card>
 
         {/* Life Rewards Vault */}
-        <Card className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-2 border-green-500">
+        <Card className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 border border-neon-green">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-400">
+            <CardTitle className="flex items-center gap-2 text-neon-green">
               <Gift className="w-5 h-5" />
               Rewards Vault
             </CardTitle>
@@ -863,23 +863,23 @@ export function LifeMap() {
           <CardContent>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Life Coins</span>
-                <span className="text-lg font-bold text-green-400">{journey.completedGoals * 100}</span>
+                <span className="text-sm font-medium text-zinc-300">Life Coins</span>
+                <span className="text-lg font-bold text-neon-green">{journey.completedGoals * 100}</span>
               </div>
               <div className="space-y-2">
-                <div className="flex items-center justify-between p-2 bg-green-500/20 border border-green-500/50 rounded">
+                <div className="flex items-center justify-between p-2 bg-neon-green/10 border border-neon-green/30 rounded">
                   <div className="flex items-center gap-2">
-                    <Gem className="w-4 h-4 text-green-400" />
-                    <span className="text-sm">Mystery Box</span>
+                    <Gem className="w-4 h-4 text-neon-green" />
+                    <span className="text-sm text-zinc-200">Mystery Box</span>
                   </div>
-                  <Button className="text-xs bg-green-600 hover:bg-green-700">500</Button>
+                  <Button size="sm" className="text-xs bg-neon-green/20 hover:bg-neon-green/40 text-neon-green border-neon-green">500</Button>
                 </div>
-                <div className="flex items-center justify-between p-2 bg-gray-700/50 border border-gray-600/50 rounded">
+                <div className="flex items-center justify-between p-2 bg-black/40 border border-zinc-800 rounded">
                   <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm">Life Shield</span>
+                    <Shield className="w-4 h-4 text-zinc-500" />
+                    <span className="text-sm text-zinc-400">Life Shield</span>
                   </div>
-                  <Button className="text-xs bg-gray-600 hover:bg-gray-700" disabled>1000</Button>
+                  <Button size="sm" variant="ghost" className="text-xs text-zinc-500" disabled>1000</Button>
                 </div>
               </div>
             </div>
@@ -887,7 +887,7 @@ export function LifeMap() {
         </Card>
 
         {/* Life Leaderboard */}
-        <Card className="bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border-2 border-indigo-500">
+        <Card className="bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border border-indigo-500">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-indigo-400">
               <Users className="w-5 h-5" />
@@ -903,15 +903,15 @@ export function LifeMap() {
                   { rank: 3, name: "You", score: 13200, trend: "up", isUser: true },
                   { rank: 4, name: "Achiever", score: 12900, trend: "same" }
                 ].map(leader => (
-                  <div key={leader.rank} className={`flex items-center justify-between p-2 rounded ${leader.isUser ? 'bg-indigo-500/30 border border-indigo-500/50' : 'bg-gray-700/50'}`}>
+                  <div key={leader.rank} className={`flex items-center justify-between p-2 rounded ${leader.isUser ? 'bg-indigo-500/20 border border-indigo-500/40' : 'bg-black/40 border border-zinc-800'}`}>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-indigo-400">#{leader.rank}</span>
-                      <span className={`text-sm ${leader.isUser ? 'text-indigo-300' : 'text-gray-300'}`}>{leader.name}</span>
+                      <span className={`text-sm ${leader.isUser ? 'text-indigo-300' : 'text-zinc-400'}`}>{leader.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-400">{leader.score}</span>
-                      {leader.trend === "up" && <TrendingUp className="w-3 h-3 text-green-400" />}
-                      {leader.trend === "down" && <TrendingDown className="w-3 h-3 text-red-400" />}
+                      <span className="text-xs text-zinc-500">{leader.score}</span>
+                      {leader.trend === "up" && <TrendingUp className="w-3 h-3 text-neon-green" />}
+                      {leader.trend === "down" && <TrendingDown className="w-3 h-3 text-neon-red" />}
                     </div>
                   </div>
                 ))}
@@ -930,28 +930,29 @@ export function LifeMap() {
           return (
             <Card 
               key={stat.id} 
-              className={`cursor-pointer transition-all ${selectedArea === stat.id ? 'ring-2 ring-blue-500' : ''} ${area.isUnlocked ? 'hover:shadow-lg' : 'opacity-50'}`}
+              variant="neon"
+              className={`cursor-pointer transition-all ${selectedArea === stat.id ? 'ring-2 ring-neon-blue shadow-[0_0_15px_var(--neon-blue)]' : ''} ${area.isUnlocked ? 'hover:shadow-[0_0_15px_rgba(0,243,255,0.3)]' : 'opacity-50'}`}
               onClick={() => area.isUnlocked && setSelectedArea(stat.id)}
             >
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className={`p-2 rounded-lg ${getColorClasses(area.color).bg} ${getColorClasses(area.color).text}`}>
+                  <div className={`p-2 rounded-lg ${getColorClasses(area.color).bg} ${getColorClasses(area.color).text} border ${getColorClasses(area.color).border}`}>
                     {area.icon}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold">{area.name}</h3>
-                    <div className="text-sm text-gray-600">Level {area.currentLevel}</div>
+                    <h3 className="font-semibold text-zinc-200">{area.name}</h3>
+                    <div className="text-sm text-zinc-500">Level {area.currentLevel}</div>
                   </div>
-                  {!area.isUnlocked && <Lock className="w-4 h-4 text-gray-400" />}
+                  {!area.isUnlocked && <Lock className="w-4 h-4 text-zinc-600" />}
                 </div>
                 
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Progress</span>
-                    <span>{Math.round(stat.progress)}%</span>
+                    <span className="text-zinc-400">Progress</span>
+                    <span className="text-neon-blue">{Math.round(stat.progress)}%</span>
                   </div>
-                  <Progress value={stat.progress} className="h-2" />
-                  <div className="text-xs text-gray-600">
+                  <Progress value={stat.progress} className="h-2 bg-black/50" />
+                  <div className="text-xs text-zinc-600">
                     {stat.completedCount}/{stat.goalsCount} goals
                   </div>
                 </div>
@@ -963,55 +964,59 @@ export function LifeMap() {
 
       {/* Selected Area Details */}
       {currentArea && (
-        <Card>
+        <Card variant="neon">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-neon-blue">
                 {currentArea.icon}
                 {currentArea.name}
               </CardTitle>
-              <Button onClick={() => setShowGoalForm(!showGoalForm)}>
+              <Button onClick={() => setShowGoalForm(!showGoalForm)} variant="neon" size="sm">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Goal
               </Button>
             </div>
-            <p className="text-gray-600">{currentArea.description}</p>
+            <p className="text-zinc-400">{currentArea.description}</p>
           </CardHeader>
           <CardContent>
-            <div className="mb-4 p-3 border rounded-lg">
+            <div className="mb-4 p-3 border border-zinc-800 bg-black/40 rounded-lg">
               <div className="flex items-center justify-between text-xs mb-2">
-                <span>Goal Progress Distribution</span>
-                <span>{currentArea.goals.length} goals</span>
+                <span className="text-zinc-400">Goal Progress Distribution</span>
+                <span className="text-zinc-500">{currentArea.goals.length} goals</span>
               </div>
               <div style={{ height: 80 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={currentArea.goals.map((g, i) => ({ name: i + 1, progress: Math.round(g.progress) }))}>
                     <XAxis dataKey="name" hide />
-                    <Tooltip contentStyle={{ fontFamily: 'monospace' }} />
-                    <Bar dataKey="progress" fill="#22d3ee" />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#000', borderColor: '#333', color: '#fff' }}
+                      itemStyle={{ color: '#00f3ff' }}
+                    />
+                    <Bar dataKey="progress" fill="#00f3ff" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
             {/* Add Goal Form */}
             {showGoalForm && (
-              <div className="mb-6 p-4 border rounded-lg space-y-4">
-                <h3 className="font-semibold">Add New Goal</h3>
+              <div className="mb-6 p-4 border border-neon-blue/30 bg-neon-blue/5 rounded-lg space-y-4">
+                <h3 className="font-semibold text-neon-blue font-mono">Add New Goal</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
                     placeholder="Goal title..."
                     value={newGoal.title}
                     onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
+                    className="bg-black/50 border-white/10 text-white focus:border-neon-blue rounded-md"
                   />
                   <select
-                    className="px-3 py-2 border border-gray-300 rounded-md"
+                    className="px-3 py-2 border border-white/10 bg-black/50 text-white rounded-md w-full focus:outline-none focus:border-neon-blue"
                     value={newGoal.priority}
                     onChange={(e) => setNewGoal({ ...newGoal, priority: e.target.value as any })}
                   >
-                    <option value="low">Low Priority</option>
-                    <option value="medium">Medium Priority</option>
-                    <option value="high">High Priority</option>
-                    <option value="critical">Critical</option>
+                    <option value="low" className="bg-black">Low Priority</option>
+                    <option value="medium" className="bg-black">Medium Priority</option>
+                    <option value="high" className="bg-black">High Priority</option>
+                    <option value="critical" className="bg-black">Critical</option>
                   </select>
                 </div>
                 <Textarea
@@ -1019,13 +1024,14 @@ export function LifeMap() {
                   value={newGoal.description}
                   onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
                   rows={3}
+                  className="bg-black/50 border-white/10 text-white focus:border-neon-blue rounded-md"
                 />
                 <div className="flex gap-2">
-                  <Button onClick={addGoal} disabled={!newGoal.title}>
-                    Add Goal
+                  <Button onClick={addGoal} disabled={!newGoal.title} variant="neon" className="font-mono">
+                    ADD GOAL
                   </Button>
-                  <Button variant="outline" onClick={() => setShowGoalForm(false)}>
-                    Cancel
+                  <Button variant="outline" onClick={() => setShowGoalForm(false)} className="font-mono">
+                    CANCEL
                   </Button>
                 </div>
               </div>
@@ -1034,33 +1040,33 @@ export function LifeMap() {
             {/* Goals List */}
             <div className="space-y-4">
               {currentArea.goals.map(goal => (
-                <Card key={goal.id} className={`border-l-4 ${
-                  goal.status === 'completed' ? 'border-green-500 bg-green-50' :
-                  goal.status === 'in_progress' ? 'border-blue-500 bg-blue-50' :
-                  goal.priority === 'critical' ? 'border-red-500' :
-                  goal.priority === 'high' ? 'border-orange-500' :
-                  goal.priority === 'medium' ? 'border-yellow-500' :
-                  'border-gray-300'
+                <Card key={goal.id} variant="neon" className={`border-l-4 ${
+                  goal.status === 'completed' ? 'border-l-neon-green border-white/10' :
+                  goal.status === 'in_progress' ? 'border-l-neon-blue border-white/10' :
+                  goal.priority === 'critical' ? 'border-l-neon-red border-white/10' :
+                  goal.priority === 'high' ? 'border-l-neon-orange border-white/10' :
+                  goal.priority === 'medium' ? 'border-l-neon-yellow border-white/10' :
+                  'border-l-zinc-500 border-white/10'
                 }`}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
-                        <h4 className="font-semibold">{goal.title}</h4>
-                        <p className="text-sm text-gray-600 mb-2">{goal.description}</p>
+                        <h4 className="font-semibold text-zinc-200">{goal.title}</h4>
+                        <p className="text-sm text-zinc-400 mb-2">{goal.description}</p>
                         <div className="flex gap-2 mb-2">
                           <Badge variant={
                             goal.status === 'completed' ? 'default' :
                             goal.status === 'in_progress' ? 'secondary' :
                             'outline'
-                          }>
+                          } className={goal.status === 'completed' ? 'bg-neon-green text-black' : goal.status === 'in_progress' ? 'bg-neon-blue text-black' : 'border-zinc-600 text-zinc-400'}>
                             {goal.status.replace('_', ' ')}
                           </Badge>
-                          <Badge variant="outline">{goal.priority}</Badge>
-                          <Badge variant="outline">+{goal.rewards.xp} XP</Badge>
+                          <Badge variant="outline" className="border-zinc-600 text-zinc-400">{goal.priority}</Badge>
+                          <Badge variant="outline" className="border-neon-purple text-neon-purple">+{goal.rewards.xp} XP</Badge>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-zinc-500">
                           Target: {goal.targetDate.toLocaleDateString()}
                         </div>
                       </div>
@@ -1068,10 +1074,10 @@ export function LifeMap() {
                     
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span>Progress</span>
-                        <span>{Math.round(goal.progress)}%</span>
+                        <span className="text-zinc-500">Progress</span>
+                        <span className="text-neon-blue">{Math.round(goal.progress)}%</span>
                       </div>
-                      <Progress value={goal.progress} className="h-2" />
+                      <Progress value={goal.progress} className="h-2 bg-black/50" />
                       
                       {/* Subtasks */}
                       {goal.subtasks.length > 0 && (
@@ -1083,12 +1089,12 @@ export function LifeMap() {
                                 className="flex-shrink-0"
                               >
                                 {subtask.completed ? (
-                                  <CheckCircle className="w-4 h-4 text-green-600" />
+                                  <CheckCircle className="w-4 h-4 text-neon-green" />
                                 ) : (
-                                  <Circle className="w-4 h-4 text-gray-400" />
+                                  <Circle className="w-4 h-4 text-zinc-600" />
                                 )}
                               </button>
-                              <span className={subtask.completed ? 'line-through text-gray-500' : ''}>
+                              <span className={subtask.completed ? 'line-through text-zinc-600' : 'text-zinc-300'}>
                                 {subtask.title}
                               </span>
                             </div>
@@ -1101,8 +1107,8 @@ export function LifeMap() {
               ))}
               
               {currentArea.goals.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <Target className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <div className="text-center py-8 text-zinc-600">
+                  <Target className="w-12 h-12 mx-auto mb-4 opacity-30" />
                   <p>No goals yet. Add your first goal to get started!</p>
                 </div>
               )}
