@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 import { Input } from '../ui/input'; // Assuming I have Input
 import { Label } from '../ui/label'; // Assuming I have Label
+import { ALL_POWER_UPS, getPowerUpsByRarity, getUnlockedPowerUps } from '../../data/powerUps';
 
 // 6 hour cooldown in milliseconds
 const SPIN_COOLDOWN_MS = 6 * 60 * 60 * 1000;
@@ -78,6 +79,11 @@ export function RewardsShop() {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'break' | 'entertainment' | 'food' | 'gaming' | 'social' | 'custom'>('all');
   const [showRedeemModal, setShowRedeemModal] = useState<boolean>(false);
   const [showAddCustom, setShowAddCustom] = useState<boolean>(false);
+  const [selectedPowerUp, setSelectedPowerUp] = useState<typeof ALL_POWER_UPS[number] | null>(null);
+  const [showPowerUpModal, setShowPowerUpModal] = useState<boolean>(false);
+  const [selectedCrate, setSelectedCrate] = useState<{ id: string; name: string; cost: number; rarity: 'common' | 'rare' | 'epic' | 'legendary'; dropRates: { [key in 'common' | 'rare' | 'epic' | 'legendary' | 'mythic']?: number } } | null>(null);
+  const [crateResult, setCrateResult] = useState<{ id: string; name: string; icon: string; rarity: string } | null>(null);
+  const [view, setView] = useState<'rewards' | 'powerups' | 'crates'>('rewards');
   const [customReward, setCustomReward] = useState<Partial<Reward>>({
     name: '',
     description: '',
@@ -114,6 +120,9 @@ export function RewardsShop() {
 
   const currentGold = user?.gold || 0;
   const userLevel = user?.level || 1;
+  const userStreak = (user?.streak ?? state.globalStreak.currentStreak) || 0;
+  const completedTasks = (user?.activityLog || []).reduce((sum, a) => sum + (a.tasksCompleted || 0), 0);
+  const totalXP = state.xpSystem.totalXPEarned || user?.xp || 0;
 
   const categories = [
     { id: 'all', name: 'All Rewards', icon: Gift },
@@ -148,6 +157,158 @@ export function RewardsShop() {
     setSelectedReward(reward);
     setShowRedeemModal(true);
   };
+
+  const unlockedPowerUps = getUnlockedPowerUps(userLevel, userStreak, completedTasks, totalXP);
+  const isPowerUpUnlocked = (id: string) => unlockedPowerUps.some(p => p.id === id);
+  const ownedCount = (id: string) => state.ownedPowerUps?.[id] || 0;
+  const getPUColor = (rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'mythic') => {
+    switch (rarity) {
+      case 'common': return 'text-gray-400 border-gray-400/30';
+      case 'rare': return 'text-blue-400 border-blue-400/30';
+      case 'epic': return 'text-purple-400 border-purple-400/30';
+      case 'legendary': return 'text-yellow-400 border-yellow-400/30 shadow-[0_0_10px_rgba(250,204,21,0.2)]';
+      case 'mythic': return 'text-pink-400 border-pink-400/30 shadow-[0_0_10px_rgba(236,72,153,0.2)]';
+      default: return 'text-gray-400';
+    }
+  };
+
+  const handleBuyPowerUp = (pu: typeof ALL_POWER_UPS[number]) => {
+    if (!canAfford(pu.cost) || !isPowerUpUnlocked(pu.id)) return;
+    setSelectedPowerUp(pu);
+    setShowPowerUpModal(true);
+  };
+
+  const confirmBuyPowerUp = () => {
+    if (!selectedPowerUp || !user) return;
+    dispatch({ type: 'BUY_POWERUP', payload: { powerUpId: selectedPowerUp.id, cost: selectedPowerUp.cost } });
+    dispatch({
+      type: 'ADD_NOTIFICATION',
+      payload: {
+        id: Date.now().toString(),
+        type: 'reward',
+        title: '⚡ Power-up Purchased!',
+        message: `Bought ${selectedPowerUp.name} for ${selectedPowerUp.cost} Gold`,
+        timestamp: new Date(),
+      }
+    });
+    dispatch({ type: 'SHOW_CONFETTI', payload: true });
+    setTimeout(() => dispatch({ type: 'SHOW_CONFETTI', payload: false }), 3000);
+    setShowPowerUpModal(false);
+    setSelectedPowerUp(null);
+  };
+
+  const handleActivatePowerUp = (pu: typeof ALL_POWER_UPS[number]) => {
+    const count = ownedCount(pu.id);
+    if (count <= 0) return;
+    dispatch({ type: 'ACTIVATE_POWERUP', payload: { powerUpId: pu.id, duration: pu.duration } });
+  };
+
+  const CRATES: { id: string; name: string; description: string; icon: string; cost: number; rarity: 'common' | 'rare' | 'epic' | 'legendary'; dropRates: { [key in 'common' | 'rare' | 'epic' | 'legendary' | 'mythic']?: number } }[] = [
+    { id: 'crate-common', name: 'Common Crate', description: 'Mostly common drops. Chance for rare.', icon: '📦', cost: 300, rarity: 'common', dropRates: { common: 0.8, rare: 0.18, epic: 0.02 } },
+    { id: 'crate-rare', name: 'Rare Crate', description: 'Rare guaranteed. Chance for epic/legendary.', icon: '🎁', cost: 900, rarity: 'rare', dropRates: { rare: 0.7, epic: 0.25, legendary: 0.05 } },
+    { id: 'crate-epic', name: 'Epic Crate', description: 'Epic guaranteed. Chance for legendary/mythic.', icon: '💎', cost: 2200, rarity: 'epic', dropRates: { epic: 0.6, legendary: 0.35, mythic: 0.05 } },
+    { id: 'crate-legendary', name: 'Legendary Crate', description: 'Legendary guaranteed. Chance for mythic.', icon: '👑', cost: 5000, rarity: 'legendary', dropRates: { legendary: 0.8, mythic: 0.2 } },
+  ];
+
+  const rollCrate = (crate: typeof CRATES[number]) => {
+    const rand = Math.random();
+    let acc = 0;
+    const order: ('mythic' | 'legendary' | 'epic' | 'rare' | 'common')[] = ['mythic', 'legendary', 'epic', 'rare', 'common'];
+    let selectedRarity: 'common' | 'rare' | 'epic' | 'legendary' | 'mythic' = 'common';
+    for (let i = order.length - 1; i >= 0; i--) {
+      const r = order[i];
+      const p = crate.dropRates[r] || 0;
+      acc += p;
+      if (rand <= acc) {
+        selectedRarity = r;
+        break;
+      }
+    }
+    const pool = getPowerUpsByRarity(selectedRarity);
+    const item = pool[Math.floor(Math.random() * pool.length)];
+    return item;
+  };
+
+  const handleOpenCrate = (crate: typeof CRATES[number]) => {
+    if (!canAfford(crate.cost)) return;
+    setSelectedCrate(crate);
+    setCrateResult(null);
+  };
+
+  const confirmOpenCrate = () => {
+    if (!selectedCrate || !user) return;
+    const item = rollCrate(selectedCrate);
+    dispatch({ type: 'BUY_POWERUP', payload: { powerUpId: item.id, cost: selectedCrate.cost } });
+    dispatch({
+      type: 'ADD_NOTIFICATION',
+      payload: {
+        id: Date.now().toString(),
+        type: 'reward',
+        title: '🎉 Mystery Crate Opened!',
+        message: `You got ${item.name} (${item.rarity})`,
+        timestamp: new Date(),
+      }
+    });
+    setCrateResult({ id: item.id, name: item.name, icon: item.icon, rarity: item.rarity });
+    dispatch({ type: 'SHOW_CONFETTI', payload: true });
+    setTimeout(() => dispatch({ type: 'SHOW_CONFETTI', payload: false }), 3000);
+  };
+  
+  const [puCategory, setPuCategory] = useState<'all' | 'offensive' | 'utility' | 'defensive' | 'economic' | 'career' | 'networking' | 'accountability' | 'business'>('all');
+
+  const MysteryCratesSection = () => (
+    <Card variant="cyber" className="border-neon-pink/50">
+      <CardHeader>
+        <CardTitle className="text-2xl font-cyber text-neon-pink">MYSTERY CRATES</CardTitle>
+        <CardDescription className="text-gray-300">Open crates to receive random power-ups. Higher tier crates drop rarer items.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {CRATES.map((crate) => {
+            const affordable = canAfford(crate.cost);
+            return (
+              <Card key={crate.id} variant="neon" className="h-full flex flex-col">
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-start">
+                    <div className="text-4xl mb-2">{crate.icon}</div>
+                    <Badge variant="outline" className={cn("capitalize text-xs font-mono", getPUColor(crate.rarity))}>
+                      {crate.rarity}
+                    </Badge>
+                  </div>
+                  <CardTitle className="text-xl font-cyber text-white">{crate.name}</CardTitle>
+                  <CardDescription className="line-clamp-2 h-10 text-gray-400 font-mono text-xs">
+                    {crate.description}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  <div className="text-sm text-gray-500 font-mono">
+                    Cost: <span className="text-yellow-400">{crate.cost} Gold</span>
+                  </div>
+                  {crateResult && selectedCrate?.id === crate.id && (
+                    <div className="mt-3 p-3 border border-neon-pink/30 rounded bg-black/40">
+                      <div className="text-2xl">{crateResult.icon}</div>
+                      <div className="font-mono text-sm text-white">{crateResult.name}</div>
+                      <div className={cn("font-mono text-xs", getPUColor(crateResult.rarity as any))}>{crateResult.rarity}</div>
+                    </div>
+                  )}
+                </CardContent>
+                <CardFooter className="pt-0">
+                  <Button
+                    variant={affordable ? "neon" : "ghost"}
+                    className={cn("w-full font-bold font-mono", !affordable && "text-gray-500 border-gray-700 bg-gray-900/50")}
+                    disabled={!affordable}
+                    onClick={() => handleOpenCrate(crate)}
+                  >
+                    Open for {crate.cost} Gold
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   const confirmRedeem = () => {
     if (!selectedReward || !user) return;
@@ -306,7 +467,135 @@ export function RewardsShop() {
           </CardContent>
         </Card>
 
+        <div className="flex gap-3 pb-2">
+          <Button
+            variant={view === 'rewards' ? 'neon' : 'ghost'}
+            onClick={() => setView('rewards')}
+            className="font-mono"
+          >
+            Rewards
+          </Button>
+          <Button
+            variant={view === 'powerups' ? 'neon' : 'ghost'}
+            onClick={() => setView('powerups')}
+            className="font-mono"
+          >
+            Power-Ups Store
+          </Button>
+          <Button
+            variant={view === 'crates' ? 'neon' : 'ghost'}
+            onClick={() => setView('crates')}
+            className="font-mono"
+          >
+            Mystery Crates
+          </Button>
+        </div>
+        {view === 'powerups' && (
+          <Card variant="cyber" className="border-neon-blue/50">
+            <CardHeader>
+              <CardTitle className="text-2xl font-cyber text-neon-blue">POWER-UPS STORE</CardTitle>
+              <CardDescription className="text-gray-300">Buy boosts and special effects to supercharge progress.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-3 pb-4">
+                {['all','offensive','utility','defensive','economic','career','networking','accountability','business'].map(cat => (
+                  <Button
+                    key={cat}
+                    variant={puCategory === cat ? 'neon' : 'ghost'}
+                    onClick={() => setPuCategory(cat as typeof puCategory)}
+                    className="capitalize font-mono"
+                  >
+                    {cat}
+                  </Button>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <AnimatePresence>
+                  {(puCategory === 'all' ? ALL_POWER_UPS : ALL_POWER_UPS.filter(p => (p.category || 'utility') === puCategory)).map((pu) => {
+                    const unlocked = isPowerUpUnlocked(pu.id);
+                    const affordable = canAfford(pu.cost);
+                    const count = ownedCount(pu.id);
+                    const rarityStyle = getPUColor(pu.rarity);
+                    return (
+                      <motion.div
+                        key={pu.id}
+                        layout
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                      >
+                        <Card 
+                          variant="neon"
+                          className={cn(
+                            "h-full flex flex-col transition-all duration-300 hover:shadow-lg hover:shadow-neon-blue/20",
+                            !unlocked ? "opacity-60 grayscale" : "hover:-translate-y-1"
+                          )}
+                        >
+                          <CardHeader className="pb-2">
+                            <div className="flex justify-between items-start">
+                              <div className="text-4xl mb-2">{pu.icon}</div>
+                              <Badge variant="outline" className={cn("capitalize text-xs font-mono border-opacity-50", rarityStyle)}>
+                                {pu.rarity}
+                              </Badge>
+                            </div>
+                            <CardTitle className="text-xl font-cyber text-white">{pu.name}</CardTitle>
+                            <CardDescription className="line-clamp-2 h-10 text-gray-400 font-mono text-xs">
+                              {pu.description}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="flex-grow">
+                            <div className="flex items-center justify-between text-sm text-gray-500 mb-2 font-mono">
+                              <div className="flex items-center gap-2">
+                                <Tag className="w-3 h-3" />
+                                <span className="capitalize">{pu.category}</span>
+                              </div>
+                              <Badge variant="outline" className="font-mono text-xs">
+                                Owned: {count}
+                              </Badge>
+                            </div>
+                            {!unlocked && (
+                              <div className="flex items-center gap-2 text-red-400 text-xs mt-2 font-mono border border-red-500/30 p-1 rounded bg-red-500/10">
+                                <Lock className="w-3 h-3" />
+                                <span>{pu.unlockCondition.description}</span>
+                              </div>
+                            )}
+                          </CardContent>
+                          <CardFooter className="pt-0 flex gap-2">
+                            <Button
+                              variant={affordable && unlocked ? "neon" : "ghost"}
+                              className={cn(
+                                "w-full font-bold font-mono",
+                                (!affordable || !unlocked) && "text-gray-500 border-gray-700 bg-gray-900/50 hover:bg-gray-900/50 cursor-not-allowed"
+                              )}
+                              disabled={!affordable || !unlocked}
+                              onClick={() => handleBuyPowerUp(pu)}
+                            >
+                              <span className="flex items-center gap-2 text-yellow-400">
+                                {pu.cost} Gold
+                              </span>
+                            </Button>
+                            <Button
+                              variant={count > 0 ? "glitch" : "ghost"}
+                              disabled={count <= 0}
+                              onClick={() => handleActivatePowerUp(pu)}
+                              className="font-mono"
+                            >
+                              Activate
+                            </Button>
+                          </CardFooter>
+                        </Card>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        {view === 'crates' && <MysteryCratesSection />}
+
         {/* Categories */}
+        {view === 'rewards' && (
         <div className="flex flex-wrap gap-3 pb-2 overflow-x-auto">
           {categories.map((category) => (
             <Button
@@ -320,8 +609,10 @@ export function RewardsShop() {
             </Button>
           ))}
         </div>
+        )}
 
         {/* Rewards Grid */}
+        {view === 'rewards' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           <AnimatePresence>
             {filteredRewards.map((reward, index) => {
@@ -400,6 +691,7 @@ export function RewardsShop() {
             })}
           </AnimatePresence>
         </div>
+        )}
       </div>
 
       {/* Redeem Confirmation Modal */}
@@ -503,7 +795,87 @@ export function RewardsShop() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Power-up Purchase Modal */}
+      {selectedPowerUp && (
+        <Dialog open={showPowerUpModal} onOpenChange={setShowPowerUpModal}>
+          <DialogContent className="sm:max-w-md border-neon-blue/50 bg-black/90 backdrop-blur-xl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-cyber text-center text-neon-blue">
+                CONFIRM POWER-UP
+              </DialogTitle>
+              <DialogDescription className="text-center pt-4">
+                <div className="text-6xl mb-4">{selectedPowerUp.icon}</div>
+                <p className="text-lg text-white mb-2">{selectedPowerUp.name}</p>
+                <p className="text-gray-400">{selectedPowerUp.description}</p>
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col items-center py-4 space-y-2">
+              <div className="text-sm text-gray-400">Cost</div>
+              <div className="text-3xl font-mono font-bold text-neon-purple text-yellow-400">{selectedPowerUp.cost} Gold</div>
+              <div className="text-xs text-gray-500">Remaining Balance: {(currentGold - selectedPowerUp.cost).toLocaleString()} Gold</div>
+            </div>
+            <DialogFooter className="sm:justify-center gap-4">
+              <Button variant="ghost" onClick={() => setShowPowerUpModal(false)}>
+                Cancel
+              </Button>
+              <Button variant="neon" onClick={confirmBuyPowerUp} className="w-full sm:w-auto">
+                Confirm Purchase
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Mystery Crate Modal */}
+      {selectedCrate && (
+        <Dialog open={!!selectedCrate} onOpenChange={(open) => { if (!open) { setSelectedCrate(null); setCrateResult(null); } }}>
+          <DialogContent className="sm:max-w-md border-neon-pink/50 bg-black/90 backdrop-blur-xl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-cyber text-center text-neon-pink">
+                OPEN {selectedCrate.name.toUpperCase()}
+              </DialogTitle>
+              <DialogDescription className="text-center pt-4">
+                <div className="text-6xl mb-4">{selectedCrate.icon}</div>
+                <p className="text-lg text-white mb-2">{selectedCrate.name}</p>
+                <p className="text-gray-400">This crate contains a random power-up.</p>
+              </DialogDescription>
+            </DialogHeader>
+            {!crateResult ? (
+              <>
+                <div className="flex flex-col items-center py-4 space-y-2">
+                  <div className="text-sm text-gray-400">Cost</div>
+                  <div className="text-3xl font-mono font-bold text-neon-purple text-yellow-400">{selectedCrate.cost} Gold</div>
+                  <div className="text-xs text-gray-500">Remaining Balance: {(currentGold - selectedCrate.cost).toLocaleString()} Gold</div>
+                </div>
+                <DialogFooter className="sm:justify-center gap-4">
+                  <Button variant="ghost" onClick={() => { setSelectedCrate(null); setCrateResult(null); }}>
+                    Cancel
+                  </Button>
+                  <Button variant="neon" onClick={confirmOpenCrate} className="w-full sm:w-auto">
+                    Open Crate
+                  </Button>
+                </DialogFooter>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col items-center py-6 space-y-3">
+                  <div className="text-6xl mb-2">{crateResult.icon}</div>
+                  <p className="text-xl font-cyber text-white">{crateResult.name}</p>
+                  <Badge variant="outline" className={cn("capitalize text-xs font-mono", getPUColor(crateResult.rarity as any))}>
+                    {crateResult.rarity}
+                  </Badge>
+                </div>
+                <DialogFooter className="sm:justify-center">
+                  <Button variant="neon" onClick={() => { setSelectedCrate(null); setCrateResult(null); }}>
+                    Close
+                  </Button>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
-
