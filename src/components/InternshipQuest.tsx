@@ -32,7 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from './ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import toast from 'react-hot-toast';
-import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, Legend, LineChart, Line, CartesianGrid } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, Legend, LineChart, Line, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
 import { appDataService } from '../services/appDataService';
 
 export function InternshipQuest() {
@@ -200,6 +200,7 @@ export function InternshipQuest() {
       count: applications.filter(a => a.status === s).length,
     }));
   }, [applications]);
+  const statusPieColors = ['#22d3ee','#84cc16','#f59e0b','#a855f7','#10b981','#ef4444'];
 
   const getExtras = (id: string): Extras => extrasMap[id] || { tags: [], interviews: [], checklist: [], reminders: [] };
   const upsertExtras = (id: string, update: Partial<Extras>) => {
@@ -419,11 +420,37 @@ export function InternshipQuest() {
     }
   };
 
+  const [timeView, setTimeView] = useState<'all' | 'daily' | 'weekly' | 'monthly'>('all');
+  const today = new Date();
+  const sameDay = (d: Date) => d.toDateString() === today.toDateString();
+  const sameMonth = (d: Date) => d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+  const weekBounds = (() => {
+    const start = new Date(today); const day = start.getDay(); const diff = start.getDate() - day + (day === 0 ? -6 : 1);
+    start.setDate(diff); start.setHours(0,0,0,0);
+    const end = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23,59,59,999);
+    return { start, end };
+  })();
+  const inWeek = (d: Date) => d >= weekBounds.start && d <= weekBounds.end;
+  const dailyCount = applications.filter(a => sameDay(new Date(a.dateApplied))).length;
+  const weeklyCount = applications.filter(a => inWeek(new Date(a.dateApplied))).length;
+  const monthlyCount = applications.filter(a => sameMonth(new Date(a.dateApplied))).length;
+  const targets = { daily: 3, weekly: 15, monthly: 60 };
+  const dailyPct = Math.min(100, Math.round((dailyCount / targets.daily) * 100));
+  const weeklyPct = Math.min(100, Math.round((weeklyCount / targets.weekly) * 100));
+  const monthlyPct = Math.min(100, Math.round((monthlyCount / targets.monthly) * 100));
+
   const filteredApplications = applications
     .filter(app => app.company.toLowerCase().includes(searchTerm.toLowerCase()) || app.role.toLowerCase().includes(searchTerm.toLowerCase()))
     .filter(app => statusFilter === 'all' ? true : app.status === statusFilter)
     .filter(app => locationFilter === 'all' ? true : (app.location || '').toLowerCase().includes(locationFilter.toLowerCase()))
-    .filter(app => tagFilter.trim() === '' ? true : getExtras(app.id).tags.some(t => t.toLowerCase().includes(tagFilter.toLowerCase())));
+    .filter(app => tagFilter.trim() === '' ? true : getExtras(app.id).tags.some(t => t.toLowerCase().includes(tagFilter.toLowerCase())))
+    .filter(app => {
+      const d = new Date(app.dateApplied);
+      if (timeView === 'all') return true;
+      if (timeView === 'daily') return sameDay(d);
+      if (timeView === 'weekly') return inWeek(d);
+      return sameMonth(d);
+    });
 
   const sortedApplications = useMemo(() => {
     const list = [...filteredApplications];
@@ -485,6 +512,16 @@ export function InternshipQuest() {
         </div>
         
         <div className="flex gap-2 md:gap-3">
+          <select
+            value={timeView}
+            onChange={(e) => setTimeView(e.target.value as 'all' | 'daily' | 'weekly' | 'monthly')}
+            className={`${darkMode ? 'border-gray-700 text-white' : 'border-black text-black'} font-bold border-2`}
+          >
+            <option value="all">All Time</option>
+            <option value="daily">Today</option>
+            <option value="weekly">This Week</option>
+            <option value="monthly">This Month</option>
+          </select>
           <Button 
             onClick={() => setIsAddModalOpen(true)}
             className="bg-lime-500 text-black hover:bg-lime-400 font-bold border-2 border-lime-600 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
@@ -519,6 +556,22 @@ export function InternshipQuest() {
           </Button>
         </div>
       </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[{ label: 'Daily', pct: dailyPct, count: dailyCount }, { label: 'Weekly', pct: weeklyPct, count: weeklyCount }, { label: 'Monthly', pct: monthlyPct, count: monthlyCount }].map((x, i) => (
+          <Card key={i} className={`${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-black'} border-2 brutal-shadow`}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-xs font-mono uppercase">{x.label} Progress</div>
+                <div className="text-xs font-mono">{x.count}</div>
+              </div>
+              <div className="h-2 bg-gray-800 border-2 border-gray-700">
+                <motion.div initial={{ width: 0 }} animate={{ width: `${x.pct}%` }} className="h-full bg-lime-500" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       {/* Status Distribution */}
       <Card className={`${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-black'} border-2 brutal-shadow`}>
@@ -533,6 +586,25 @@ export function InternshipQuest() {
               <Legend />
               <Bar dataKey="count" name="Applications" fill="#84cc16" />
             </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+      
+      <Card className={`${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-black'} border-2 brutal-shadow`}>
+        <CardHeader className="pb-2">
+          <CardTitle className="font-mono text-sm uppercase">Status Mix</CardTitle>
+        </CardHeader>
+        <CardContent style={{ height: 200 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={statusChartData} dataKey="count" cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3}>
+                {statusChartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={statusPieColors[index % statusPieColors.length]} stroke={darkMode ? '#111' : '#fff'} strokeWidth={2} />
+                ))}
+              </Pie>
+              <Tooltip contentStyle={{ backgroundColor: darkMode ? '#111' : '#fff', borderRadius: 0, fontFamily: 'monospace' }} />
+              <Legend />
+            </PieChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>

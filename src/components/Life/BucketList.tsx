@@ -6,6 +6,7 @@ import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
 import { CheckCircle, Circle, Plus, Trash2, Edit2, Save, X, MapPin, Calendar, Star, Trophy, Flame, Timer, Crown, Shield, Gem, Coins, Gift, Bell, TrendingUp, TrendingDown, Users, Clock, Award, Medal, Heart, Zap, Target, AlertTriangle, Rocket, Lock } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { useAuth } from '../../hooks/useAuth';
 import { appDataService } from '../../services/appDataService';
 
 interface BucketItem {
@@ -34,7 +35,7 @@ const PRIORITY_COLORS = {
 
 export function BucketList() {
   const { state, dispatch } = useApp();
-  const { authUser } = state;
+  const { user: authUser } = useAuth();
   const [items, setItems] = useState<BucketItem[]>([]);
   const [newItem, setNewItem] = useState<Partial<BucketItem>>({
     title: '',
@@ -56,7 +57,11 @@ export function BucketList() {
   const loadBucketList = async () => {
     try {
       const appData = await appDataService.getAppData(authUser!.id);
-      const existingItems = appData?.bucketList || [];
+      const existingItems = (appData?.bucketList || []).map((i: any) => ({
+        ...i,
+        createdAt: i.createdAt ? new Date(i.createdAt) : new Date(),
+        targetDate: i.targetDate ? new Date(i.targetDate) : undefined,
+      }));
       
       // If no items exist, add some default bucket list items
       if (existingItems.length === 0) {
@@ -149,7 +154,12 @@ export function BucketList() {
           }
         ];
         
-        await appDataService.updateAppDataField(authUser!.id, 'bucketList', defaultItems);
+        const serializable = defaultItems.map(i => ({
+          ...i,
+          createdAt: i.createdAt.toISOString(),
+          targetDate: i.targetDate ? i.targetDate.toISOString() : undefined,
+        }));
+        await appDataService.updateAppDataField(authUser!.id, 'bucketList', serializable);
         setItems(defaultItems);
       } else {
         setItems(existingItems);
@@ -161,7 +171,12 @@ export function BucketList() {
 
   const saveBucketList = async (updatedItems: BucketItem[]) => {
     try {
-      await appDataService.updateAppDataField(authUser!.id, 'bucketList', updatedItems);
+      const serializable = updatedItems.map(i => ({
+        ...i,
+        createdAt: i.createdAt instanceof Date ? i.createdAt.toISOString() : i.createdAt,
+        targetDate: i.targetDate instanceof Date ? i.targetDate.toISOString() : i.targetDate,
+      }));
+      await appDataService.updateAppDataField(authUser!.id, 'bucketList', serializable);
       setItems(updatedItems);
     } catch (error) {
       console.error('Error saving bucket list:', error);

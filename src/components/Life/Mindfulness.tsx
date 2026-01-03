@@ -89,48 +89,58 @@ export function Mindfulness() {
     return () => clearInterval(timer);
   }, [activeSession, timeLeft, paused]);
   
+  const finalizeSession = (endedEarly = false) => {
+    const now = new Date();
+    const iso = now.toISOString().split('T')[0];
+    dispatch({ type: 'UPDATE_TIME_BASED_STREAK', payload: { activityType: 'mindfulness', timestamp: now } });
+    
+    const existing = state.timeBasedStreak.dailyActivity[iso] || { activeMinutes: 0, problemsSolved: 0, tasksCompleted: 0, xpEarned: 0, lastActivityTime: now.toISOString() };
+    const totalSeconds = selectedDuration * 60;
+    const elapsedSeconds = endedEarly ? Math.max(0, totalSeconds - timeLeft) : totalSeconds;
+    const minutesDone = clamp(Math.ceil(elapsedSeconds / 60), 1, 120);
+    
+    dispatch({ 
+      type: 'RECORD_DAILY_ACTIVITY', 
+      payload: { 
+        date: iso, 
+        activity: { 
+          activeMinutes: (existing.activeMinutes || 0) + minutesDone, 
+          lastActivityTime: now.toISOString() 
+        } 
+      } 
+    });
+    const finalMood = typeof moodScore === 'number' ? moodScore : 7;
+    dispatch({ type: 'COMPLETE_MINDFULNESS_SESSION', payload: { durationMinutes: minutesDone, timestamp: now, moodScore: finalMood } });
+    const entry = { id: Date.now().toString(), type: selectedType, duration: minutesDone, mood: finalMood, date: now.toISOString() };
+    const updated = [entry, ...history].slice(0, 50);
+    setHistory(updated);
+    setLocalStorage('mindfulness_sessions', updated);
+    const newTotalSessions = (stats.totalSessions || 0) + 1;
+    const newAvgMood = Math.round((((stats.averageMood || 0) * (newTotalSessions - 1)) + finalMood) / newTotalSessions);
+    const updatedStats = {
+      currentStreak: stats.currentStreak,
+      totalMinutes: (stats.totalMinutes || 0) + minutesDone,
+      averageMood: newAvgMood,
+      totalSessions: newTotalSessions,
+      lastSessionDate: now,
+    };
+    setStats({ currentStreak: updatedStats.currentStreak, totalMinutes: updatedStats.totalMinutes, averageMood: updatedStats.averageMood, totalSessions: updatedStats.totalSessions });
+    if (authUser?.id) {
+      const payload = {
+        stats: updatedStats,
+        sessions: updated
+      };
+      appDataService.updateAppDataField(authUser.id, 'mindfulness', payload).catch(() => {});
+    }
+    setActiveSession(false);
+    setPaused(false);
+    setMoodScore(null);
+    setTimeLeft(0);
+  };
+
   useEffect(() => {
     if (activeSession && timeLeft === 0) {
-      const now = new Date();
-      const iso = now.toISOString().split('T')[0];
-      dispatch({ type: 'UPDATE_TIME_BASED_STREAK', payload: { activityType: 'mindfulness', timestamp: now } });
-      
-      const existing = state.timeBasedStreak.dailyActivity[iso] || { activeMinutes: 0, problemsSolved: 0, tasksCompleted: 0, xpEarned: 0, lastActivityTime: now.toISOString() };
-      dispatch({ 
-        type: 'RECORD_DAILY_ACTIVITY', 
-        payload: { 
-          date: iso, 
-          activity: { 
-            activeMinutes: (existing.activeMinutes || 0) + clamp(selectedDuration, 1, 120), 
-            lastActivityTime: now.toISOString() 
-          } 
-        } 
-      });
-      const finalMood = typeof moodScore === 'number' ? moodScore : 7;
-      const dur = clamp(selectedDuration, 1, 120);
-      dispatch({ type: 'COMPLETE_MINDFULNESS_SESSION', payload: { durationMinutes: dur, timestamp: now, moodScore: finalMood } });
-      const entry = { id: Date.now().toString(), type: selectedType, duration: dur, mood: finalMood, date: now.toISOString() };
-      const updated = [entry, ...history].slice(0, 50);
-      setHistory(updated);
-      setLocalStorage('mindfulness_sessions', updated);
-      const newTotalSessions = (stats.totalSessions || 0) + 1;
-      const newAvgMood = Math.round((((stats.averageMood || 0) * (newTotalSessions - 1)) + finalMood) / newTotalSessions);
-      const updatedStats = {
-        currentStreak: stats.currentStreak,
-        totalMinutes: (stats.totalMinutes || 0) + dur,
-        averageMood: newAvgMood,
-        totalSessions: newTotalSessions,
-        lastSessionDate: now,
-      };
-      setStats({ currentStreak: updatedStats.currentStreak, totalMinutes: updatedStats.totalMinutes, averageMood: updatedStats.averageMood, totalSessions: updatedStats.totalSessions });
-      if (authUser?.id) {
-        const payload = {
-          stats: updatedStats,
-          sessions: updated
-        };
-        appDataService.updateAppDataField(authUser.id, 'mindfulness', payload).catch(() => {});
-      }
-      setActiveSession(false);
+      finalizeSession(false);
     }
   }, [activeSession, timeLeft, selectedDuration, selectedType, moodScore, history, state.timeBasedStreak.dailyActivity, dispatch, authUser?.id, stats]);
 
@@ -279,7 +289,7 @@ export function Mindfulness() {
                   <Button variant="outline" onClick={() => setPaused(p => !p)} className="border-2 border-yellow-500 text-yellow-500 hover:bg-yellow-500 hover:text-black font-mono uppercase">
                     {paused ? 'Resume' : 'Pause'}
                   </Button>
-                  <Button variant="outline" onClick={() => setActiveSession(false)} className="border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-mono uppercase">
+                  <Button variant="outline" onClick={() => finalizeSession(true)} className="border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-mono uppercase">
                     End
                   </Button>
                 </div>
@@ -294,7 +304,7 @@ export function Mindfulness() {
                     className="w-48"
                   />
                 </div>
-                <Button variant="outline" onClick={() => setActiveSession(false)} className="border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-mono uppercase">
+                <Button variant="outline" onClick={() => finalizeSession(true)} className="border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-mono uppercase">
                   End Session
                 </Button>
               </div>

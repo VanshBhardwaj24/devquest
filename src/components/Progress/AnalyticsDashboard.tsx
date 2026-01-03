@@ -7,6 +7,87 @@ import { AnalyticsService } from '../../services/analyticsService';
 import { AlertTriangle, RefreshCw, BarChart2, PieChart as PieIcon, Activity, TrendingUp } from 'lucide-react';
 import { Button } from '../ui/button';
 import { motion } from 'framer-motion';
+
+// Helper functions for enhanced analytics
+const calculatePenaltyTrend = (tasks: any[]) => {
+  const now = new Date();
+  const lastWeek = tasks.filter(t => {
+    const taskDate = new Date(t.createdAt || now);
+    return taskDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  });
+  
+  const overdueLastWeek = lastWeek.filter(t => 
+    t.dueDate && new Date(t.dueDate) < now && !t.completed
+  ).length;
+  
+  return {
+    trend: overdueLastWeek > 2 ? 'increasing' : overdueLastWeek > 0 ? 'stable' : 'decreasing',
+    count: overdueLastWeek,
+    percentage: Math.round((overdueLastWeek / Math.max(1, lastWeek.length)) * 100)
+  };
+};
+
+const calculatePenaltyRate = (tasks: any[]) => {
+  const totalTasks = tasks.length;
+  const overdueTasks = tasks.filter(t => 
+    t.dueDate && new Date(t.dueDate) < new Date() && !t.completed
+  ).length;
+  
+  return Math.round((overdueTasks / Math.max(1, totalTasks)) * 100);
+};
+
+const calculateRecoveryRate = (tasks: any[]) => {
+  const completedTasks = tasks.filter(t => t.completed);
+  const recoveredTasks = completedTasks.filter(t => 
+    t.dueDate && new Date(t.dueDate) < new Date(t.completedAt || new Date())
+  ).length;
+  
+  return Math.round((recoveredTasks / Math.max(1, completedTasks.length)) * 100);
+};
+
+const calculateTaskCompletionRate = (tasks: any[]) => {
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter(t => t.completed).length;
+  return Math.round((completedTasks / Math.max(1, totalTasks)) * 100);
+};
+
+const calculateAverageCompletionTime = (tasks: any[]) => {
+  const completedTasks = tasks.filter(t => t.completed && t.createdAt && t.completedAt);
+  if (completedTasks.length === 0) return 0;
+  
+  const totalTime = completedTasks.reduce((sum, task) => {
+    const created = new Date(task.createdAt);
+    const completed = new Date(task.completedAt);
+    return sum + (completed.getTime() - created.getTime());
+  }, 0);
+  
+  return Math.round(totalTime / completedTasks.length / (1000 * 60 * 60)); // hours
+};
+
+const calculateProductivityScore = (tasks: any[]) => {
+  const completionRate = calculateTaskCompletionRate(tasks);
+  const recoveryRate = calculateRecoveryRate(tasks);
+  const penaltyRate = calculatePenaltyRate(tasks);
+  
+  // Weighted score: completion (40%) + recovery (30%) + low penalties (30%)
+  return Math.round(
+    (completionRate * 0.4) + 
+    (recoveryRate * 0.3) + 
+    ((100 - penaltyRate) * 0.3)
+  );
+};
+
+const analyzeStreakData = (appState: any) => {
+  const currentStreak = appState.user?.streak || 0;
+  const longestStreak = appState.user?.longestStreak || 0;
+  
+  return {
+    current: currentStreak,
+    longest: longestStreak,
+    consistency: currentStreak > 7 ? 'high' : currentStreak > 3 ? 'medium' : 'low',
+    improvement: longestStreak > 0 ? Math.round((currentStreak / longestStreak) * 100) : 100
+  };
+};
  
 export function AnalyticsDashboard() {
   const { state: appState } = useApp();
@@ -17,11 +98,30 @@ export function AnalyticsDashboard() {
     dispatch({ type: 'INIT_FETCH' });
     try {
         const data = await AnalyticsService.fetchAnalyticsData(user, tasks);
-        dispatch({ type: 'FETCH_SUCCESS', payload: data });
+        
+        // Enhanced analytics with penalty tracking
+        const enhancedData = {
+          ...data,
+          penaltyAnalytics: {
+            totalPenalties: appState.careerStats?.totalPenalties || 0,
+            overdueQuests: appState.careerStats?.overdueQuests || 0,
+            penaltyTrend: calculatePenaltyTrend(tasks),
+            penaltyRate: calculatePenaltyRate(tasks),
+            recoveryRate: calculateRecoveryRate(tasks)
+          },
+          performanceMetrics: {
+            taskCompletionRate: calculateTaskCompletionRate(tasks),
+            averageCompletionTime: calculateAverageCompletionTime(tasks),
+            productivityScore: calculateProductivityScore(tasks),
+            streakAnalysis: analyzeStreakData(appState)
+          }
+        };
+        
+        dispatch({ type: 'FETCH_SUCCESS', payload: enhancedData });
     } catch (error) {
         dispatch({ type: 'FETCH_ERROR', payload: error instanceof Error ? error.message : 'Failed to load analytics' });
     }
-  }, [user, tasks]);
+  }, [user, tasks, appState.careerStats]);
 
   useEffect(() => {
     fetchData();
@@ -166,6 +266,58 @@ export function AnalyticsDashboard() {
                     </ResponsiveContainer>
                 </div>
             </div>
+        </div>
+
+        {/* Penalty Analytics Section */}
+        <div className={`p-6 border-4 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-black'} brutal-shadow`}>
+          <div className="flex items-center gap-2 mb-4">
+            <AlertTriangle className="h-5 w-5 text-red-500" />
+            <h3 className="font-bold font-mono text-xl">Quest Penalty Analytics</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-500">
+                {data?.penaltyAnalytics?.totalPenalties || 0}
+              </div>
+              <div className="text-sm text-gray-600">Total XP Penalties</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-500">
+                {data?.penaltyAnalytics?.overdueQuests || 0}
+              </div>
+              <div className="text-sm text-gray-600">Overdue Quests</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-yellow-500">
+                {data?.penaltyAnalytics?.penaltyRate || 0}%
+              </div>
+              <div className="text-sm text-gray-600">Penalty Rate</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-500">
+                {data?.penaltyAnalytics?.recoveryRate || 0}%
+              </div>
+              <div className="text-sm text-gray-600">Recovery Rate</div>
+            </div>
+          </div>
+          
+          {/* Penalty Trend Indicator */}
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Penalty Trend</span>
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-bold ${
+                  data?.penaltyAnalytics?.penaltyTrend?.trend === 'decreasing' ? 'text-green-600' :
+                  data?.penaltyAnalytics?.penaltyTrend?.trend === 'stable' ? 'text-yellow-600' : 'text-red-600'
+                }`}>
+                  {data?.penaltyAnalytics?.penaltyTrend?.trend || 'stable'}
+                </span>
+                <span className="text-sm text-gray-600">
+                  ({data?.penaltyAnalytics?.penaltyTrend?.count || 0} this week)
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Life Integration Metrics */}

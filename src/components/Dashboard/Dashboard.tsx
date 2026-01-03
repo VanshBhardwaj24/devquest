@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { dashboardReducer, initialDashboardState } from './dashboardReducer';
 import { RecentActivity } from './RecentActivity';
+import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, Tooltip, CartesianGrid, LineChart, Line } from 'recharts';
 
 // Sub-component for User Stats Overview
 const UserStatsOverview = ({ user, xpSystem }: { user: any; xpSystem: any }) => {
@@ -58,6 +59,7 @@ const QuickStatsGrid = ({ stats }: { stats: any }) => {
     { label: 'Achievements', value: stats.achievements || 0, icon: Trophy, color: 'yellow' },
     { label: 'Energy', value: `${stats.energy || 100}%`, icon: Zap, color: 'purple' }
   ];
+  const sparkData = Array.from({ length: 10 }).map((_, i) => ({ name: i, value: Math.round(Math.random() * 5) + 1 }));
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -67,6 +69,16 @@ const QuickStatsGrid = ({ stats }: { stats: any }) => {
             <stat.icon className={`w-8 h-8 mx-auto mb-2 text-${stat.color}-500`} />
             <div className="text-2xl font-bold">{stat.value}</div>
             <div className="text-sm text-gray-600">{stat.label}</div>
+            <div className="mt-2 h-8">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={sparkData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                  <XAxis dataKey="name" hide />
+                  <Tooltip contentStyle={{ fontFamily: 'monospace' }} />
+                  <Area type="monotone" dataKey="value" stroke="#22d3ee" fill="#22d3ee" fillOpacity={0.2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       ))}
@@ -112,6 +124,7 @@ const ActivitiesFeed = ({ activities }: { activities: any[] }) => {
 
 // Sub-component for Daily Challenges
 const DailyChallengesWidget = ({ challenges }: { challenges: any[] }) => {
+  const microData = challenges.slice(0, 5).map((c: any, i: number) => ({ name: i, xp: c.xp || 0 }));
   return (
     <Card>
       <CardHeader>
@@ -121,6 +134,15 @@ const DailyChallengesWidget = ({ challenges }: { challenges: any[] }) => {
         </CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="h-10 mb-3">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={microData}>
+              <XAxis dataKey="name" hide />
+              <Tooltip contentStyle={{ fontFamily: 'monospace' }} />
+              <Bar dataKey="xp" fill="#84cc16" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
         <div className="space-y-3">
           {challenges.slice(0, 3).map((challenge, index) => (
             <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
@@ -131,6 +153,14 @@ const DailyChallengesWidget = ({ challenges }: { challenges: any[] }) => {
               <div className="text-right">
                 <div className="text-sm font-bold text-green-600">+{challenge.xp} XP</div>
                 <div className="text-xs text-gray-500">{challenge.progress}%</div>
+                <div className="h-6 w-24">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={[{ p: 0 }, { p: challenge.progress }]}>
+                      <Tooltip contentStyle={{ fontFamily: 'monospace' }} />
+                      <Area type="monotone" dataKey="p" stroke="#10b981" fill="#10b981" fillOpacity={0.2} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
           ))}

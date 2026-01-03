@@ -207,6 +207,7 @@ export interface Task {
   difficulty?: 'easy' | 'medium' | 'hard';
   relatedSkillId?: string;
   xpReward?: number;
+  recurring?: 'daily' | 'weekly' | 'monthly';
 }
 
 export interface Achievement {
@@ -228,4 +229,6 @@ export interface CareerStats {
   rejections: number;
   skillsMastered: number;
   projectsCompleted: number;
+  totalPenalties?: number;
+  overdueQuests?: number;
 }

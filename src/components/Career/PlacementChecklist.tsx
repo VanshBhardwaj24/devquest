@@ -3,8 +3,9 @@ import { motion } from 'framer-motion';
 import { useApp } from '../../contexts/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { GraduationCap, CheckSquare, Target, Clock, ListChecks, Flame } from 'lucide-react';
+import { GraduationCap, CheckSquare, Target, Clock, ListChecks, Flame, AlertTriangle, TrendingDown, Zap } from 'lucide-react';
 import { getLocalStorage, setLocalStorage } from '../../lib/utils';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
 
 type ChecklistItem = {
   id: string;
@@ -156,6 +157,7 @@ export function PlacementChecklist() {
   const storageKey = 'placement_prep_checks';
   const initial = useMemo(() => getLocalStorage<Record<string, boolean>>(storageKey, {}), []);
   const [checked, setChecked] = useState<Record<string, boolean>>(initial);
+  const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly' | 'sixmonth'>('daily');
 
   // Custom tasks storage (persisted separately)
   const customKey = 'placement_prep_custom_tasks';
@@ -351,6 +353,38 @@ export function PlacementChecklist() {
     setChecked({});
   };
 
+  const resetDaily = () => {
+    const dailyGroup = groups.find(g => g.id === 'daily-plan');
+    if (!dailyGroup) return;
+    setChecked(prev => {
+      const next = { ...prev };
+      dailyGroup.items.forEach(it => {
+        const key = `${dailyGroup.id}:${it.id}`;
+        if (next[key]) next[key] = false;
+      });
+      customTasks.forEach(t => {
+        if (next[t.id]) next[t.id] = false;
+      });
+      return next;
+    });
+  };
+
+  const renderGroupsForTab = () => {
+    const isWeeklyItem = (label: string) => /\(1 week\)/i.test(label);
+    if (activeTab === 'daily') {
+      return groups.filter(g => g.id === 'daily-plan');
+    }
+    if (activeTab === 'weekly') {
+      return groups
+        .filter(g => g.id === 'month2' || g.id === 'month3')
+        .map(g => ({ ...g, items: g.items.filter(it => isWeeklyItem(it.label)) }));
+    }
+    if (activeTab === 'monthly') {
+      return groups.filter(g => g.id === 'month1' || g.id === 'month2' || g.id === 'month3');
+    }
+    return groups.filter(g => g.id === 'habits' || g.id === 'outcomes' || g.id === 'philosophy' || g.id === 'purpose');
+  };
+
   const addCustomTask = () => {
     if (!newLabel.trim()) return;
     const id = `custom:${Date.now()}`;
@@ -393,22 +427,16 @@ export function PlacementChecklist() {
 
   return (
     <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 border-2 border-black ${darkMode ? 'bg-orange-400' : 'bg-orange-500'}`}>
-            <GraduationCap className="h-6 w-6 text-black" />
-          </div>
-          <h2 className="text-2xl font-black font-mono uppercase tracking-tight">
-            90-Day <span className="text-orange-500">Checklist</span>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className={`text-3xl font-extrabold tracking-tight font-cyber text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-purple`}>
+            90-DAY PLACEMENT PLAN
           </h2>
+          <p className="text-sm text-gray-400 font-mono">Structured roadmap with glitch-styled sections.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={exportCSV} className="border-2 border-black">
-            Export CSV
-          </Button>
-          <Button variant="outline" onClick={resetAll} className="border-2 border-black">
-            Reset
-          </Button>
+        <div className="flex items-center gap-3 bg-black/20 p-3 rounded-xl backdrop-blur-sm border border-white/10">
+          <Button variant="neon" size="sm" onClick={exportCSV}>Export CSV</Button>
+          <Button variant="glitch" size="sm" onClick={resetAll}>Reset All</Button>
         </div>
       </div>
 
@@ -448,86 +476,187 @@ export function PlacementChecklist() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {groups.map((group, gi) => (
-          <motion.div
-            key={group.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: gi * 0.05 }}
-          >
-            <Card variant="brutal" className={`${darkMode ? 'bg-zinc-900 border-white' : 'bg-white border-black'} rounded-none`}>
-              <CardHeader className="p-4 border-b-2 border-black">
-                <div className="flex items-center gap-2">
-                  {group.id === 'daily-plan' ? <Clock className="h-5 w-5" /> : null}
-                  {group.id === 'philosophy' ? <Target className="h-5 w-5" /> : null}
-                  {group.id === 'habits' ? <Flame className="h-5 w-5" /> : <ListChecks className="h-5 w-5" />}
-                  <CardTitle className="text-lg font-black uppercase tracking-tight">{group.title}</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-4">
-                <div className="space-y-2">
-                  {group.items.map((item) => (
-                    <label key={item.id} className="flex items-start gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={!!checked[`${group.id}:${item.id}`]}
-                        onChange={() => toggle(`${group.id}:${item.id}`)}
-                        className="mt-0.5 h-4 w-4 border-2 border-black"
-                      />
-                      <span className="text-sm font-mono">
-                        {item.label}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
+      <Tabs value={activeTab} onValueChange={v => setActiveTab(v as typeof activeTab)}>
+        <TabsList className="grid grid-cols-4 w-full md:w-auto">
+          <TabsTrigger value="daily">Daily</TabsTrigger>
+          <TabsTrigger value="weekly">Weekly</TabsTrigger>
+          <TabsTrigger value="monthly">Monthly</TabsTrigger>
+          <TabsTrigger value="sixmonth">6-Month</TabsTrigger>
+        </TabsList>
 
-        {/* Custom tasks column */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <Card variant="brutal" className={`${darkMode ? 'bg-zinc-900 border-white' : 'bg-white border-black'} rounded-none`}>
-            <CardHeader className="p-4 border-b-2 border-black">
-              <div className="flex items-center gap-2">
-                <CardTitle className="text-lg font-black uppercase tracking-tight">Custom Tasks</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="Task label" className="flex-1 p-2 border-2 border-black" />
-                  <input type="date" value={newDue || ''} onChange={e => setNewDue(e.target.value || null)} className="p-2 border-2 border-black" />
-                  <select value={newPriority} onChange={e => setNewPriority(e.target.value as any)} className="p-2 border-2 border-black">
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
-                  <Button onClick={addCustomTask}>Add</Button>
-                </div>
-
-                <div className="space-y-2">
-                  {customTasks.map(t => (
-                    <div key={t.id} className="flex items-center justify-between gap-3 border p-2">
-                      <label className="flex items-center gap-2 flex-1">
-                        <input type="checkbox" checked={!!checked[t.id]} onChange={() => toggle(t.id)} className="h-4 w-4 border-2 border-black" />
-                        <div>
-                          <div className="font-mono text-sm">{t.label}</div>
-                          <div className="text-xs opacity-60">{t.dueDate ? `Due: ${t.dueDate}` : 'No due date'} • {t.priority}</div>
-                        </div>
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" onClick={() => removeCustomTask(t.id)} className="border-2 border-black">Delete</Button>
-                      </div>
+        <TabsContent value="daily">
+          <div className="flex items-center justify-end mb-3">
+            <Button variant="outline" onClick={resetDaily}>Reset Daily</Button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {renderGroupsForTab().map((group, gi) => (
+              <motion.div key={group.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: gi * 0.05 }}>
+                <Card variant="brutal" className={`${darkMode ? 'bg-zinc-900 border-white' : 'bg-white border-black'} rounded-none`}>
+                  <CardHeader className="p-4 border-b-2 border-black">
+                    <div className="flex items-center gap-2">
+                      {group.id === 'daily-plan' ? <Clock className="h-5 w-5" /> : null}
+                      {group.id === 'philosophy' ? <Target className="h-5 w-5" /> : null}
+                      {group.id === 'habits' ? <Flame className="h-5 w-5" /> : <ListChecks className="h-5 w-5" />}
+                      <CardTitle className="text-lg font-black uppercase tracking-tight">{group.title}</CardTitle>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="space-y-2">
+                      {group.items.map((item) => (
+                        <label key={item.id} className="flex items-start gap-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={!!checked[`${group.id}:${item.id}`]}
+                            onChange={() => toggle(`${group.id}:${item.id}`)}
+                            className="mt-0.5 h-4 w-4 border-2 border-black"
+                          />
+                          <span className="text-sm font-mono">{item.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <Card variant="brutal" className={`${darkMode ? 'bg-zinc-900 border-white' : 'bg-white border-black'} rounded-none`}>
+                <CardHeader className="p-4 border-b-2 border-black">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg font-black uppercase tracking-tight">Custom Tasks</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="Task label" className="flex-1 p-2 border-2 border-black" />
+                      <input type="date" value={newDue || ''} onChange={e => setNewDue(e.target.value || null)} className="p-2 border-2 border-black" />
+                      <select value={newPriority} onChange={e => setNewPriority(e.target.value as any)} className="p-2 border-2 border-black">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                      </select>
+                      <Button onClick={addCustomTask}>Add</Button>
+                    </div>
+                    <div className="space-y-2">
+                      {customTasks.map(t => (
+                        <div key={t.id} className="flex items-center justify-between gap-3 border p-2">
+                          <label className="flex items-center gap-2 flex-1">
+                            <input type="checkbox" checked={!!checked[t.id]} onChange={() => toggle(t.id)} className="h-4 w-4 border-2 border-black" />
+                            <div>
+                              <div className="font-mono text-sm">{t.label}</div>
+                              <div className="text-xs opacity-60">{t.dueDate ? `Due: ${t.dueDate}` : 'No due date'} • {t.priority}</div>
+                            </div>
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <Button variant="outline" onClick={() => removeCustomTask(t.id)} className="border-2 border-black">Delete</Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="weekly">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {renderGroupsForTab().map((group, gi) => (
+              <motion.div key={group.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: gi * 0.05 }}>
+                <Card variant="brutal" className={`${darkMode ? 'bg-zinc-900 border-white' : 'bg-white border-black'} rounded-none`}>
+                  <CardHeader className="p-4 border-b-2 border-black">
+                    <div className="flex items-center gap-2">
+                      <ListChecks className="h-5 w-5" />
+                      <CardTitle className="text-lg font-black uppercase tracking-tight">{group.title}</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="space-y-2">
+                      {group.items.map((item) => (
+                        <label key={item.id} className="flex items-start gap-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={!!checked[`${group.id}:${item.id}`]}
+                            onChange={() => toggle(`${group.id}:${item.id}`)}
+                            className="mt-0.5 h-4 w-4 border-2 border-black"
+                          />
+                          <span className="text-sm font-mono">{item.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="monthly">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {renderGroupsForTab().map((group, gi) => (
+              <motion.div key={group.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: gi * 0.05 }}>
+                <Card variant="brutal" className={`${darkMode ? 'bg-zinc-900 border-white' : 'bg-white border-black'} rounded-none`}>
+                  <CardHeader className="p-4 border-b-2 border-black">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-5 w-5" />
+                      <CardTitle className="text-lg font-black uppercase tracking-tight">{group.title}</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="space-y-2">
+                      {group.items.map((item) => (
+                        <label key={item.id} className="flex items-start gap-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={!!checked[`${group.id}:${item.id}`]}
+                            onChange={() => toggle(`${group.id}:${item.id}`)}
+                            className="mt-0.5 h-4 w-4 border-2 border-black"
+                          />
+                          <span className="text-sm font-mono">{item.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="sixmonth">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {renderGroupsForTab().map((group, gi) => (
+              <motion.div key={group.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: gi * 0.05 }}>
+                <Card variant="brutal" className={`${darkMode ? 'bg-zinc-900 border-white' : 'bg-white border-black'} rounded-none`}>
+                  <CardHeader className="p-4 border-b-2 border-black">
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="h-5 w-5" />
+                      <CardTitle className="text-lg font-black uppercase tracking-tight">{group.title}</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="space-y-2">
+                      {group.items.map((item) => (
+                        <label key={item.id} className="flex items-start gap-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={!!checked[`${group.id}:${item.id}`]}
+                            onChange={() => toggle(`${group.id}:${item.id}`)}
+                            className="mt-0.5 h-4 w-4 border-2 border-black"
+                          />
+                          <span className="text-sm font-mono">{item.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
 
       <Card variant="brutal" className={`${darkMode ? 'bg-zinc-900 border-white' : 'bg-white border-black'} rounded-none`}>
         <CardContent className="p-4 flex items-center justify-between">

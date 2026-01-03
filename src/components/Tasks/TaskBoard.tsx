@@ -9,7 +9,9 @@ import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../hooks/useAuth';
 import { taskService } from '../../services/taskService';
 import { achievementService } from '../../services/achievementService';
+import { appDataService } from '../../services/appDataService';
 import { Task } from '../../types';
+import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, Legend, LineChart, Line, CartesianGrid } from 'recharts';
 
 // Default tasks for new users
 const DEFAULT_TASKS: Omit<Task, 'id'>[] = [
@@ -53,6 +55,59 @@ const calculateCriticalHit = () => {
   return { type: 'normal', multiplier: 1, message: null };
 };
 
+// Penalty tracking for overdue tasks
+const applyTaskPenalties = (tasks: Task[], dispatch: any) => {
+  const now = new Date();
+  const overdueTasks = tasks.filter(task => 
+    task.dueDate && 
+    new Date(task.dueDate) < now && 
+    !task.completed
+  );
+
+  overdueTasks.forEach(task => {
+    const daysOverdue = Math.floor((now.getTime() - new Date(task.dueDate).getTime()) / (1000 * 60 * 60 * 24));
+    let penaltyAmount = 0;
+
+    if (daysOverdue > 7) {
+      penaltyAmount = Math.floor((task.xp || 50) * 0.5); // 50% penalty for > 7 days
+    } else if (daysOverdue > 3) {
+      penaltyAmount = Math.floor((task.xp || 50) * 0.25); // 25% penalty for 3-7 days
+    } else if (daysOverdue >= 1) {
+      penaltyAmount = Math.floor((task.xp || 50) * 0.1); // 10% penalty for 1-3 days
+    }
+
+    if (penaltyAmount > 0) {
+      dispatch({
+        type: 'ADD_XP',
+        payload: {
+          amount: -penaltyAmount,
+          source: `Task Penalty: ${task.title}`
+        }
+      });
+
+      dispatch({
+        type: 'ADD_NOTIFICATION',
+        payload: {
+          id: Date.now().toString(),
+          type: 'mission',
+          title: 'Task Overdue',
+          message: `-${penaltyAmount} XP penalty for overdue task: ${task.title}`,
+          timestamp: new Date(),
+          priority: daysOverdue > 7 ? 'high' : 'medium'
+        }
+      });
+
+      dispatch({
+        type: 'UPDATE_STATS',
+        payload: {
+          totalPenalties: (dispatch.getState?.careerStats?.totalPenalties || 0) + penaltyAmount,
+          overdueTasks: (dispatch.getState?.careerStats?.overdueTasks || 0) + 1
+        }
+      });
+    }
+  });
+};
+
 export function TaskBoard() {
   const { state, dispatch } = useApp();
   const { user: authUser } = useAuth();
@@ -74,8 +129,12 @@ export function TaskBoard() {
     xp: 100, 
     relatedSkillId: '',
     difficulty: 'medium' as 'easy' | 'medium' | 'hard',
-    dueDateISO: ''
+    dueDateISO: '',
+    recurring: '' as '' | 'daily' | 'weekly' | 'monthly'
   });
+  const [timeView, setTimeView] = useState<'all' | 'daily' | 'weekly' | 'monthly'>('all');
+  const [taskTargets, setTaskTargets] = useState<{ daily: number; weekly: number; monthly: number }>({ daily: 3, weekly: 15, monthly: 60 });
+  const [challengeStore, setChallengeStore] = useState<any>({});
 
   // Difficulty Multipliers
   const difficultyConfig = {
@@ -83,6 +142,17 @@ export function TaskBoard() {
     medium: { xp: 100, label: 'Medium', color: 'text-yellow-400', border: 'border-yellow-500/30' },
     hard: { xp: 200, label: 'Hard', color: 'text-red-400', border: 'border-red-500/30' }
   };
+
+  const today = new Date();
+  const sameDay = (d: Date) => d.toDateString() === today.toDateString();
+  const sameMonth = (d: Date) => d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+  const weekBounds = (() => {
+    const start = new Date(today); const day = start.getDay(); const diff = start.getDate() - day + (day === 0 ? -6 : 1);
+    start.setDate(diff); start.setHours(0,0,0,0);
+    const end = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23,59,59,999);
+    return { start, end };
+  })();
+  const inWeek = (d: Date) => d >= weekBounds.start && d <= weekBounds.end;
 
   // Loss Aversion: HP Decay after 6 PM
   useEffect(() => {
@@ -108,6 +178,38 @@ export function TaskBoard() {
   }, [authUser, tasks.length, dispatch]);
 
   useEffect(() => {
+    const loadTargets = async () => {
+      if (!authUser?.id) return;
+      try {
+        const data = await appDataService.getAppData(authUser.id);
+        const ch = (data?.challenges as any) || {};
+        setChallengeStore(ch);
+        if (ch?.targets) {
+          setTaskTargets({
+            daily: Number(ch.targets.daily) || taskTargets.daily,
+            weekly: Number(ch.targets.weekly) || taskTargets.weekly,
+            monthly: Number(ch.targets.monthly) || taskTargets.monthly,
+          });
+        }
+      } catch {
+        void 0;
+      }
+    };
+    loadTargets();
+  }, [authUser?.id]);
+
+  useEffect(() => {
+    const persistTargets = async () => {
+      if (!authUser?.id) return;
+      const next = { ...challengeStore, targets: taskTargets };
+      setChallengeStore(next);
+      await appDataService.updateAppDataField(authUser.id, 'challenges', next);
+    };
+    persistTargets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taskTargets.daily, taskTargets.weekly, taskTargets.monthly]);
+
+  useEffect(() => {
     if (!overduePenaltiesEnabled) return;
     const interval = setInterval(() => {
       try {
@@ -124,10 +226,62 @@ export function TaskBoard() {
         });
         
         if (newlyOverdue.length > 0) {
-          const totalPenalty = newlyOverdue.reduce((sum, t) => sum + Math.round(Math.min(50, t.xp * 0.1)), 0);
+          const totalPenalty = newlyOverdue.reduce((sum, t) => {
+            const daysOverdue = Math.floor((now.getTime() - new Date(t.dueDate).getTime()) / (1000 * 60 * 60 * 24));
+            let penaltyAmount = 0;
+
+            if (daysOverdue > 7) {
+              penaltyAmount = Math.floor((t.xp || 50) * 0.5); // 50% penalty for > 7 days
+            } else if (daysOverdue > 3) {
+              penaltyAmount = Math.floor((t.xp || 50) * 0.25); // 25% penalty for 3-7 days
+            } else if (daysOverdue >= 1) {
+              penaltyAmount = Math.floor((t.xp || 50) * 0.1); // 10% penalty for 1-3 days
+            }
+
+            return sum + penaltyAmount;
+          }, 0);
+          
           newlyOverdue.forEach(t => {
-            const p = Math.round(Math.min(50, t.xp * 0.1));
-            dispatch({ type: 'ADD_XP', payload: { amount: -p, source: `Overdue: ${t.title}` } });
+            const daysOverdue = Math.floor((now.getTime() - new Date(t.dueDate).getTime()) / (1000 * 60 * 60 * 24));
+            let penaltyAmount = 0;
+
+            if (daysOverdue > 7) {
+              penaltyAmount = Math.floor((t.xp || 50) * 0.5);
+            } else if (daysOverdue > 3) {
+              penaltyAmount = Math.floor((t.xp || 50) * 0.25);
+            } else if (daysOverdue >= 1) {
+              penaltyAmount = Math.floor((t.xp || 50) * 0.1);
+            }
+
+            if (penaltyAmount > 0) {
+              dispatch({ 
+                type: 'ADD_XP', 
+                payload: { 
+                  amount: -penaltyAmount, 
+                  source: `Task Penalty: ${t.title} (${daysOverdue} days overdue)`
+                } 
+              });
+
+              dispatch({
+                type: 'ADD_NOTIFICATION',
+                payload: {
+                  id: Date.now().toString(),
+                  type: 'mission',
+                  title: 'Task Overdue',
+                  message: `-${penaltyAmount} XP penalty for overdue task: ${t.title} (${daysOverdue} days)`,
+                  timestamp: new Date(),
+                  priority: daysOverdue > 7 ? 'high' : 'medium'
+                }
+              });
+
+              dispatch({
+                type: 'UPDATE_STATS',
+                payload: {
+                  totalPenalties: (state.careerStats?.totalPenalties || 0) + penaltyAmount,
+                  overdueTasks: (state.careerStats?.overdueTasks || 0) + 1
+                }
+              });
+            }
           });
           
           // Update penalized tasks with today's date
@@ -165,7 +319,22 @@ export function TaskBoard() {
   const filteredTasks = tasks.filter(task => {
     const matchesFilter = filter === 'all' || (filter === 'in-progress' ? !task.completed : task.priority === filter);
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
+    const dv = task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate as unknown as string);
+    const matchesTime =
+      timeView === 'all' ? true :
+      timeView === 'daily' ? sameDay(dv) :
+      timeView === 'weekly' ? inWeek(dv) :
+      sameMonth(dv);
+    return matchesFilter && matchesSearch && matchesTime;
+  });
+
+  // Time-range tasks for charts/stats (independent of search/filter)
+  const timeTasks = tasks.filter(t => {
+    const dv = t.dueDate instanceof Date ? t.dueDate : new Date(t.dueDate as unknown as string);
+    if (timeView === 'daily') return sameDay(dv);
+    if (timeView === 'weekly') return inWeek(dv);
+    if (timeView === 'monthly') return sameMonth(dv);
+    return true;
   });
 
   // Zeigarnik Effect: Show in-progress tasks first
@@ -175,15 +344,45 @@ export function TaskBoard() {
     return order[a.priority] - order[b.priority];
   });
 
-  const completedTasks = tasks.filter(t => t.completed);
-  const pendingTasks = tasks.filter(t => !t.completed);
-  const completionPct = tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0;
+  const completedTasks = timeTasks.filter(t => t.completed);
+  const pendingTasks = timeTasks.filter(t => !t.completed);
+  const completionPct = timeTasks.length > 0 ? Math.round((completedTasks.length / timeTasks.length) * 100) : 0;
   const isNearComplete = completionPct >= 75; // Goal Gradient zone
+  const priorityChartData = ['Elite','Core','Bonus'].map(p => {
+    const completed = timeTasks.filter(t => t.priority === p && t.completed).length;
+    const pending = timeTasks.filter(t => t.priority === p && !t.completed).length;
+    return { name: p, completed, pending };
+  });
+  const completionTimelineData = (() => {
+    const map: Record<string, number> = {};
+    completedTasks.forEach(t => {
+      const d = t.completedAt ? new Date(t.completedAt) : new Date();
+      const key = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      map[key] = (map[key] || 0) + 1;
+    });
+    const keys = Object.keys(map);
+    keys.sort((a, b) => {
+      const pa = new Date(a);
+      const pb = new Date(b);
+      return pa.getTime() - pb.getTime();
+    });
+    return keys.map(k => ({ name: k, count: map[k] }));
+  })();
+  const dailySet = tasks.filter(t => sameDay(t.dueDate));
+  const weeklySet = tasks.filter(t => inWeek(t.dueDate));
+  const monthlySet = tasks.filter(t => sameMonth(t.dueDate));
+  const dailyProgress = dailySet.length ? Math.round((dailySet.filter(t => t.completed).length / dailySet.length) * 100) : 0;
+  const weeklyProgress = weeklySet.length ? Math.round((weeklySet.filter(t => t.completed).length / weeklySet.length) * 100) : 0;
+  const monthlyProgress = monthlySet.length ? Math.round((monthlySet.filter(t => t.completed).length / monthlySet.length) * 100) : 0;
 
   const toggleComplete = async (task: Task) => {
     if (!authUser) return;
-    const updated = { ...task, completed: !task.completed };
     const completionTime = new Date();
+    const updated = { 
+      ...task, 
+      completed: !task.completed,
+      completedAt: !task.completed ? completionTime : undefined
+    };
     
     try {
       await taskService.updateTask(authUser.id, task.id, updated);
@@ -299,15 +498,72 @@ export function TaskBoard() {
         createdAt: new Date(),
         streak: 0,
         // Include relatedSkillId from state
-        relatedSkillId: newTask.relatedSkillId || undefined
+        relatedSkillId: newTask.relatedSkillId || undefined,
+        recurring: newTask.recurring ? (newTask.recurring as 'daily' | 'weekly' | 'monthly') : undefined
       };
-      await taskService.createTask(authUser.id, taskData);
-      dispatch({ type: 'ADD_TASK', payload: { ...taskData, id: Date.now().toString() } });
-      setNewTask({ title: '', description: '', priority: 'Core', category: '', xp: 100, relatedSkillId: '', difficulty: 'medium', dueDateISO: '' });
+      const created = await taskService.createTask(authUser.id, taskData);
+      const mapped: Task = {
+        id: created.id,
+        title: created.title,
+        description: created.description || '',
+        priority: created.priority as 'Elite' | 'Core' | 'Bonus',
+        completed: created.completed,
+        xp: created.xp,
+        category: created.category,
+        dueDate: new Date(created.due_date || Date.now()),
+        createdAt: new Date(created.created_at),
+        streak: created.streak,
+        relatedSkillId: taskData.relatedSkillId,
+        recurring: taskData.recurring
+      };
+      dispatch({ type: 'ADD_TASK', payload: mapped });
+      setNewTask({ title: '', description: '', priority: 'Core', category: '', xp: 100, relatedSkillId: '', difficulty: 'medium', dueDateISO: '', recurring: '' });
       setShowAddTask(false);
     } catch (error: unknown) {
       console.error('Error:', (error as Error)?.message || JSON.stringify(error));
     }
+  };
+  
+  const resetCompleted = async () => {
+    if (!authUser) return;
+    const toReset = tasks.filter(t => t.completed);
+    for (const t of toReset) {
+      const updated: Task = { ...t, completed: false, completedAt: undefined };
+      try {
+        await taskService.updateTask(authUser.id, t.id, updated);
+        dispatch({ type: 'UPDATE_TASK', payload: updated });
+      } catch {
+        void 0;
+      }
+    }
+    dispatch({ type: 'ADD_NOTIFICATION', payload: {
+      id: Date.now().toString(),
+      type: 'system',
+      title: 'Reset Completed',
+      message: 'All completed quests have been reset',
+      timestamp: new Date(),
+    }});
+  };
+  
+  const resetRecurringDaily = async () => {
+    if (!authUser) return;
+    const toReset = tasks.filter(t => t.recurring === 'daily');
+    for (const t of toReset) {
+      const updated: Task = { ...t, completed: false, completedAt: undefined };
+      try {
+        await taskService.updateTask(authUser.id, t.id, updated);
+        dispatch({ type: 'UPDATE_TASK', payload: updated });
+      } catch {
+        void 0;
+      }
+    }
+    dispatch({ type: 'ADD_NOTIFICATION', payload: {
+      id: Date.now().toString(),
+      type: 'system',
+      title: 'Reset Daily Recurring',
+      message: 'Daily recurring quests have been reset',
+      timestamp: new Date(),
+    }});
   };
 
   const formatDate = (d: Date) => {
@@ -439,12 +695,63 @@ export function TaskBoard() {
           </div>
         </motion.div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6">
+          {[{ label: 'Daily', pct: dailyProgress, color: 'lime' }, { label: 'Weekly', pct: weeklyProgress, color: 'cyan' }, { label: 'Monthly', pct: monthlyProgress, color: 'purple' }].map((x, i) => (
+            <div key={i} className="p-2 sm:p-3 brutal-card bg-gray-900 border-gray-700">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-black font-mono">{x.label} View</span>
+                <span className={`text-xs font-black font-mono text-${x.color}-400`}>{x.pct}%</span>
+              </div>
+              <div className="w-full h-2 bg-gray-800 border border-gray-700">
+                <motion.div className={`h-full bg-${x.color}-500`} initial={{ width: 0 }} animate={{ width: `${x.pct}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="p-3 sm:p-4 brutal-card bg-gray-900 border-gray-700">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-black text-white font-mono text-sm">PRIORITY_DISTRIBUTION</span>
+              <span className="text-[10px] sm:text-xs text-gray-500 font-mono">Completed vs Pending</span>
+            </div>
+            <div className="h-48 sm:h-56 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={priorityChartData}>
+                  <XAxis dataKey="name" stroke="#888" tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderRadius: 0, fontFamily: 'monospace', color: '#fff' }} />
+                  <Legend />
+                  <Bar dataKey="completed" name="Completed" fill="#84cc16" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="pending" name="Pending" fill="#22d3ee" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="p-3 sm:p-4 brutal-card bg-gray-900 border-gray-700">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-black text-white font-mono text-sm">COMPLETION_TIMELINE</span>
+              <span className="text-[10px] sm:text-xs text-gray-500 font-mono">Daily completes</span>
+            </div>
+            <div className="h-48 sm:h-56 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={completionTimelineData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderRadius: 0, fontFamily: 'monospace', color: '#fff' }} />
+                  <Legend />
+                  <Line type="monotone" dataKey="count" name="Completed" stroke="#f59e0b" dot={false} strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
         {/* Stats - Neo Brutalist */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
           {[
             { icon: Target, color: 'cyan', value: pendingTasks.length, label: 'ACTIVE' },
             { icon: Trophy, color: 'lime', value: completedTasks.length, label: 'DONE' },
-            { icon: Calendar, color: 'orange', value: completedTasks.filter(t => t.createdAt.toDateString() === new Date().toDateString()).length, label: 'TODAY' },
+            { icon: Calendar, color: 'orange', value: timeTasks.length, label: (timeView === 'all' ? 'ALL' : timeView.toUpperCase()) },
             { icon: Flame, color: 'fuchsia', value: user?.streak || 0, label: 'STREAK' },
           ].map((s, i) => (
             <motion.div key={i} whileHover={{ scale: 1.02, y: -2 }} className={`p-2 sm:p-3 brutal-card bg-gray-900 border-${s.color}-500/30`}>
@@ -457,6 +764,65 @@ export function TaskBoard() {
               </div>
             </motion.div>
           ))}
+        </div>
+
+        <div className="mb-3 sm:mb-4">
+          {(() => {
+            const map: Record<'daily'|'weekly'|'monthly', { done: number; target: number; label: string }> = {
+              daily: { done: dailySet.filter(t => t.completed).length, target: taskTargets.daily, label: 'TODAY' },
+              weekly: { done: weeklySet.filter(t => t.completed).length, target: taskTargets.weekly, label: 'THIS WEEK' },
+              monthly: { done: monthlySet.filter(t => t.completed).length, target: taskTargets.monthly, label: 'THIS MONTH' },
+            };
+            const current = timeView === 'all' ? null : map[timeView];
+            if (!current) return null;
+            const pct = current.target > 0 ? Math.min(100, Math.round((current.done / current.target) * 100)) : 0;
+            return (
+              <div className="p-3 brutal-card bg-gray-900 border-gray-700 flex items-center justify-between">
+                <span className="font-black text-white font-mono text-sm">{current.label} TARGET</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-400 font-mono">{current.done}/{current.target}</span>
+                  <div className="w-24 h-2 bg-black border border-white/20">
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} className={`h-full ${pct >= 100 ? 'bg-lime-500' : 'bg-cyan-500'}`} />
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Targets */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6">
+          {[
+            { label: 'Daily', value: taskTargets.daily, set: (v: number) => setTaskTargets(prev => ({ ...prev, daily: Math.max(1, v) })), done: dailySet.filter(t => t.completed).length },
+            { label: 'Weekly', value: taskTargets.weekly, set: (v: number) => setTaskTargets(prev => ({ ...prev, weekly: Math.max(1, v) })), done: weeklySet.filter(t => t.completed).length },
+            { label: 'Monthly', value: taskTargets.monthly, set: (v: number) => setTaskTargets(prev => ({ ...prev, monthly: Math.max(1, v) })), done: monthlySet.filter(t => t.completed).length },
+          ].map((t) => {
+            const pct = Math.min(100, Math.round((t.done / t.value) * 100));
+            return (
+              <div key={t.label} className="p-3 sm:p-4 brutal-card bg-gray-900 border-gray-700">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-black text-white font-mono text-sm">{t.label.toUpperCase()} TARGET</span>
+                  <span className="text-[10px] sm:text-xs text-gray-500 font-mono">{t.done}/{t.value}</span>
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="number"
+                    value={t.value}
+                    onChange={(e) => t.set(parseInt(e.target.value) || 1)}
+                    className="w-20 px-2 py-1 rounded border text-xs bg-gray-800 border-gray-700 text-white"
+                  />
+                  <span className="text-[10px] sm:text-xs text-gray-500 font-mono">tasks</span>
+                </div>
+                <div className="h-2 bg-black border border-white/20">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    className={`h-full ${pct >= 100 ? 'bg-lime-500' : 'bg-cyan-500'}`}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Controls - Neo Brutalist */}
@@ -472,6 +838,16 @@ export function TaskBoard() {
             />
           </div>
           <div className="flex gap-2">
+            <select
+              value={timeView}
+              onChange={(e) => setTimeView(e.target.value as 'all' | 'daily' | 'weekly' | 'monthly')}
+              className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border text-xs sm:text-sm bg-gray-800 border-gray-700 text-white"
+            >
+              <option value="all">All Time</option>
+              <option value="daily">Today</option>
+              <option value="weekly">This Week</option>
+              <option value="monthly">This Month</option>
+            </select>
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value as 'all' | 'Elite' | 'Core' | 'Bonus' | 'in-progress')}
@@ -500,6 +876,22 @@ export function TaskBoard() {
               className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border text-xs sm:text-sm ${overduePenaltiesEnabled ? 'bg-red-500/20 border-red-500/40 text-red-300' : 'bg-gray-800 border-gray-700 text-gray-300'}`}
             >
               {overduePenaltiesEnabled ? 'Penalties: On' : 'Penalties: Off'}
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={resetCompleted}
+              className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border text-xs sm:text-sm bg-gray-800 border-gray-700 text-gray-300"
+            >
+              Reset Completed
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={resetRecurringDaily}
+              className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border text-xs sm:text-sm bg-gray-800 border-gray-700 text-gray-300"
+            >
+              Reset Daily Recurring
             </motion.button>
           </div>
         </div>
@@ -642,6 +1034,17 @@ export function TaskBoard() {
                       <option value="hard">🔴 Hard (200 XP)</option>
                     </select>
                   </div>
+                  
+                  <select
+                    value={newTask.recurring}
+                    onChange={(e) => setNewTask(prev => ({ ...prev, recurring: e.target.value as '' | 'daily' | 'weekly' | 'monthly' }))}
+                    className="w-full px-3 py-2 rounded-lg border text-sm bg-gray-700 border-gray-600 text-white"
+                  >
+                    <option value="">One-off</option>
+                    <option value="daily">Daily Recurring</option>
+                    <option value="weekly">Weekly Recurring</option>
+                    <option value="monthly">Monthly Recurring</option>
+                  </select>
                   
                   {/* XP Override (Optional) */}
                   <div className="flex items-center gap-2">

@@ -65,6 +65,7 @@ export interface UserAppData {
     weekly: any[];
     monthly: any[];
   };
+  lifeMap?: any;
 }
 
 export const appDataService = {
@@ -120,6 +121,7 @@ export const appDataService = {
         projects: (data as any).projects as any,
         skills: (data as any).skills as any,
         challenges: (data as any).challenges as any,
+        lifeMap: (data as any).life_map as any,
       };
     } catch (error) {
       // Log error safely (stringify to avoid React conversion issues)
@@ -201,6 +203,9 @@ export const appDataService = {
       if (appData.challenges !== undefined) {
         dbData.challenges = appData.challenges;
       }
+      if ((appData as any).lifeMap !== undefined) {
+        (dbData as any).life_map = (appData as any).lifeMap;
+      }
 
       // Use upsert to create or update
       const { error } = await supabase
@@ -260,6 +265,7 @@ export const appDataService = {
       projects: 'projects',
       skills: 'skills',
       challenges: 'challenges',
+      lifeMap: 'life_map',
     };
 
     const dbField = fieldMap[field];
@@ -351,6 +357,7 @@ export const appDataService = {
       const projects = localStorage.getItem('projects');
       const skills = localStorage.getItem('skills');
       const challenges = localStorage.getItem('challenges');
+      const lifeMap = localStorage.getItem('lifeMap');
 
       return {
         timeBasedStreak: timeBasedStreak ? JSON.parse(timeBasedStreak) : undefined,
@@ -368,6 +375,7 @@ export const appDataService = {
         projects: projects ? JSON.parse(projects) : undefined,
         skills: skills ? JSON.parse(skills) : undefined,
         challenges: challenges ? JSON.parse(challenges) : undefined,
+        lifeMap: lifeMap ? JSON.parse(lifeMap) : undefined,
       };
     } catch (error) {
       // Log error safely (stringify to avoid React conversion issues)
@@ -427,6 +435,9 @@ export const appDataService = {
       }
       if (appData.challenges !== undefined) {
         localStorage.setItem('challenges', JSON.stringify(appData.challenges));
+      }
+      if ((appData as any).lifeMap !== undefined) {
+        localStorage.setItem('lifeMap', JSON.stringify((appData as any).lifeMap));
       }
     } catch (error) {
       // Log error safely (stringify to avoid React conversion issues)

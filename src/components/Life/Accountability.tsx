@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../hooks/useAuth';
+import { appDataService } from '../../services/appDataService';
 
 interface TimeWaster {
   id: string;
@@ -225,6 +226,24 @@ export function Accountability() {
   // Public Commitments
   const [commitments, setCommitments] = useState<PublicCommitment[]>([]);
   
+  useEffect(() => {
+    const loadBackend = async () => {
+      if (!authUser?.id) return;
+      try {
+        const data = await appDataService.getAppData(authUser.id);
+        const acc = (data?.accountabilityData || {}) as any;
+        if (Array.isArray(acc.timeWasters)) setTimeWasters(acc.timeWasters);
+        if (Array.isArray(acc.businessGoals)) setBusinessGoals(acc.businessGoals);
+        if (Array.isArray(acc.internshipApplications)) setApplications(acc.internshipApplications);
+        if (Array.isArray(acc.networkingEvents)) setNetworkingEvents(acc.networkingEvents);
+        if (Array.isArray(acc.publicCommitments)) setCommitments(acc.publicCommitments);
+      } catch {
+        void 0;
+      }
+    };
+    loadBackend();
+  }, [authUser?.id]);
+  
   // Save to backend and localStorage
   useEffect(() => {
     if (!authUser) {
@@ -239,6 +258,17 @@ export function Accountability() {
       localStorage.setItem('internshipApplications', JSON.stringify(applications));
       localStorage.setItem('networkingEvents', JSON.stringify(networkingEvents));
       localStorage.setItem('publicCommitments', JSON.stringify(commitments));
+      
+      if (authUser?.id) {
+        const payload = {
+          timeWasters,
+          businessGoals,
+          internshipApplications: applications,
+          networkingEvents,
+          publicCommitments: commitments,
+        };
+        appDataService.updateAppDataField(authUser.id, 'accountabilityData', payload).catch(() => {});
+      }
     };
 
     const timeoutId = setTimeout(saveData, 1000);

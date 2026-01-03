@@ -59,9 +59,8 @@ const FOMOTimer = ({ deadline, title, reward }: {
   );
 };
 
-// Punishment System Component - Shows penalties for inactivity
-const PunishmentSystem = ({ enhancedStreak, lastActive }: { 
-  enhancedStreak: number; 
+// Inactivity Penalty Component - Shows penalties for inactivity
+const InactivityPenalty = ({ lastActive }: { 
   lastActive: Date;
 }) => {
   const daysInactive = Math.floor((Date.now() - lastActive.getTime()) / (1000 * 60 * 60 * 24));
@@ -1410,7 +1409,7 @@ const PowerUpCard = ({ powerUp, onUse }: {
 
 // Sub-component for Season Pass Tier
 const SeasonPassTier = ({ tier, isPremium, onClaim }: { 
-  tier: any; 
+  tier: { tier: number; free: string; premium: string; claimed: boolean }; 
   isPremium: boolean;
   onClaim: (tierNumber: number, isPremium: boolean) => void;
 }) => {
@@ -1447,7 +1446,16 @@ const SeasonPassTier = ({ tier, isPremium, onClaim }: {
 };
 
 // Sub-component for Stats Overview
-const GamificationStats = ({ stats }: { stats: any }) => {
+const GamificationStats = ({ stats }: { 
+  stats: { 
+    enhancedStreak: number; 
+    coins?: number; 
+    achievements?: number; 
+    powerUps?: number;
+    totalPenalties?: number;
+    activePowerUps?: number;
+  } 
+}) => {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       <Card className="text-center">
@@ -1536,6 +1544,84 @@ const LEVEL_TITLES = [
 export function GamificationHub() {
   const { state, dispatch } = useApp();
   const { user, codingStats, tasks, xpSystem } = state;
+
+  // Enhanced penalty tracking integration
+  const [penaltyHistory, setPenaltyHistory] = useState<Array<{
+    id: string;
+    type: 'task_overdue' | 'powerup_expired' | 'streak_lost' | 'achievement_missed';
+    amount: number;
+    description: string;
+    timestamp: Date;
+    reason: string;
+  }>>(() => {
+    const saved = localStorage.getItem('penaltyHistory');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [totalPenalties, setTotalPenalties] = useState(() => {
+    const saved = localStorage.getItem('totalPenalties');
+    return saved ? parseInt(saved) : 0;
+  });
+
+  // Save penalty to history and update stats
+  const applyPenalty = (type: 'task_overdue' | 'powerup_expired' | 'streak_lost' | 'achievement_missed', amount: number, description: string, reason: string) => {
+    const newPenalty = {
+      id: Date.now().toString(),
+      type,
+      amount,
+      description,
+      reason,
+      timestamp: new Date()
+    };
+
+    setPenaltyHistory(prev => [...prev, newPenalty]);
+    setTotalPenalties(prev => prev + Math.abs(amount));
+
+    // Update career stats
+    dispatch({
+      type: 'UPDATE_STATS',
+      payload: {
+        totalPenalties: state.careerStats?.totalPenalties || 0 + Math.abs(amount),
+        overdueTasks: state.careerStats?.overdueTasks || 0 + (type === 'task_overdue' ? 1 : 0)
+      }
+    });
+
+    // Apply XP penalty
+    if (amount < 0) {
+      dispatch({
+        type: 'ADD_XP',
+        payload: {
+          amount,
+          source: `Penalty: ${description}`
+        }
+      });
+    }
+
+    // Add notification
+    dispatch({
+      type: 'ADD_NOTIFICATION',
+      payload: {
+        id: Date.now().toString(),
+        type: 'mission',
+        title: 'Penalty Applied',
+        message: `${amount > 0 ? '-' : '+'}${Math.abs(amount)} XP - ${description}`,
+        timestamp: new Date(),
+        priority: amount > 50 ? 'high' : 'medium'
+      }
+    });
+
+    // Save to localStorage
+    localStorage.setItem('penaltyHistory', JSON.stringify([...penaltyHistory, newPenalty]));
+    localStorage.setItem('totalPenalties', (totalPenalties + Math.abs(amount)).toString());
+  };
+
+  // Load penalty history on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('penaltyHistory');
+    if (saved) {
+      setPenaltyHistory(JSON.parse(saved));
+    }
+  }, []);
   
   const [activeTab, setActiveTab] = useState<'overview' | 'powerups' | 'achievements' | 'season'>('overview');
   const [claimedAchievements, setClaimedAchievements] = useState<Set<string>>(() => {
@@ -1548,13 +1634,17 @@ export function GamificationHub() {
     const saved = localStorage.getItem('claimedSeasonRewards');
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
+  const [tick, setTick] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setTick(Date.now()), 30000);
+    return () => clearInterval(id);
+  }, []);
 
   // Core stats from state
   const currentLevel = xpSystem?.currentLevel || user?.level || 1;
   const currentXP = xpSystem?.currentXP || user?.xp || 0;
-  const baseStreak = codingStats?.currentStreak || user?.streak || 0;
   const completedTasks = tasks?.filter(t => t.completed).length || 0;
-  const coins = Math.floor(currentXP / 10); // Derive coins from XP
+  const coins = state.user?.gold || 0;
 
   // Enhanced streak calculation with proper logic
   const enhancedStreak = useMemo(() => {
@@ -1613,6 +1703,12 @@ export function GamificationHub() {
       };
     });
   }, [unlockedPowerUps, state.ownedPowerUps, state.activePowerUps]);
+  const [powerCategory, setPowerCategory] = useState<'all' | string>('all');
+  const powerCategories = useMemo(() => {
+    const set = new Set<string>();
+    powerUps.forEach(p => set.add(p.category || 'general'));
+    return ['all', ...Array.from(set)];
+  }, [powerUps]);
 
   // Daily rewards calendar
   const dailyRewards = useMemo<DailyReward[]>(() => {
@@ -1811,6 +1907,22 @@ export function GamificationHub() {
   // Active power-ups count
   const activePowerUps = powerUps.filter(p => p.active);
 
+  useEffect(() => {
+    const timers: Array<ReturnType<typeof setTimeout>> = [];
+    (state.activePowerUps || []).forEach((a) => {
+      const ms = a.expiresAt - Date.now();
+      if (ms > 0) {
+        const t = setTimeout(() => {
+          dispatch({ type: 'EXPIRE_POWERUP', payload: a.id });
+        }, ms);
+        timers.push(t);
+      }
+    });
+    return () => {
+      timers.forEach((t) => clearTimeout(t));
+    };
+  }, [state.activePowerUps, dispatch]);
+
   // Claim daily login - persist to localStorage
   const [dailyLoginClaimed, setDailyLoginClaimed] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -1842,6 +1954,24 @@ export function GamificationHub() {
   // Tab content components
   const renderOverview = () => (
     <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-3xl font-extrabold tracking-tight font-cyber text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-purple">
+            POWER-UPS OVERVIEW
+          </h2>
+          <p className="text-sm text-gray-400 font-mono">Your boosts, multipliers, and active effects.</p>
+        </div>
+        <div className="flex items-center gap-4 bg-black/20 p-3 rounded-xl backdrop-blur-sm border border-white/10">
+          <div className="text-right">
+            <p className="text-[10px] text-gray-400 uppercase tracking-widest">Available Gold</p>
+            <p className="text-2xl font-bold text-neon-yellow font-mono">{(state.user?.gold || 0).toLocaleString()} 🪙</p>
+          </div>
+          <div className="h-8 w-[1px] bg-white/10" />
+          <Button variant="glitch" size="sm" onClick={() => dispatch({ type: 'CONVERT_XP_TO_GOLD', payload: { amount: 100 } })}>
+            Convert XP → Gold
+          </Button>
+        </div>
+      </div>
       {/* Addictive Game Features */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <DailySpinWheel />
@@ -1894,9 +2024,9 @@ export function GamificationHub() {
             </div>
             <div className="flex items-center justify-between text-xs font-mono mt-2">
               <span className="flex items-center gap-1 text-lime-400">
-                <Zap size={12} /> {xpSystem.xpMultiplier.toFixed(2)}x Multiplier
+                <Zap size={12} /> {xpSystem?.xpMultiplier?.toFixed(2) || '1.00'}x Multiplier
               </span>
-              {xpSystem.bonusXPActive && xpSystem.bonusXPExpiry && (
+              {xpSystem?.bonusXPActive && xpSystem?.bonusXPExpiry && (
                 <span className="text-fuchsia-400">
                   Expires in {Math.max(0, Math.ceil((xpSystem.bonusXPExpiry.getTime() - Date.now()) / 60000))}m
                 </span>
@@ -1955,8 +2085,7 @@ export function GamificationHub() {
         />
         
         {/* Punishment System */}
-        <PunishmentSystem 
-          enhancedStreak={enhancedStreak} 
+        <InactivityPenalty 
           lastActive={new Date(Date.now() - Math.random() * 5 * 24 * 60 * 60 * 1000)}
         />
       </div>
@@ -2372,7 +2501,7 @@ export function GamificationHub() {
         whileHover={{ scale: dailyLoginClaimed ? 1 : 1.01 }}
         onClick={claimDailyLogin}
       >
-        <Card className="border-2" className={`cursor-pointer ${
+        <Card className={`border-2 cursor-pointer ${
           dailyLoginClaimed 
             ? 'bg-zinc-800 border-zinc-600' 
             : 'bg-zinc-900 border-brutal-purple'
@@ -2469,11 +2598,21 @@ export function GamificationHub() {
 
   const renderPowerUps = () => (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-black text-white font-mono uppercase">Power-Ups & Boosters</h2>
-        <span className="text-sm text-gray-400 flex items-center gap-1 font-mono">
-          <Gem size={14} className="text-yellow-400" /> {coins.toLocaleString()} Coins
-        </span>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-3xl font-extrabold tracking-tight font-cyber text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-purple">
+            POWER-UPS MARKET
+          </h2>
+          <p className="text-sm text-gray-400 font-mono">Activate boosters to multiply XP and progress.</p>
+        </div>
+        <div className="flex items-center gap-4 bg-black/20 p-3 rounded-xl backdrop-blur-sm border border-white/10">
+          <div className="text-right">
+            <p className="text-[10px] text-gray-400 uppercase tracking-widest">Available Gold</p>
+            <p className="text-2xl font-bold text-neon-yellow font-mono">{coins.toLocaleString()} 🪙</p>
+          </div>
+          <div className="h-8 w-[1px] bg-white/10" />
+          <Button variant="neon" size="sm" onClick={() => setPowerCategory('all')}>All</Button>
+        </div>
       </div>
 
       {/* Rarity Legend */}
@@ -2489,10 +2628,24 @@ export function GamificationHub() {
           </span>
         ))}
       </div>
+      
+      {/* Category Filters */}
+      <div className="flex flex-wrap gap-2">
+        {powerCategories.map(cat => (
+          <Button
+            key={cat}
+            variant={powerCategory === cat ? 'neon' : 'ghost'}
+            size="sm"
+            onClick={() => setPowerCategory(cat)}
+          >
+            {cat.toUpperCase()}
+          </Button>
+        ))}
+      </div>
 
       {/* Power-Ups Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {powerUps.map((powerUp) => (
+        {(powerCategory === 'all' ? powerUps : powerUps.filter(p => (p.category || 'general') === powerCategory)).map((powerUp) => (
           <motion.div
             key={powerUp.id}
             whileHover={{ y: -4 }}
@@ -2524,23 +2677,26 @@ export function GamificationHub() {
             <p className="text-xs text-gray-400 mb-3 font-mono">{powerUp.description}</p>
             
             <div className="flex items-center justify-between font-mono">
-              <span className="text-sm text-gray-500">Owned: {powerUp.owned}</span>
+              <span className="text-sm text-gray-500">Owned: {(state.ownedPowerUps?.[powerUp.id] || 0)}</span>
               {powerUp.active ? (
                 <span className="text-sm font-bold text-fuchsia-400">Active ({powerUp.remainingTime}m)</span>
               ) : (
                 <div className="flex gap-2">
-                  {powerUp.owned > 0 ? (
-                    <button 
+                  {(state.ownedPowerUps?.[powerUp.id] || 0) > 0 ? (
+                    <Button
+                      variant="glitch"
+                      size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         dispatch({ type: 'ACTIVATE_POWERUP', payload: { powerUpId: powerUp.id, duration: powerUp.duration } });
                       }}
-                      className="px-2 py-1 bg-lime-500 text-black text-xs font-bold border border-black hover:bg-lime-400 font-mono uppercase"
                     >
                       ACTIVATE
-                    </button>
+                    </Button>
                   ) : (
-                    <button 
+                    <Button
+                      variant={coins >= powerUp.cost ? 'neon' : 'ghost'}
+                      size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (coins >= powerUp.cost) {
@@ -2548,12 +2704,9 @@ export function GamificationHub() {
                         }
                       }}
                       disabled={coins < powerUp.cost}
-                      className={`px-2 py-1 text-black text-xs font-bold border border-black flex items-center gap-1 font-mono uppercase ${
-                        coins >= powerUp.cost ? 'bg-yellow-400 hover:bg-yellow-300' : 'bg-gray-600 cursor-not-allowed opacity-50'
-                      }`}
                     >
                       BUY <Coins size={10} /> {powerUp.cost}
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
@@ -2603,7 +2756,7 @@ export function GamificationHub() {
 
   const renderAchievements = () => {
     const categories = ['streak', 'tasks', 'coding', 'special'] as const;
-    const categoryNames = { enhancedStreak: '🔥 Streak', tasks: '✅ Tasks', coding: '💻 Coding', special: '⭐ Special' };
+    const categoryNames = { streak: '🔥 Streak', tasks: '✅ Tasks', coding: '💻 Coding', special: '⭐ Special' };
     
     return (
       <div className="space-y-6">

@@ -202,6 +202,48 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
               <span className="text-[10px] sm:text-xs text-orange-400 font-bold">{streak}</span>
             </div>
           </div>
+          
+          <div className="mt-2 sm:mt-3">
+            <div className="flex items-center gap-1.5 sm:gap-2 px-1 sm:px-2 mb-1">
+              <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-cyan-400 flex-shrink-0" />
+              <span className="text-[9px] sm:text-[10px] text-gray-500 font-semibold uppercase tracking-wide truncate">In Progress</span>
+            </div>
+            <div className="space-y-1.5">
+              <div className="bg-gray-800 p-1.5 sm:p-2 rounded">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] sm:text-[10px] text-gray-500">Pending Tasks</span>
+                  <span className="text-[9px] sm:text-[10px] text-gray-400">{pendingTasks}/{totalTasks}</span>
+                </div>
+                <div className="h-2 sm:h-2.5 bg-gray-700 border border-gray-600 rounded overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }} 
+                    animate={{ width: `${Math.min(100, Math.round(((totalTasks - pendingTasks) / Math.max(totalTasks, 1)) * 100))}%` }} 
+                    className="h-full bg-gradient-to-r from-cyan-400 to-lime-400"
+                  />
+                </div>
+              </div>
+              {(state.activePowerUps || []).length > 0 && (
+                <div className="bg-gray-800 p-1.5 sm:p-2 rounded">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
+                    <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-fuchsia-400" />
+                    <span className="text-[9px] sm:text-[10px] text-gray-500">Active Power-Ups</span>
+                  </div>
+                  <div className="space-y-1">
+                    {state.activePowerUps.slice(0, 3).map(p => {
+                      const remainingMs = Math.max(0, p.expiresAt - Date.now());
+                      const remainingMin = Math.ceil(remainingMs / 60000);
+                      return (
+                        <div key={p.id} className="flex items-center justify-between text-[9px] sm:text-[10px]">
+                          <span className="text-gray-300 truncate">{p.id}</span>
+                          <span className="text-fuchsia-400">{remainingMin}m</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

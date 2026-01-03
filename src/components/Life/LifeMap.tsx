@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
+import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip } from 'recharts';
 import { Textarea } from '../ui/textarea';
 import { Input } from '../ui/input';
 import { 
@@ -977,6 +978,21 @@ export function LifeMap() {
             <p className="text-gray-600">{currentArea.description}</p>
           </CardHeader>
           <CardContent>
+            <div className="mb-4 p-3 border rounded-lg">
+              <div className="flex items-center justify-between text-xs mb-2">
+                <span>Goal Progress Distribution</span>
+                <span>{currentArea.goals.length} goals</span>
+              </div>
+              <div style={{ height: 80 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={currentArea.goals.map((g, i) => ({ name: i + 1, progress: Math.round(g.progress) }))}>
+                    <XAxis dataKey="name" hide />
+                    <Tooltip contentStyle={{ fontFamily: 'monospace' }} />
+                    <Bar dataKey="progress" fill="#22d3ee" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
             {/* Add Goal Form */}
             {showGoalForm && (
               <div className="mb-6 p-4 border rounded-lg space-y-4">

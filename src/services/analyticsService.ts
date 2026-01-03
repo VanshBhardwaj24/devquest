@@ -26,11 +26,37 @@ export interface LifeAnalytics {
   spendingTrend: { date: string; amount: number }[];
 }
 
+export interface PenaltyAnalytics {
+  totalPenalties: number;
+  overdueQuests: number;
+  penaltyTrend: {
+    trend: 'increasing' | 'stable' | 'decreasing';
+    count: number;
+    percentage: number;
+  };
+  penaltyRate: number;
+  recoveryRate: number;
+}
+
+export interface PerformanceMetrics {
+  taskCompletionRate: number;
+  averageCompletionTime: number;
+  productivityScore: number;
+  streakAnalysis: {
+    current: number;
+    longest: number;
+    consistency: 'high' | 'medium' | 'low';
+    improvement: number;
+  };
+}
+
 export interface AnalyticsData {
   performance: PerformanceDataPoint[];
   focusDistribution: FocusMetric[];
   completionRate: CompletionMetric[];
   lifeAnalytics: LifeAnalytics;
+  penaltyAnalytics?: PenaltyAnalytics;
+  performanceMetrics?: PerformanceMetrics;
   insights: string[];
   lastUpdated: Date;
 }

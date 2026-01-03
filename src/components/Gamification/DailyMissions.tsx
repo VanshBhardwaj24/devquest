@@ -4,6 +4,7 @@ import { Target, Clock, CheckCircle, Zap } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
+import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, AreaChart, Area } from 'recharts';
 
 interface Mission {
   id: string;
@@ -117,6 +118,7 @@ export function DailyMissions() {
 
   const completedMissions = missions.filter(m => m.completed).length;
   const totalRewards = missions.filter(m => m.completed).reduce((sum, m) => sum + m.xpReward + m.coinReward, 0);
+  const overviewSpark = missions.map((m, i) => ({ name: i, pct: Math.round((m.progress / m.target) * 100) }));
 
   const [claimedMissions, setClaimedMissions] = useState<Set<string>>(() => {
     if (typeof window === 'undefined') return new Set();
@@ -175,6 +177,15 @@ export function DailyMissions() {
             className="h-full bg-red-500"
           />
         </div>
+        <div className="mt-2 h-10">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={overviewSpark}>
+              <XAxis dataKey="name" hide />
+              <Tooltip contentStyle={{ fontFamily: 'monospace' }} />
+              <Area type="monotone" dataKey="pct" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.2} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
         <div className="mt-2 flex items-center justify-between text-xs font-bold">
           <span className="uppercase opacity-70">Total Rewards</span>
           <span className="text-green-600 dark:text-green-400">+{totalRewards} XP & Coins</span>
@@ -229,6 +240,15 @@ export function DailyMissions() {
                         mission.completed ? 'bg-green-500' : 'bg-blue-500'
                       }`}
                     />
+                  </div>
+                  <div className="h-8 mt-2">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={[{ name: 'P', v: mission.progress }, { name: 'T', v: mission.target }]}>
+                        <XAxis dataKey="name" hide />
+                        <Tooltip contentStyle={{ fontFamily: 'monospace' }} />
+                        <Bar dataKey="v" fill={mission.completed ? '#22c55e' : '#3b82f6'} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
 

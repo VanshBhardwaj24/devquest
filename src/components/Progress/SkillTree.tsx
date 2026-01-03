@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { appDataService } from '../../services/appDataService';
+import { ResponsiveContainer, AreaChart, Area, LineChart, Line, CartesianGrid, XAxis, Tooltip } from 'recharts';
 
 interface SkillNode {
   id: string;
@@ -47,6 +48,7 @@ interface SkillNode {
   achievements: SkillAchievement[];
   stats: SkillStats;
   progression: SkillProgression;
+  practiceLog?: string[];
 }
 
 interface MasteryPath {
@@ -406,6 +408,17 @@ export function SkillTree() {
   const [userLevel, setUserLevel] = useState(1);
   const [totalCoins, setTotalCoins] = useState(1000);
   const [selectedNode, setSelectedNode] = useState<SkillNode | null>(null);
+  const [timeView, setTimeView] = useState<'all' | 'daily' | 'weekly' | 'monthly'>('all');
+  const today = new Date();
+  const sameDay = (d: Date) => d.toDateString() === today.toDateString();
+  const sameMonth = (d: Date) => d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+  const weekBounds = (() => {
+    const start = new Date(today); const day = start.getDay(); const diff = start.getDate() - day + (day === 0 ? -6 : 1);
+    start.setDate(diff); start.setHours(0,0,0,0);
+    const end = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23,59,59,999);
+    return { start, end };
+  })();
+  const inWeek = (d: Date) => d >= weekBounds.start && d <= weekBounds.end;
 
   useEffect(() => {
     if (authUser) {
@@ -434,7 +447,8 @@ export function SkillTree() {
               level: savedNode.level || 0,
               xp: savedNode.xp || 0,
               isUnlocked: savedNode.isUnlocked || node.isUnlocked,
-              isMastered: savedNode.isMastered || false
+              isMastered: savedNode.isMastered || false,
+              practiceLog: Array.isArray(savedNode.practiceLog) ? savedNode.practiceLog : node.practiceLog || []
             };
           })
         };
@@ -458,8 +472,8 @@ export function SkillTree() {
     try {
       const skillData = updatedTrees.reduce((acc, tree) => {
         acc[tree.id] = {
-          nodes: tree.nodes.map(({ id, level, xp, isUnlocked, isMastered }) => ({
-            id, level, xp, isUnlocked, isMastered
+          nodes: tree.nodes.map(({ id, level, xp, isUnlocked, isMastered, practiceLog }) => ({
+            id, level, xp, isUnlocked, isMastered, practiceLog: practiceLog || []
           }))
         };
         return acc;
@@ -561,7 +575,8 @@ export function SkillTree() {
     
     if (!node || !node.isUnlocked) return;
     
-    const xpGain = Math.floor(Math.random() * 20) + 10; // 10-30 XP
+    const xpGain = Math.floor(Math.random() * 20) + 10;
+    const ts = new Date().toISOString();
     
     const updatedTrees = skillTrees.map(t => {
       if (t.id !== treeId) return t;
@@ -572,7 +587,7 @@ export function SkillTree() {
           if (n.id !== nodeId) return n;
           
           const newXp = Math.min(n.xp + xpGain, n.maxXp);
-          return { ...n, xp: newXp };
+          return { ...n, xp: newXp, practiceLog: [...(n.practiceLog || []), ts] };
         })
       };
     });
@@ -601,6 +616,34 @@ export function SkillTree() {
       totalLevels: acc.totalLevels + tree.nodes.reduce((sum, node) => sum + node.level, 0)
     }), { totalSkills: 0, unlockedSkills: 0, masteredSkills: 0, totalLevels: 0 });
   }, [skillTrees]);
+  const treePracticeTimeline = useMemo(() => {
+    const map: Record<string, number> = {};
+    if (!currentTree) return [];
+    currentTree.nodes.forEach(n => {
+      (n.practiceLog || []).forEach(iso => {
+        const d = new Date(iso);
+        const key = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        map[key] = (map[key] || 0) + 1;
+      });
+    });
+    const keys = Object.keys(map);
+    keys.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    return keys.map(k => ({ name: k, count: map[k] }));
+  }, [currentTree]);
+  const practiceCounts = useMemo(() => {
+    if (!currentTree) return { daily: 0, weekly: 0, monthly: 0 };
+    const logs = currentTree.nodes.flatMap(n => n.practiceLog || []);
+    const daily = logs.filter(l => sameDay(new Date(l))).length;
+    const weekly = logs.filter(l => inWeek(new Date(l))).length;
+    const monthly = logs.filter(l => sameMonth(new Date(l))).length;
+    return { daily, weekly, monthly };
+  }, [currentTree]);
+  const practiceTargets = { daily: 2, weekly: 10, monthly: 40 };
+  const practicePercents = {
+    daily: Math.min(100, Math.round((practiceCounts.daily / practiceTargets.daily) * 100)),
+    weekly: Math.min(100, Math.round((practiceCounts.weekly / practiceTargets.weekly) * 100)),
+    monthly: Math.min(100, Math.round((practiceCounts.monthly / practiceTargets.monthly) * 100)),
+  };
 
   return (
     <div className="space-y-6">
@@ -614,6 +657,19 @@ export function SkillTree() {
           <div className="text-center">
             <div className="text-2xl font-bold text-yellow-600">{totalCoins}</div>
             <div className="text-sm text-gray-600">Coins</div>
+          </div>
+          <div className="text-center">
+            <Select value={timeView} onValueChange={(val) => setTimeView(val as 'all' | 'daily' | 'weekly' | 'monthly')}>
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="Time view" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="daily">Today</SelectItem>
+                <SelectItem value="weekly">This Week</SelectItem>
+                <SelectItem value="monthly">This Month</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
@@ -645,6 +701,43 @@ export function SkillTree() {
           </CardContent>
         </Card>
       </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[{ label: 'Daily', pct: practicePercents.daily, count: practiceCounts.daily }, { label: 'Weekly', pct: practicePercents.weekly, count: practiceCounts.weekly }, { label: 'Monthly', pct: practicePercents.monthly, count: practiceCounts.monthly }].map((x, i) => (
+          <Card key={i}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-xs font-mono uppercase">{x.label} Practice</div>
+                <div className="text-xs font-mono">{x.count}</div>
+              </div>
+              <div className="h-2 bg-gray-200 dark:bg-gray-800 rounded overflow-hidden">
+                <div className="h-full bg-lime-500" style={{ width: `${x.pct}%` }} />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      {currentTree && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-6 h-6" />
+              Practice Timeline
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div style={{ height: 180 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={treePracticeTimeline}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="name" stroke="#6b7280" tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={{ borderRadius: 0, fontFamily: 'monospace' }} />
+                  <Line type="monotone" dataKey="count" name="Sessions" stroke="#10b981" dot={false} strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tree Selection */}
       <div className="flex gap-4 items-center">
@@ -677,7 +770,12 @@ export function SkillTree() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-6">
-              {currentTree.nodes.map(node => (
+              {(timeView === 'all' ? currentTree.nodes : currentTree.nodes.filter(node => {
+                const log = node.practiceLog || [];
+                if (timeView === 'daily') return log.some(iso => sameDay(new Date(iso)));
+                if (timeView === 'weekly') return log.some(iso => inWeek(new Date(iso)));
+                return log.some(iso => sameMonth(new Date(iso)));
+              })).map(node => (
                 <Card key={node.id} className={`border-2 ${node.isUnlocked ? 'border-blue-500' : 'border-gray-300'} ${node.isMastered ? 'bg-gradient-to-r from-purple-50 to-pink-50' : ''}`}>
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
@@ -717,6 +815,30 @@ export function SkillTree() {
                                 <span>{node.xp}/{node.maxXp} XP</span>
                               </div>
                               <Progress value={(node.xp / node.maxXp) * 100} className="h-2" />
+                            </div>
+                            <div>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span>Recent Practice</span>
+                                <span>{(node.practiceLog || []).length}</span>
+                              </div>
+                              <div style={{ height: 60 }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <AreaChart data={(() => {
+                                    const now = new Date();
+                                    const days = Array.from({ length: 7 }).map((_, i) => {
+                                      const d = new Date(now); d.setDate(now.getDate() - (6 - i));
+                                      const key = d.toDateString();
+                                      const count = (node.practiceLog || []).filter(iso => new Date(iso).toDateString() === key).length;
+                                      return { name: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), count };
+                                    });
+                                    return days;
+                                  })()}>
+                                    <XAxis dataKey="name" hide />
+                                    <Tooltip contentStyle={{ borderRadius: 0, fontFamily: 'monospace' }} />
+                                    <Area type="monotone" dataKey="count" stroke="#22d3ee" fill="#22d3ee33" />
+                                  </AreaChart>
+                                </ResponsiveContainer>
+                              </div>
                             </div>
                             
                             <div className="flex gap-2">

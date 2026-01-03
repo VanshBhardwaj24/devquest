@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Target, Trophy, TrendingUp, Calendar, Briefcase, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 
 export function PlacementDashboard() {
   const { state } = useApp();
@@ -16,6 +17,16 @@ export function PlacementDashboard() {
       const d = new Date(app.dateApplied);
       return d.toDateString() === today;
     }).length;
+  }, [user?.internships]);
+  const monthlyApplications = React.useMemo(() => {
+    const map: Record<string, number> = {};
+    (user?.internships || []).forEach(app => {
+      const d = new Date(app.dateApplied);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      map[key] = (map[key] || 0) + 1;
+    });
+    const keys = Object.keys(map).sort((a,b) => a.localeCompare(b));
+    return keys.map(k => ({ name: k, count: map[k] }));
   }, [user?.internships]);
 
   return (
@@ -147,6 +158,50 @@ export function PlacementDashboard() {
                   />
                 </div>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className={`${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-black'} border-2 brutal-shadow`}>
+          <CardHeader>
+            <CardTitle className="font-mono uppercase flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-cyan-500" /> Applications Trend
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div style={{ height: 220 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyApplications}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#222' : '#ddd'} />
+                  <XAxis dataKey="name" stroke={darkMode ? '#888' : '#444'} tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={{ backgroundColor: darkMode ? '#111' : '#fff', borderRadius: 0, fontFamily: 'monospace' }} />
+                  <Legend />
+                  <Bar dataKey="count" name="Applications" fill="#84cc16" radius={[4,4,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className={`${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-black'} border-2 brutal-shadow`}>
+          <CardHeader>
+            <CardTitle className="font-mono uppercase flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-orange-500" /> Daily Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div style={{ height: 220 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={monthlyApplications}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#222' : '#ddd'} />
+                  <XAxis dataKey="name" stroke={darkMode ? '#888' : '#444'} tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={{ backgroundColor: darkMode ? '#111' : '#fff', borderRadius: 0, fontFamily: 'monospace' }} />
+                  <Legend />
+                  <Line type="monotone" dataKey="count" name="Count" stroke="#f59e0b" dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>

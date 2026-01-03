@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../contexts/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Activity, Zap, Lock } from 'lucide-react';
+import { Trophy, Activity, Zap, Lock, Target, Star, Flame, Calendar, BarChart3 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
+import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, Tooltip, CartesianGrid, LineChart, Line, Legend } from 'recharts';
 
 export function Achievements() {
   const { state, dispatch } = useApp();
@@ -17,6 +18,40 @@ export function Achievements() {
   const totalTasks = Object.values(activityData).reduce((acc, curr) => acc + (curr.tasksCompleted || 0), 0);
   const totalCoding = Object.values(activityData).reduce((acc, curr) => acc + (curr.problemsSolved || 0), 0);
   const totalActiveMinutes = Object.values(activityData).reduce((acc, curr) => acc + (curr.activeMinutes || 0), 0);
+  const badgesUnlocked = badges.filter(b => b.unlocked).length;
+  const totalBadges = badges.length;
+  const unlockedPct = totalBadges ? Math.round((badgesUnlocked / totalBadges) * 100) : 0;
+  const challengeStarted = challenges.filter(c => c.status !== 'not-started').length;
+  const challengeCompleted = challenges.filter(c => c.status === 'completed').length;
+  const challengeInProgress = challenges.filter(c => c.status === 'in-progress').length;
+  const difficultyCounts = ['Easy','Medium','Hard'].map(d => ({ name: d, count: challenges.filter(c => c.difficulty === d).length }));
+  const xpFromChallenges = challenges.reduce((acc, c) => acc + (c.xpReward || 0), 0);
+  const today = new Date();
+  const sameDay = (d: Date) => d.toDateString() === today.toDateString();
+  const sameMonth = (d: Date) => d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+  const weekBounds = (() => {
+    const start = new Date(today); const day = start.getDay(); const diff = start.getDate() - day + (day === 0 ? -6 : 1);
+    start.setDate(diff); start.setHours(0,0,0,0);
+    const end = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23,59,59,999);
+    return { start, end };
+  })();
+  const inWeek = (d: Date) => d >= weekBounds.start && d <= weekBounds.end;
+  const [timeView, setTimeView] = useState<'all' | 'daily' | 'weekly' | 'monthly'>('all');
+  const rangeDates = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (29 - i)); return d;
+  });
+  const filteredDates = rangeDates.filter(d => {
+    if (timeView === 'daily') return sameDay(d);
+    if (timeView === 'weekly') return inWeek(d);
+    if (timeView === 'monthly') return sameMonth(d);
+    return true;
+  });
+  const activitySeries = filteredDates.map(d => {
+    const key = d.toISOString().split('T')[0];
+    const a = activityData[key] || {};
+    return { name: key, tasks: a.tasksCompleted || 0, coding: a.problemsSolved || 0, minutes: a.activeMinutes || 0, xp: a.xpEarned || 0 };
+  });
+  const sparkSeries = activitySeries.map((x, i) => ({ name: i, value: (x.tasks + x.coding) }));
 
   // Heatmap data (last 30 days)
   const heatmapData = Array.from({ length: 30 }, (_, i) => {
@@ -49,6 +84,100 @@ export function Achievements() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="h-5 w-5" />
+          <span className="text-xs font-bold uppercase">Analytics</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4" />
+          <select
+            value={timeView}
+            onChange={(e) => setTimeView(e.target.value as 'all' | 'daily' | 'weekly' | 'monthly')}
+            className={`${darkMode ? 'bg-zinc-900 border-white text-white' : 'bg-white border-black text-black'} text-xs font-bold border px-2 py-1`}
+          >
+            <option value="all">All</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+      </div>
+
+      <Card variant="brutal" className={`${darkMode ? 'bg-zinc-900 border-white' : 'bg-white border-black'}`}>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-3 border-2 border-black">
+              <div className="flex items-center justify-between">
+                <div className="text-xs uppercase font-bold">Badges</div>
+                <Trophy className="h-4 w-4 text-yellow-500" />
+              </div>
+              <div className="text-2xl font-black">{badgesUnlocked}/{totalBadges}</div>
+              <div className="text-[10px] opacity-70 uppercase">{unlockedPct}% unlocked</div>
+              <div className="h-8 mt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={sparkSeries}>
+                    <XAxis dataKey="name" hide />
+                    <Tooltip contentStyle={{ fontFamily: 'monospace' }} />
+                    <Area type="monotone" dataKey="value" stroke="#fde047" fill="#fde047" fillOpacity={0.25} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <div className="p-3 border-2 border-black">
+              <div className="flex items-center justify-between">
+                <div className="text-xs uppercase font-bold">Streak</div>
+                <Flame className="h-4 w-4 text-orange-500" />
+              </div>
+              <div className="text-2xl font-black">{timeBasedStreak.currentStreak}</div>
+              <div className="text-[10px] opacity-70 uppercase">Longest {timeBasedStreak.longestStreak}</div>
+              <div className="h-8 mt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={activitySeries}>
+                    <XAxis dataKey="name" hide />
+                    <Tooltip contentStyle={{ fontFamily: 'monospace' }} />
+                    <Line type="monotone" dataKey="xp" stroke="#fb7185" dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <div className="p-3 border-2 border-black">
+              <div className="flex items-center justify-between">
+                <div className="text-xs uppercase font-bold">Challenges</div>
+                <Target className="h-4 w-4 text-red-500" />
+              </div>
+              <div className="text-2xl font-black">{challengeCompleted}</div>
+              <div className="text-[10px] opacity-70 uppercase">Done • {challengeInProgress} active</div>
+              <div className="h-8 mt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={difficultyCounts}>
+                    <XAxis dataKey="name" hide />
+                    <Tooltip contentStyle={{ fontFamily: 'monospace' }} />
+                    <Bar dataKey="count" fill="#22d3ee" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <div className="p-3 border-2 border-black">
+              <div className="flex items-center justify-between">
+                <div className="text-xs uppercase font-bold">XP Pace</div>
+                <Zap className="h-4 w-4 text-yellow-500" />
+              </div>
+              <div className="text-2xl font-black">{xpSystem.currentXP}</div>
+              <div className="text-[10px] opacity-70 uppercase">{xpFromChallenges} from challenges</div>
+              <div className="h-8 mt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={activitySeries}>
+                    <XAxis dataKey="name" hide />
+                    <Tooltip contentStyle={{ fontFamily: 'monospace' }} />
+                    <Area type="monotone" dataKey="xp" stroke="#34d399" fill="#34d399" fillOpacity={0.25} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       {/* Level Progress Section */}
       <Card variant="brutal" className={`${darkMode ? 'bg-zinc-900 border-white' : 'bg-white border-black'}`}>
         <CardContent className="pt-6">
