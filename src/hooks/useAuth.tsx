@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { logger } from '../utils/logger';
 
 // Demo user object for demo mode
 const DEMO_USER: User = {
@@ -23,7 +24,7 @@ export function useAuth() {
 
     // Check if Supabase is properly configured
     if (!isSupabaseConfigured()) {
-      console.warn('⚠️  Supabase not configured - running in demo mode');
+      logger.warn('Supabase not configured - running in demo mode', 'AUTH');
       setLoading(false);
       // Don't set error in demo mode - let user use demo login
       return;
@@ -34,19 +35,19 @@ export function useAuth() {
       try {
         setLoading(true);
         setError(null);
-        
+
         const { data: { session }, error } = await supabase.auth.getSession();
-        
+
         if (error) {
           // Log error safely (stringify to avoid React conversion issues)
-          console.error('Error getting session:', error?.message || JSON.stringify(error));
+          logger.error('Error getting session', 'AUTH', error);
           setError(`Authentication error: ${error.message}`);
         } else if (mounted) {
           setUser(session?.user ?? null);
         }
       } catch (error) {
         // Log error safely (stringify to avoid React conversion issues)
-        console.error('Error in getSession:', (error as Error)?.message || JSON.stringify(error));
+        logger.error('Error in getSession', 'AUTH', error);
         if (mounted) {
           setError('Failed to connect to authentication service');
         }
@@ -63,13 +64,13 @@ export function useAuth() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email);
-      
+      logger.auth(event, session?.user?.email);
+
       try {
         if (mounted) {
           setUser(session?.user ?? null);
           setError(null);
-          
+
           // Only set loading to false after initial load
           if (event !== 'INITIAL_SESSION') {
             setLoading(false);
@@ -77,7 +78,7 @@ export function useAuth() {
         }
       } catch (error) {
         // Log error safely (stringify to avoid React conversion issues)
-        console.error('Error in auth state change:', (error as Error)?.message || JSON.stringify(error));
+        logger.error('Error in auth state change', 'AUTH', error);
         if (mounted) {
           setError('Authentication state error');
         }
@@ -93,9 +94,9 @@ export function useAuth() {
   const signUp = async (email: string, password: string) => {
     // Check if Supabase is configured
     if (!isSupabaseConfigured()) {
-      return { 
-        data: null, 
-        error: { message: 'Demo mode: Supabase not configured. Please add your credentials to .env file.' } 
+      return {
+        data: null,
+        error: { message: 'Demo mode: Supabase not configured. Please add your credentials to .env file.' }
       };
     }
 
@@ -118,18 +119,18 @@ export function useAuth() {
           emailRedirectTo: undefined, // Disable email confirmation
         }
       });
-      
+
       if (error) {
         console.error('Sign up error:', error);
         setError(`Sign up failed: ${error.message}`);
         return { data: null, error };
       }
 
-      console.log('Sign up successful:', data.user?.email);
+      logger.auth('Sign up successful', data.user?.email);
       return { data, error: null };
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : JSON.stringify(err);
-      console.error('Sign up exception:', errorMessage);
+      logger.error('Sign up exception', 'AUTH', err);
       setError(errorMessage);
       return { data: null, error: { message: errorMessage } };
     } finally {
@@ -140,9 +141,9 @@ export function useAuth() {
   const signIn = async (email: string, password: string) => {
     // Check if Supabase is configured
     if (!isSupabaseConfigured()) {
-      return { 
-        data: null, 
-        error: { message: 'Demo mode: Supabase not configured. Please add your credentials to .env file.' } 
+      return {
+        data: null,
+        error: { message: 'Demo mode: Supabase not configured. Please add your credentials to .env file.' }
       };
     }
 
@@ -162,18 +163,18 @@ export function useAuth() {
         email: email.trim(),
         password,
       });
-      
+
       if (error) {
         console.error('Sign in error:', error);
         setError(`Sign in failed: ${error.message}`);
         return { data: null, error };
       }
 
-      console.log('Sign in successful:', data.user?.email);
+      logger.auth('Sign in successful', data.user?.email);
       return { data, error: null };
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : JSON.stringify(err);
-      console.error('Sign in exception:', errorMessage);
+      logger.error('Sign in exception', 'AUTH', err);
       setError(errorMessage);
       return { data: null, error: { message: errorMessage } };
     } finally {
@@ -193,19 +194,19 @@ export function useAuth() {
       setError(null);
 
       const { error } = await supabase.auth.signOut();
-      
+
       if (error) {
         console.error('Sign out error:', error);
         setError(error.message);
         return { error };
       }
 
-      console.log('Sign out successful');
+      logger.auth('Sign out successful');
       setUser(null);
       return { error: null };
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : JSON.stringify(err);
-      console.error('Sign out exception:', errorMessage);
+      logger.error('Sign out exception', 'AUTH', err);
       setError(errorMessage);
       return { error: { message: errorMessage } };
     } finally {
@@ -228,7 +229,7 @@ export function useAuth() {
       }
 
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
-      
+
       if (error) {
         console.error('Reset password error:', error);
         setError(error.message);
@@ -237,7 +238,7 @@ export function useAuth() {
 
       return { error: null };
     } catch (error) {
-      console.error('Reset password exception:', error);
+      logger.error('Reset password exception', 'AUTH', error);
       const errorMessage = (error as Error).message || 'An unexpected error occurred';
       setError(errorMessage);
       return { error: { message: errorMessage } };

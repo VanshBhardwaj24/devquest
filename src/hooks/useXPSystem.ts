@@ -5,8 +5,8 @@
 
 import { useCallback, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext.refactored';
-import { getXPForLevel, calculateLevelFromXP, calculateXPProgress } from '../utils/xpCalculations';
-import { validateXP } from '../utils/xpCalculations';
+import { getXPForLevel, calculateXPProgress, validateXP } from '../utils/xpCalculations';
+import { logger } from '../utils/logger';
 
 export interface XPSystemData {
   currentXP: number;
@@ -51,10 +51,10 @@ export const useXPSystem = (): XPSystemData & XPSystemActions => {
     const xpForCurrentLevel = getXPForLevel(state.xpSystem.currentLevel);
     const xpForNextLevel = getXPForLevel(state.xpSystem.currentLevel + 1);
     const totalXPForLevel = xpForCurrentLevel;
-    
+
     // Calculate rank based on level
     const rank = calculateRank(state.xpSystem.currentLevel);
-    
+
     return {
       xpForCurrentLevel,
       xpForNextLevel,
@@ -67,25 +67,25 @@ export const useXPSystem = (): XPSystemData & XPSystemActions => {
   const addXP = useCallback((amount: number, source: string, multiplier?: number) => {
     const validatedAmount = validateXP(amount);
     if (validatedAmount <= 0) return;
-    
+
     dispatch(actions.addXP(validatedAmount, source, multiplier));
-    
+
     // Log XP gain for analytics
-    console.log(`XP Gained: +${validatedAmount} from ${source}`);
+    logger.xp('gained', validatedAmount, source, { multiplier });
   }, [dispatch, actions]);
 
   // Spend XP with validation
   const spendXP = useCallback((amount: number, reason: string): boolean => {
     const validatedAmount = validateXP(amount);
     if (validatedAmount <= 0) return false;
-    
+
     if (state.xpSystem.currentXP >= validatedAmount) {
       dispatch(actions.addXP(-validatedAmount, reason));
-      console.log(`XP Spent: -${validatedAmount} for ${reason}`);
+      logger.xp('spent', -validatedAmount, reason);
       return true;
     }
-    
-    console.warn(`Insufficient XP: Need ${validatedAmount}, have ${state.xpSystem.currentXP}`);
+
+    logger.warn(`Insufficient XP: Need ${validatedAmount}, have ${state.xpSystem.currentXP}`, 'XP');
     return false;
   }, [dispatch, actions, state.xpSystem.currentXP]);
 
@@ -93,16 +93,16 @@ export const useXPSystem = (): XPSystemData & XPSystemActions => {
   const convertXPToGold = useCallback((amount: number): boolean => {
     const goldAmount = Math.floor(amount / 10); // 1 Gold = 10 XP
     if (goldAmount <= 0) return false;
-    
+
     dispatch(actions.convertXPToGold(goldAmount));
-    console.log(`Converted ${amount} XP to ${goldAmount} Gold`);
+    logger.info(`Converted ${amount} XP to ${goldAmount} Gold`, 'XP_CONVERSION', { amount, goldAmount });
     return true;
   }, [dispatch, actions]);
 
   // Activate bonus XP
   const activateBonusXP = useCallback((multiplier: number, duration: number) => {
     dispatch(actions.activateBonusXP(multiplier, duration));
-    console.log(`Bonus XP activated: ${multiplier}x for ${duration} minutes`);
+    logger.info(`Bonus XP activated: ${multiplier}x for ${duration} minutes`, 'XP_BONUS', { multiplier, duration });
   }, [dispatch, actions]);
 
   // Calculate XP for different actions
@@ -110,7 +110,7 @@ export const useXPSystem = (): XPSystemData & XPSystemActions => {
     const baseXP = getBaseXPForAction(action);
     const difficultyMultiplier = getDifficultyMultiplier(difficulty);
     const bonusMultiplier = state.xpSystem.xpMultiplier;
-    
+
     return Math.floor(baseXP * difficultyMultiplier * bonusMultiplier);
   }, [state.xpSystem.xpMultiplier]);
 
@@ -132,7 +132,7 @@ export const useXPSystem = (): XPSystemData & XPSystemActions => {
     bonusXPExpiry: state.xpSystem.bonusXPExpiry,
     progress,
     stats,
-    
+
     // Actions
     addXP,
     spendXP,
@@ -158,7 +158,7 @@ function getBaseXPForAction(action: string): number {
     'social_interaction': 20,
     'learning_complete': 80,
   };
-  
+
   return xpMap[action] || 25;
 }
 
@@ -170,7 +170,7 @@ function getDifficultyMultiplier(difficulty?: string): number {
     'Elite': 3,
     'Legendary': 5,
   };
-  
+
   return multipliers[difficulty || 'Easy'] || 1;
 }
 

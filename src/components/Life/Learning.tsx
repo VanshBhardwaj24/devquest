@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  BookOpen, Trophy, Target, Plus, CheckCircle, 
+import {
+  BookOpen, Trophy, Target, Plus, CheckCircle,
   Clock, Flame, Brain,
   Lightbulb
 } from 'lucide-react';
@@ -93,7 +93,7 @@ export function Learning() {
     if (!title.trim()) return;
 
     const xpEarned = calculateXP();
-    
+
     const newSession: LearningSession = {
       id: Date.now().toString(),
       type: selectedType.id as LearningSession['type'],
@@ -108,16 +108,16 @@ export function Learning() {
 
     setSessions(prev => [newSession, ...prev]);
 
-    dispatch({ 
-      type: 'ADD_XP', 
-      payload: { 
-        amount: xpEarned, 
-        source: `Learning: ${selectedType.name} - ${title}` 
-      } 
+    dispatch({
+      type: 'ADD_XP',
+      payload: {
+        amount: xpEarned,
+        source: `Learning: ${selectedType.name} - ${title}`
+      }
     });
 
-    dispatch({ 
-      type: 'ADD_NOTIFICATION', 
+    dispatch({
+      type: 'ADD_NOTIFICATION',
       payload: {
         id: Date.now().toString(),
         type: 'achievement',
@@ -150,10 +150,10 @@ export function Learning() {
     };
 
     setGoals(prev => [...prev, newGoal]);
-    
-    dispatch({ 
-      type: 'ADD_XP', 
-      payload: { amount: 25, source: `Created learning goal: ${newGoalTitle}` } 
+
+    dispatch({
+      type: 'ADD_XP',
+      payload: { amount: 25, source: `Created learning goal: ${newGoalTitle}` }
     });
 
     setShowGoalModal(false);
@@ -167,14 +167,14 @@ export function Learning() {
         const newCurrent = Math.min(goal.current + increment, goal.target);
         const wasComplete = goal.current >= goal.target;
         const isNowComplete = newCurrent >= goal.target;
-        
+
         if (!wasComplete && isNowComplete) {
-          dispatch({ 
-            type: 'ADD_XP', 
-            payload: { amount: 300, source: `Completed: ${goal.title}!` } 
+          dispatch({
+            type: 'ADD_XP',
+            payload: { amount: 300, source: `Completed: ${goal.title}!` }
           });
-          dispatch({ 
-            type: 'ADD_NOTIFICATION', 
+          dispatch({
+            type: 'ADD_NOTIFICATION',
             payload: {
               id: Date.now().toString(),
               type: 'achievement',
@@ -186,7 +186,7 @@ export function Learning() {
             }
           });
         }
-        
+
         return { ...goal, current: newCurrent };
       }
       return goal;
@@ -197,7 +197,49 @@ export function Learning() {
   const totalSessions = sessions.length;
   const totalMinutes = sessions.reduce((sum, s) => sum + s.duration, 0);
   const totalXPEarned = sessions.reduce((sum, s) => sum + s.xpEarned, 0);
-  const streak = 5; // TODO: Calculate actual streak
+
+  // Calculate actual streak
+  const calculateLearningStreak = (): number => {
+    if (sessions.length === 0) return 0;
+
+    // Sort sessions by date (newest first)
+    const sortedSessions = [...sessions].sort((a, b) => b.date.getTime() - a.date.getTime());
+
+    // Get unique dates (YYYY-MM-DD format)
+    const uniqueDates = [...new Set(
+      sortedSessions.map(s => s.date.toISOString().split('T')[0])
+    )].sort().reverse();
+
+    if (uniqueDates.length === 0) return 0;
+
+    // Check if today or yesterday has activity
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+    if (uniqueDates[0] !== today && uniqueDates[0] !== yesterday) {
+      return 0; // Streak broken
+    }
+
+    // Count consecutive days
+    let streak = 1;
+    let currentDate = new Date(uniqueDates[0]);
+
+    for (let i = 1; i < uniqueDates.length; i++) {
+      const prevDate = new Date(uniqueDates[i]);
+      const dayDiff = Math.floor((currentDate.getTime() - prevDate.getTime()) / 86400000);
+
+      if (dayDiff === 1) {
+        streak++;
+        currentDate = prevDate;
+      } else {
+        break; // Streak broken
+      }
+    }
+
+    return streak;
+  };
+
+  const streak = calculateLearningStreak();
 
   const skillStats = categories.map(cat => ({
     ...cat,
@@ -229,11 +271,10 @@ export function Learning() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as 'sessions' | 'goals' | 'skills')}
-              className={`flex items-center gap-2 px-4 py-2 font-bold border-2 brutal-shadow whitespace-nowrap transition-all ${
-                activeTab === tab.id
+              className={`flex items-center gap-2 px-4 py-2 font-bold border-2 brutal-shadow whitespace-nowrap transition-all ${activeTab === tab.id
                   ? 'bg-purple-500 text-black border-purple-400'
                   : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-purple-500/50'
-              }`}
+                }`}
             >
               <tab.icon size={16} />
               {tab.label}
@@ -392,16 +433,15 @@ export function Learning() {
               {goals.map((goal, index) => {
                 const progressPercent = (goal.current / goal.target) * 100;
                 const isComplete = goal.current >= goal.target;
-                
+
                 return (
                   <motion.div
                     key={goal.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className={`brutal-card p-4 ${
-                      isComplete ? 'bg-green-900/30 border-green-500' : 'bg-gray-900 border-gray-700'
-                    }`}
+                    className={`brutal-card p-4 ${isComplete ? 'bg-green-900/30 border-green-500' : 'bg-gray-900 border-gray-700'
+                      }`}
                   >
                     <div className="flex items-center gap-3 mb-4">
                       <span className="text-4xl">{goal.icon}</span>
@@ -452,14 +492,14 @@ export function Learning() {
         {activeTab === 'skills' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <h2 className="text-xl font-black text-white font-mono mb-4">SKILL TREE</h2>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Active Skills */}
               <div className="brutal-card bg-gray-900 border-gray-700 p-6">
                 <h3 className="text-lg font-black text-white mb-4 flex items-center gap-2">
                   <Brain className="text-purple-400" /> YOUR SKILLS
                 </h3>
-                
+
                 {skillStats.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">Start learning to unlock skills!</p>
                 ) : (
@@ -493,7 +533,7 @@ export function Learning() {
                 <h3 className="text-lg font-black text-white mb-4 flex items-center gap-2">
                   <Lightbulb className="text-yellow-400" /> RECOMMENDED
                 </h3>
-                
+
                 <div className="space-y-4">
                   {[
                     { skill: 'System Design', reason: 'Essential for senior roles', icon: '🏗️', xp: 500 },
@@ -693,11 +733,10 @@ export function Learning() {
                             setNewGoalType(type.id as 'book' | 'course' | 'skill');
                             setNewGoalIcon(type.icon);
                           }}
-                          className={`p-3 border-2 transition-colors flex flex-col items-center gap-1 ${
-                            newGoalType === type.id
+                          className={`p-3 border-2 transition-colors flex flex-col items-center gap-1 ${newGoalType === type.id
                               ? 'bg-cyan-500 text-black border-cyan-400'
                               : 'bg-gray-800 text-gray-400 border-gray-700'
-                          }`}
+                            }`}
                         >
                           <span className="text-xl">{type.icon}</span>
                           <span className="text-sm font-bold">{type.label}</span>
