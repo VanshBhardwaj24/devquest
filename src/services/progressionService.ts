@@ -95,6 +95,7 @@ export interface EventReward {
 
 class ProgressionService {
   private static instance: ProgressionService;
+  private events: SeasonalEvent[] = [];
 
   static getInstance(): ProgressionService {
     if (!ProgressionService.instance) {
@@ -103,6 +104,30 @@ class ProgressionService {
     return ProgressionService.instance;
   }
 
+  constructor() {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    this.events = [
+      {
+        id: 'new_year_push',
+        name: 'New Year Push',
+        description: 'Boost progress with focused challenges',
+        startDate: start,
+        endDate: end,
+        theme: 'cyber',
+        challenges: [
+          { id: 'c1', name: 'Daily Tasks', description: 'Complete tasks daily', component: 'tasks', requirement: 'tasks_completed >= 5', progress: 0, target: 5, completed: false, points: 100 },
+          { id: 'c2', name: 'Skill Grind', description: 'Gain skill XP', component: 'skills', requirement: 'skill_xp >= 300', progress: 0, target: 300, completed: false, points: 150 }
+        ],
+        rewards: [
+          { id: 'r1', name: 'Event Badge', description: 'Exclusive badge', cost: 0, type: 'cosmetic', rarity: 'epic' },
+          { id: 'r2', name: 'XP Boost', description: 'Global XP bonus', cost: 0, type: 'powerup', rarity: 'legendary' }
+        ],
+        isActive: true
+      }
+    ];
+  }
   async getUnifiedProgress(userId: string): Promise<UnifiedProgress> {
     try {
       const appData = await appDataService.getAppData(userId);
@@ -379,7 +404,6 @@ class ProgressionService {
   }
 
   private evaluateRequirement(requirement: string, progress: any): boolean {
-    // Simple requirement evaluation - can be expanded
     const [key, operator, value] = requirement.split(' ');
     const progressValue = this.getProgressValue(key, progress);
     
@@ -388,6 +412,10 @@ class ProgressionService {
         return progressValue >= parseInt(value);
       case '>':
         return progressValue > parseInt(value);
+      case '<=':
+        return progressValue <= parseInt(value);
+      case '<':
+        return progressValue < parseInt(value);
       case '==':
         return progressValue === parseInt(value);
       default:
@@ -396,12 +424,37 @@ class ProgressionService {
   }
 
   private getProgressValue(key: string, progress: any): number {
-    // Extract progress values based on key
     if (key === 'tasks_completed') return progress.tasksCompleted || 0;
     if (key === 'skill_level') return progress.skillLevel || 0;
     if (key === 'mastered_skills') return progress.masteredSkills || 0;
     if (key === 'max_level_skill') return progress.maxLevelSkill ? 1 : 0;
+    if (key === 'skill_xp') return progress.skillXp || 0;
     return 0;
+  }
+
+  getActiveEvents(): SeasonalEvent[] {
+    const now = new Date();
+    return this.events.filter(e => e.isActive && now >= e.startDate && now <= e.endDate);
+  }
+
+  updateEventProgress(eventId: string, challengeId: string, amount: number): SeasonalEvent | null {
+    const event = this.events.find(e => e.id === eventId);
+    if (!event) return null;
+    const challenge = event.challenges.find(c => c.id === challengeId);
+    if (!challenge) return event;
+    challenge.progress = Math.min(challenge.target, challenge.progress + amount);
+    if (challenge.progress >= challenge.target) {
+      challenge.completed = true;
+    }
+    return event;
+  }
+
+  redeemEventReward(eventId: string, rewardId: string): EventReward | null {
+    const event = this.events.find(e => e.id === eventId);
+    if (!event) return null;
+    const reward = event.rewards.find(r => r.id === rewardId);
+    if (!reward) return null;
+    return reward;
   }
 }
 

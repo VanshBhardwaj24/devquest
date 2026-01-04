@@ -108,4 +108,21 @@ export const achievementService = {
       return null;
     }
   },
+  
+  async getAchievementSummary(userId: string) {
+    const all = await this.getAchievements();
+    const user = await this.getUserAchievements(userId);
+    const unlockedCount = user.filter(a => a.unlocked).length;
+    const totalCount = all.length;
+    const totalXp = all.reduce((acc, a) => acc + (a.xp || 0), 0);
+    const unlockedXp = user.filter(a => a.unlocked).reduce((acc, a) => acc + (a.xp || 0), 0);
+    const nextTier = ['bronze', 'silver', 'gold', 'platinum', 'mythic'].find(t => user.some(a => a.tier === t && !a.unlocked));
+    return {
+      unlockedCount,
+      totalCount,
+      unlockedXp,
+      totalXp,
+      nextTier
+    };
+  },
 };

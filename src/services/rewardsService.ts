@@ -391,14 +391,18 @@ class RewardsService {
   }
 
   private async getUserProgress(userId: string): Promise<any> {
-    // This would get user progress from the progression service
-    // For now, return a basic structure
+    const data = await appDataService.getAppData(userId);
+    const integration = (data?.integrationData as any) || {};
+    const economy = integration.economy || { currency: 0 };
+    const progress = (data?.unifiedProgress as any) || { totalLevel: 1, masteryTier: 'Bronze' };
+    const achievements = (data?.achievementChains as any) || [];
+    const streak = (data?.timeBasedStreak as any)?.currentStreak || 0;
     return {
-      level: 1,
-      tier: 'Bronze',
-      achievements: [],
-      streak: 0,
-      currency: 0
+      level: progress.totalLevel || 1,
+      tier: progress.masteryTier || 'Bronze',
+      achievements: achievements.map((c: any) => c.completed ? c.id : null).filter(Boolean),
+      streak,
+      currency: economy.currency || 0
     };
   }
 
@@ -629,15 +633,36 @@ class RewardsService {
   }
 
   private async addCurrency(userId: string, amount: number): Promise<void> {
-    // Implementation to add currency to user
+    const data = await appDataService.getAppData(userId);
+    const integration = ((data?.integrationData as any) || {});
+    const economy = integration.economy || { currency: 0 };
+    economy.currency = (economy.currency || 0) + amount;
+    integration.economy = economy;
+    await appDataService.updateAppDataField(userId, 'integrationData', integration);
   }
 
   private async deductCurrency(userId: string, amount: number): Promise<void> {
-    // Implementation to deduct currency from user
+    const data = await appDataService.getAppData(userId);
+    const integration = ((data?.integrationData as any) || {});
+    const economy = integration.economy || { currency: 0 };
+    economy.currency = Math.max(0, (economy.currency || 0) - amount);
+    integration.economy = economy;
+    await appDataService.updateAppDataField(userId, 'integrationData', integration);
   }
 
   private async saveUserRewards(userId: string, rewards: any): Promise<void> {
-    // Implementation to save user's reward states
+    const key = `user_rewards_${userId}`;
+    const payload = {
+      rewards: 'rewards' in rewards ? rewards.rewards : undefined,
+      powerUps: 'powerUps' in rewards ? rewards.powerUps : undefined,
+      cosmetics: 'cosmetics' in rewards ? rewards.cosmetics : undefined,
+      titles: 'titles' in rewards ? rewards.titles : undefined,
+      savedAt: new Date().toISOString()
+    };
+    try {
+      localStorage.setItem(key, JSON.stringify(payload));
+    } catch {
+    }
   }
 
   async getMysteryBoxReward(userId: string): Promise<EnhancedReward | null> {

@@ -423,3 +423,81 @@ export function setupGlobalErrorHandling(): void {
     );
   });
 }
+
+export class ErrorRateLimiter {
+  private static counts: Map<string, { count: number; windowStart: number }> = new Map();
+  private static windowMs = 60000;
+  private static maxPerWindow = 50;
+  static allow(key: string): boolean {
+    const now = Date.now();
+    const entry = this.counts.get(key);
+    if (!entry) {
+      this.counts.set(key, { count: 1, windowStart: now });
+      return true;
+    }
+    if (now - entry.windowStart > this.windowMs) {
+      entry.count = 1;
+      entry.windowStart = now;
+      return true;
+    }
+    if (entry.count >= this.maxPerWindow) {
+      return false;
+    }
+    entry.count++;
+    return true;
+  }
+  static setWindow(ms: number): void {
+    this.windowMs = ms;
+  }
+  static setMax(n: number): void {
+    this.maxPerWindow = n;
+  }
+}
+
+export class ErrorStore {
+  private static key = 'error_store_v1';
+  static save(error: AppError): void {
+    try {
+      const raw = localStorage.getItem(this.key);
+      const arr = raw ? JSON.parse(raw) : [];
+      arr.push({ ...error, timestamp: new Date(error.timestamp).toISOString() });
+      if (arr.length > 500) arr.shift();
+      localStorage.setItem(this.key, JSON.stringify(arr));
+    } catch {
+    }
+  }
+  static load(limit: number = 100): AppError[] {
+    try {
+      const raw = localStorage.getItem(this.key);
+      const arr = raw ? JSON.parse(raw) : [];
+      return arr.slice(-limit).map((e: any) => ({ ...e, timestamp: new Date(e.timestamp) }));
+    } catch {
+      return [];
+    }
+  }
+  static clear(): void {
+    try {
+      localStorage.removeItem(this.key);
+    } catch {
+    }
+  }
+}
+
+export class DiagnosticsCollector {
+  private static data: Record<string, any> = {};
+  static set(key: string, value: any): void {
+    this.data[key] = value;
+  }
+  static get(key: string): any {
+    return this.data[key];
+  }
+  static snapshot(): Record<string, any> {
+    return { ...this.data, capturedAt: new Date().toISOString() };
+  }
+  static merge(payload: Record<string, any>): void {
+    Object.assign(this.data, payload);
+  }
+  static clear(): void {
+    this.data = {};
+  }
+}

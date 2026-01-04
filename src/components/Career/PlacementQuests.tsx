@@ -6,6 +6,48 @@ import { Trophy, Clock, Calendar, AlertTriangle, Flame, Star, Sword, Gem, Crown 
 import { getLocalStorage, setLocalStorage } from '../../lib/utils';
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, Legend, LineChart, Line, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
 
+let __sfxCtx: AudioContext | null = null;
+const __getSfxCtx = () => {
+  if (typeof window === 'undefined') return null;
+  if (!__sfxCtx) {
+    const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext;
+    __sfxCtx = Ctx ? new Ctx() : null;
+  }
+  return __sfxCtx;
+};
+
+const __playNotes = (notes: Array<{ f: number; d: number; v?: number }>) => {
+  const ctx = __getSfxCtx();
+  if (!ctx) return;
+  let t = ctx.currentTime;
+  for (const n of notes) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(n.f, t);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(n.v ?? 0.2, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + n.d);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
+    osc.start(t);
+    osc.stop(t + n.d + 0.02);
+    t += n.d * 0.9;
+  }
+};
+
+const playCompletionSfx = () => {
+  __playNotes([
+    { f: 784, d: 0.09, v: 0.18 },
+    { f: 988, d: 0.11, v: 0.2 },
+    { f: 1319, d: 0.13, v: 0.22 },
+  ]);
+};
+
 type Recurrence = 'daily' | 'weekly' | 'monthly' | 'one-off';
 type Difficulty = 'easy' | 'medium' | 'hard' | 'elite' | 'boss';
 type Category = 'technical' | 'soft-skills' | 'portfolio' | 'networking' | 'interview' | 'application';
@@ -146,6 +188,7 @@ export function PlacementQuests() {
     setQuests(prev => prev.map(q => q.id === id ? { ...q, lastCompletedAt: new Date().toISOString(), overdue: false } : q));
     const q = quests.find(x => x.id === id);
     if (q) dispatch({ type: 'ADD_XP', payload: { amount: q.xpReward, source: `Quest: ${q.title}` } });
+    playCompletionSfx();
   };
 
   const applyPenalties = useCallback(() => {

@@ -55,6 +55,87 @@ const calculateCriticalHit = () => {
   return { type: 'normal', multiplier: 1, message: null };
 };
 
+let __sfxCtx: AudioContext | null = null;
+const __getSfxCtx = () => {
+  if (typeof window === 'undefined') return null;
+  if (!__sfxCtx) {
+    const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext;
+    __sfxCtx = Ctx ? new Ctx() : null;
+  }
+  return __sfxCtx;
+};
+
+const __playNotes = (notes: Array<{ f: number; d: number; v?: number }>) => {
+  const ctx = __getSfxCtx();
+  if (!ctx) return;
+  let t = ctx.currentTime;
+  for (const n of notes) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(n.f, t);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(n.v ?? 0.2, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + n.d);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
+    osc.start(t);
+    osc.stop(t + n.d + 0.02);
+    t += n.d * 0.9;
+  }
+};
+
+const playCompletionSfx = (kind: string) => {
+  const presets: Record<string, Array<{ f: number; d: number; v?: number }>> = {
+    success: [
+      { f: 784, d: 0.09, v: 0.18 },
+      { f: 988, d: 0.11, v: 0.2 },
+      { f: 1319, d: 0.13, v: 0.22 },
+    ],
+    bonus: [
+      { f: 659, d: 0.08, v: 0.18 },
+      { f: 880, d: 0.1, v: 0.2 },
+      { f: 1175, d: 0.12, v: 0.22 },
+    ],
+    critical: [
+      { f: 523, d: 0.08, v: 0.18 },
+      { f: 784, d: 0.1, v: 0.22 },
+      { f: 1175, d: 0.12, v: 0.25 },
+      { f: 1760, d: 0.14, v: 0.28 },
+    ],
+    epic: [
+      { f: 392, d: 0.08, v: 0.18 },
+      { f: 523, d: 0.09, v: 0.2 },
+      { f: 784, d: 0.1, v: 0.22 },
+      { f: 1175, d: 0.12, v: 0.25 },
+      { f: 1760, d: 0.14, v: 0.28 },
+    ],
+    jackpot: [
+      { f: 440, d: 0.08, v: 0.18 },
+      { f: 587, d: 0.08, v: 0.18 },
+      { f: 784, d: 0.1, v: 0.22 },
+      { f: 1046, d: 0.12, v: 0.25 },
+      { f: 1397, d: 0.14, v: 0.28 },
+      { f: 1865, d: 0.16, v: 0.3 },
+    ],
+  };
+  const seq =
+    kind === 'bonus'
+      ? presets.bonus
+      : kind === 'critical'
+      ? presets.critical
+      : kind === 'epic'
+      ? presets.epic
+      : kind === 'jackpot'
+      ? presets.jackpot
+      : presets.success;
+  __playNotes(seq);
+};
+
 // Penalty tracking for overdue tasks
 const applyTaskPenalties = (tasks: Task[], dispatch: any) => {
   const now = new Date();
@@ -431,6 +512,8 @@ export function TaskBoard() {
         if (isNearComplete) {
           dispatch({ type: 'ADD_XP', payload: { amount: Math.round(task.xp * 0.25), source: 'Goal Gradient Bonus! 🎯' } });
         }
+
+        playCompletionSfx(crit.type);
 
         if (task.relatedSkillId) {
           dispatch({ 

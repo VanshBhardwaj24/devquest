@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { UnifiedProgress, CrossComponentBonus, AchievementChain } from './progressionService';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export interface UserAppData {
@@ -66,6 +67,9 @@ export interface UserAppData {
     monthly: any[];
   };
   lifeMap?: any;
+  unifiedProgress?: UnifiedProgress;
+  crossComponentBonuses?: CrossComponentBonus[];
+  achievementChains?: AchievementChain[];
 }
 
 export const appDataService = {
@@ -126,6 +130,9 @@ export const appDataService = {
         skills: ((data as any).skills as any) ?? local?.skills,
         challenges: ((data as any).challenges as any) ?? local?.challenges,
         lifeMap: ((data as any).life_map as any) ?? local?.lifeMap,
+        unifiedProgress: ((data as any).unified_progress as any) ?? (local as any)?.unifiedProgress,
+        crossComponentBonuses: ((data as any).cross_component_bonuses as any) ?? (local as any)?.crossComponentBonuses,
+        achievementChains: ((data as any).achievement_chains as any) ?? (local as any)?.achievementChains,
       };
     } catch (error) {
       // Log error safely (stringify to avoid React conversion issues)
@@ -210,6 +217,15 @@ export const appDataService = {
       if ((appData as any).lifeMap !== undefined) {
         (dbData as any).life_map = (appData as any).lifeMap;
       }
+      if ((appData as any).unifiedProgress !== undefined) {
+        (dbData as any).unified_progress = (appData as any).unifiedProgress;
+      }
+      if ((appData as any).crossComponentBonuses !== undefined) {
+        (dbData as any).cross_component_bonuses = (appData as any).crossComponentBonuses;
+      }
+      if ((appData as any).achievementChains !== undefined) {
+        (dbData as any).achievement_chains = (appData as any).achievementChains;
+      }
 
       // Use upsert to create or update
       const { error } = await supabase
@@ -270,6 +286,9 @@ export const appDataService = {
       skills: 'skills',
       challenges: 'challenges',
       lifeMap: 'life_map',
+      unifiedProgress: 'unified_progress',
+      crossComponentBonuses: 'cross_component_bonuses',
+      achievementChains: 'achievement_chains',
     };
 
     const dbField = fieldMap[field];
@@ -362,6 +381,9 @@ export const appDataService = {
       const skills = localStorage.getItem('skills');
       const challenges = localStorage.getItem('challenges');
       const lifeMap = localStorage.getItem('lifeMap');
+      const unifiedProgress = localStorage.getItem('unifiedProgress');
+      const crossComponentBonuses = localStorage.getItem('crossComponentBonuses');
+      const achievementChains = localStorage.getItem('achievementChains');
 
       return {
         timeBasedStreak: timeBasedStreak ? JSON.parse(timeBasedStreak) : undefined,
@@ -380,6 +402,9 @@ export const appDataService = {
         skills: skills ? JSON.parse(skills) : undefined,
         challenges: challenges ? JSON.parse(challenges) : undefined,
         lifeMap: lifeMap ? JSON.parse(lifeMap) : undefined,
+        unifiedProgress: unifiedProgress ? JSON.parse(unifiedProgress) : undefined,
+        crossComponentBonuses: crossComponentBonuses ? JSON.parse(crossComponentBonuses) : undefined,
+        achievementChains: achievementChains ? JSON.parse(achievementChains) : undefined,
       };
     } catch (error) {
       // Log error safely (stringify to avoid React conversion issues)
@@ -442,6 +467,15 @@ export const appDataService = {
       }
       if ((appData as any).lifeMap !== undefined) {
         localStorage.setItem('lifeMap', JSON.stringify((appData as any).lifeMap));
+      }
+      if ((appData as any).unifiedProgress !== undefined) {
+        localStorage.setItem('unifiedProgress', JSON.stringify((appData as any).unifiedProgress));
+      }
+      if ((appData as any).crossComponentBonuses !== undefined) {
+        localStorage.setItem('crossComponentBonuses', JSON.stringify((appData as any).crossComponentBonuses));
+      }
+      if ((appData as any).achievementChains !== undefined) {
+        localStorage.setItem('achievementChains', JSON.stringify((appData as any).achievementChains));
       }
     } catch (error) {
       // Log error safely (stringify to avoid React conversion issues)

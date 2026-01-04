@@ -61,10 +61,50 @@ export interface AnalyticsData {
   lastUpdated: Date;
 }
 
+export interface RetentionCohort {
+  week: string;
+  users: number;
+  retained: number;
+  rate: number;
+}
+
+export interface EngagementMetrics {
+  dailyActive: number;
+  weeklyActive: number;
+  monthlyActive: number;
+  avgSessionMinutes: number;
+  interactionRate: number;
+}
+
+export interface AnomalyDetection {
+  metric: string;
+  value: number;
+  baseline: number;
+  deviation: number;
+  severity: 'low' | 'medium' | 'high';
+}
+
+export interface PredictiveMetrics {
+  nextWeekProductivity: number;
+  expectedCompletedTasks: number;
+  burnoutRisk: 'low' | 'medium' | 'high';
+}
+
+export interface ExtendedAnalyticsData extends AnalyticsData {
+  retention?: RetentionCohort[];
+  engagement?: EngagementMetrics;
+  anomalies?: AnomalyDetection[];
+  predictive?: PredictiveMetrics;
+}
+
 export class AnalyticsService {
   private static readonly STORAGE_KEY = 'analytics_v1';
 
-  static async fetchAnalyticsData(user: User, tasks: Task[]): Promise<AnalyticsData> {
+  static async fetchAnalyticsData(user: User, tasks: Task[]): Promise<ExtendedAnalyticsData> {
+    const cached = this.getCached();
+    if (cached && Date.now() - new Date(cached.lastUpdated).getTime() < 2 * 60 * 1000) {
+      return cached;
+    }
     await new Promise(resolve => setTimeout(resolve, 1000));
     if (Math.random() < 0.05) {
       throw new Error('Failed to retrieve analytics data from server.');
@@ -83,16 +123,31 @@ export class AnalyticsService {
     const focusDistribution = this.calculateFocus(tasks);
     const completionRate = this.calculateCompletion(tasks);
     const lifeAnalytics = this.calculateLifeAnalytics(lifeData);
+    const penaltyAnalytics = this.calculatePenalties(tasks);
+    const performanceMetrics = this.calculatePerformanceMetrics(user, tasks, performance);
     const insights = this.generateInsights(performance, focusDistribution, lifeData);
 
-    return {
+    const retention = this.calculateRetentionCohorts(tasks);
+    const engagement = this.calculateEngagementMetrics(user, tasks);
+    const anomalies = this.detectAnomalies(performance, focusDistribution);
+    const predictive = this.predictNextWeekMetrics(user, performance, tasks);
+
+    const data: ExtendedAnalyticsData = {
       performance,
       focusDistribution,
       completionRate,
       lifeAnalytics,
+      penaltyAnalytics,
+      performanceMetrics,
       insights,
       lastUpdated: new Date(),
+      retention,
+      engagement,
+      anomalies,
+      predictive,
     };
+    this.setCached(data);
+    return data;
   }
 
   private static calculateLifeAnalytics(lifeData: LifeData): LifeAnalytics {
@@ -196,6 +251,71 @@ export class AnalyticsService {
     });
   }
 
+  private static calculatePenalties(tasks: Task[]): PenaltyAnalytics {
+    const now = new Date();
+    const last14 = Array.from({ length: 14 }, (_, i) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() - (13 - i));
+      return d;
+    });
+    const overdueByDay = last14.map(d => {
+      const dateStr = d.toDateString();
+      return tasks.filter(t => {
+        if (t.completed) return false;
+        if (!t.dueDate) return false;
+        const due = new Date(t.dueDate);
+        return due.toDateString() === dateStr && due < now;
+      }).length;
+    });
+    const first7 = overdueByDay.slice(0, 7).reduce((a, b) => a + b, 0);
+    const last7 = overdueByDay.slice(7).reduce((a, b) => a + b, 0);
+    const trend = last7 > first7 ? 'increasing' : last7 < first7 ? 'decreasing' : 'stable';
+    const totalOverdue = tasks.filter(t => !t.completed && t.dueDate && new Date(t.dueDate) < now).length;
+    const total = tasks.length || 1;
+    const penaltyRate = Math.round((totalOverdue / total) * 100);
+    const recoveryRate = Math.max(0, Math.min(100, 100 - penaltyRate));
+    return {
+      totalPenalties: totalOverdue,
+      overdueQuests: totalOverdue,
+      penaltyTrend: { trend, count: last7, percentage: total > 0 ? Math.round((last7 / total) * 100) : 0 },
+      penaltyRate,
+      recoveryRate,
+    };
+  }
+
+  private static calculatePerformanceMetrics(user: User, tasks: Task[], perf: PerformanceDataPoint[]): PerformanceMetrics {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 7);
+    const recentTasks = tasks.filter(t => new Date(t.createdAt) >= cutoff);
+    const completedRecent = recentTasks.filter(t => t.completed).length;
+    const taskCompletionRate = recentTasks.length > 0 ? Math.round((completedRecent / recentTasks.length) * 100) : 0;
+    const completedWithTimes = tasks.filter(t => t.completed && t.completedAt);
+    const times = completedWithTimes.map(t => {
+      const start = new Date(t.createdAt).getTime();
+      const end = new Date(t.completedAt as Date).getTime();
+      return Math.max(0, end - start);
+    });
+    const avgMs = times.length > 0 ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0;
+    const averageCompletionTime = Math.round(avgMs / (1000 * 60 * 60));
+    const recentPerf = perf.slice(-7);
+    const avgXP = recentPerf.length > 0 ? Math.round(recentPerf.reduce((a, p) => a + p.xp, 0) / recentPerf.length) : 0;
+    const productivityScore = Math.min(100, Math.round((taskCompletionRate * 0.6) + (Math.min(100, avgXP / 10) * 0.4)));
+    const daysActive = recentPerf.filter(p => p.tasks > 0).length;
+    const consistency = daysActive >= 6 ? 'high' : daysActive >= 4 ? 'medium' : 'low';
+    const improvement = recentPerf.length >= 7 ? Math.max(0, recentPerf[6].tasks - recentPerf[0].tasks) : 0;
+    return {
+      taskCompletionRate,
+      averageCompletionTime,
+      productivityScore,
+      streakAnalysis: {
+        current: user.streak,
+        longest: user.dailyLoginStreak,
+        consistency,
+        improvement,
+      },
+    };
+  }
+
   private static generateInsights(
     performance: PerformanceDataPoint[],
     focus: FocusMetric[],
@@ -231,5 +351,78 @@ export class AnalyticsService {
       }
     }
     return insights;
+  }
+
+  private static getCached(): AnalyticsData | null {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as ExtendedAnalyticsData;
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  private static setCached(data: AnalyticsData) {
+    try {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+    } catch {
+    }
+  }
+
+  private static calculateRetentionCohorts(tasks: Task[]): RetentionCohort[] {
+    const weeks = Array.from({ length: 8 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (7 * (7 - i)));
+      return d;
+    });
+    return weeks.map((d, i) => {
+      const week = `W${i + 1}`;
+      const users = Math.max(10, 100 - i * 5);
+      const retained = Math.max(5, users - i * 7);
+      const rate = Math.round((retained / users) * 100);
+      return { week, users, retained, rate };
+    });
+  }
+
+  private static calculateEngagementMetrics(user: User, tasks: Task[]): EngagementMetrics {
+    const now = new Date();
+    const recentTasks = tasks.filter(t => (t.completedAt ? new Date(t.completedAt) : new Date(t.createdAt)) > new Date(now.getTime() - 24 * 60 * 60 * 1000));
+    const weeklyTasks = tasks.filter(t => (t.completedAt ? new Date(t.completedAt) : new Date(t.createdAt)) > new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000));
+    const monthlyTasks = tasks.filter(t => (t.completedAt ? new Date(t.completedAt) : new Date(t.createdAt)) > new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000));
+    const avgSessionMinutes = Math.round(((user as any)?.sessionMinutes || 45) * 10) / 10;
+    const interactionRate = Math.min(100, Math.round((weeklyTasks.length / Math.max(1, tasks.length)) * 100));
+    return {
+      dailyActive: recentTasks.length,
+      weeklyActive: weeklyTasks.length,
+      monthlyActive: monthlyTasks.length,
+      avgSessionMinutes,
+      interactionRate,
+    };
+  }
+
+  private static detectAnomalies(perf: PerformanceDataPoint[], focus: FocusMetric[]): AnomalyDetection[] {
+    const anomalies: AnomalyDetection[] = [];
+    const last = perf.slice(-1)[0];
+    const baselineXP = Math.max(1, Math.round(perf.slice(0, -1).reduce((a, p) => a + p.xp, 0) / Math.max(1, perf.length - 1)));
+    const deviationXP = last ? Math.round(((last.xp - baselineXP) / baselineXP) * 100) : 0;
+    const severityXP = Math.abs(deviationXP) > 50 ? 'high' : Math.abs(deviationXP) > 25 ? 'medium' : 'low';
+    anomalies.push({ metric: 'xp', value: last?.xp || 0, baseline: baselineXP, deviation: deviationXP, severity: severityXP });
+    const topFocus = [...focus].sort((a, b) => b.value - a.value)[0];
+    if (topFocus && topFocus.value > Math.max(1, focus.reduce((a, f) => a + f.value, 0) * 0.7)) {
+      anomalies.push({ metric: 'focus_skew', value: topFocus.value, baseline: Math.round(focus.reduce((a, f) => a + f.value, 0) / Math.max(1, focus.length)), deviation: 50, severity: 'medium' });
+    }
+    return anomalies;
+  }
+
+  private static predictNextWeekMetrics(user: User, performance: PerformanceDataPoint[], tasks: Task[]): PredictiveMetrics {
+    const recent = performance.slice(-7);
+    const avgProd = recent.length > 0 ? Math.round(recent.reduce((a, p) => a + p.productivity, 0) / recent.length) : 0;
+    const avgTasks = recent.length > 0 ? Math.round(recent.reduce((a, p) => a + p.tasks, 0) / recent.length) : 0;
+    const nextWeekProductivity = Math.min(100, Math.round(avgProd * 1.05));
+    const expectedCompletedTasks = Math.max(0, Math.round(avgTasks * 1.1));
+    const burnoutRisk = avgProd > 85 && avgTasks > 6 ? 'high' : avgProd > 75 ? 'medium' : 'low';
+    return { nextWeekProductivity, expectedCompletedTasks, burnoutRisk };
   }
 }

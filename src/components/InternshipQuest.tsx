@@ -35,6 +35,66 @@ import toast from 'react-hot-toast';
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, Legend, LineChart, Line, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
 import { appDataService } from '../services/appDataService';
 
+let __sfxCtx: AudioContext | null = null;
+const __getSfxCtx = () => {
+  if (typeof window === 'undefined') return null;
+  if (!__sfxCtx) {
+    const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext;
+    __sfxCtx = Ctx ? new Ctx() : null;
+  }
+  return __sfxCtx;
+};
+
+const __playNotes = (notes: Array<{ f: number; d: number; v?: number }>) => {
+  const ctx = __getSfxCtx();
+  if (!ctx) return;
+  let t = ctx.currentTime;
+  for (const n of notes) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(n.f, t);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(n.v ?? 0.2, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + n.d);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
+    osc.start(t);
+    osc.stop(t + n.d + 0.02);
+    t += n.d * 0.9;
+  }
+};
+
+const playCompletionSfx = (kind: string) => {
+  const presets: Record<string, Array<{ f: number; d: number; v?: number }>> = {
+    success: [
+      { f: 784, d: 0.09, v: 0.18 },
+      { f: 988, d: 0.11, v: 0.2 },
+      { f: 1319, d: 0.13, v: 0.22 },
+    ],
+    epic: [
+      { f: 392, d: 0.08, v: 0.18 },
+      { f: 523, d: 0.09, v: 0.2 },
+      { f: 784, d: 0.1, v: 0.22 },
+      { f: 1175, d: 0.12, v: 0.25 },
+      { f: 1760, d: 0.14, v: 0.28 },
+    ],
+    jackpot: [
+      { f: 440, d: 0.08, v: 0.18 },
+      { f: 587, d: 0.08, v: 0.18 },
+      { f: 784, d: 0.1, v: 0.22 },
+      { f: 1046, d: 0.12, v: 0.25 },
+      { f: 1397, d: 0.14, v: 0.28 },
+      { f: 1865, d: 0.16, v: 0.3 },
+    ],
+  };
+  __playNotes(presets[kind] || presets.success);
+};
+
 export function InternshipQuest() {
   const { state, dispatch } = useApp();
   const { user, darkMode } = state;
@@ -390,14 +450,17 @@ export function InternshipQuest() {
       if (nextStatus === 'Interviewing' && prevStatus !== 'Interviewing') {
         dispatch({ type: 'ADD_XP', payload: { amount: 30, source: 'Internship: Interview Stage' } });
         dispatch({ type: 'UPDATE_STATS', payload: { interviews: state.careerStats.interviews + 1 } });
+        playCompletionSfx('success');
       }
       if (nextStatus === 'Offer' && prevStatus !== 'Offer') {
         dispatch({ type: 'ADD_XP', payload: { amount: 50, source: 'Internship: Offer Received' } });
         dispatch({ type: 'SHOW_CONFETTI', payload: true });
+        playCompletionSfx('jackpot');
       }
       if (nextStatus === 'Accepted' && prevStatus !== 'Accepted') {
         dispatch({ type: 'ADD_XP', payload: { amount: 100, source: 'Internship: Offer Accepted' } });
         dispatch({ type: 'SHOW_CONFETTI', payload: true });
+        playCompletionSfx('epic');
       }
       if (nextStatus === 'Rejected' && prevStatus !== 'Rejected') {
         dispatch({ type: 'ADD_XP', payload: { amount: 5, source: 'Internship: Rejection Resilience' } });

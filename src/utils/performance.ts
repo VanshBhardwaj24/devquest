@@ -455,3 +455,152 @@ export function usePerformanceMonitor(componentName: string) {
     getStats: () => PerformanceTracker.getStats(componentName),
   };
 }
+
+export class PriorityScheduler {
+  private queue: { priority: number; task: () => void }[] = [];
+  private running = false;
+  add(task: () => void, priority: number = 0): void {
+    this.queue.push({ priority, task });
+    this.queue.sort((a, b) => b.priority - a.priority);
+    if (!this.running) {
+      this.running = true;
+      this.flush();
+    }
+  }
+  private flush(): void {
+    const next = this.queue.shift();
+    if (!next) {
+      this.running = false;
+      return;
+    }
+    try {
+      next.task();
+    } finally {
+      if (typeof window !== 'undefined' && (window as any).requestIdleCallback) {
+        (window as any).requestIdleCallback(() => this.flush());
+      } else {
+        setTimeout(() => this.flush(), 0);
+      }
+    }
+  }
+}
+
+export class RollingStats {
+  private values: number[] = [];
+  private limit: number;
+  constructor(limit: number = 100) {
+    this.limit = limit;
+  }
+  add(value: number): void {
+    this.values.push(value);
+    if (this.values.length > this.limit) this.values.shift();
+  }
+  get avg(): number {
+    if (this.values.length === 0) return 0;
+    return this.values.reduce((a, b) => a + b, 0) / this.values.length;
+  }
+  get min(): number {
+    if (this.values.length === 0) return 0;
+    return Math.min(...this.values);
+  }
+  get max(): number {
+    if (this.values.length === 0) return 0;
+    return Math.max(...this.values);
+  }
+  get count(): number {
+    return this.values.length;
+  }
+}
+
+export class TTLCache<K, V> {
+  private store = new Map<K, { value: V; expires: number }>();
+  private ttl: number;
+  constructor(ttlMs: number) {
+    this.ttl = ttlMs;
+  }
+  set(key: K, value: V): void {
+    const expires = Date.now() + this.ttl;
+    this.store.set(key, { value, expires });
+  }
+  get(key: K): V | undefined {
+    const entry = this.store.get(key);
+    if (!entry) return undefined;
+    if (Date.now() > entry.expires) {
+      this.store.delete(key);
+      return undefined;
+    }
+    return entry.value;
+  }
+  clear(): void {
+    this.store.clear();
+  }
+  prune(): void {
+    const now = Date.now();
+    for (const [k, v] of this.store.entries()) {
+      if (now > v.expires) this.store.delete(k);
+    }
+  }
+}
+
+export class TaskQueue {
+  private q: Array<() => Promise<void>> = [];
+  private active = 0;
+  private concurrency: number;
+  constructor(concurrency: number = 4) {
+    this.concurrency = concurrency;
+  }
+  add(task: () => Promise<void>): void {
+    this.q.push(task);
+    this.run();
+  }
+  private run(): void {
+    if (this.active >= this.concurrency) return;
+    const next = this.q.shift();
+    if (!next) return;
+    this.active++;
+    next().finally(() => {
+      this.active--;
+      this.run();
+    });
+  }
+  size(): number {
+    return this.q.length;
+  }
+}
+
+export class WorkerPool {
+  private queue: Array<() => Promise<any>> = [];
+  private running = 0;
+  private max: number;
+  private results: any[] = [];
+  constructor(max: number = 2) {
+    this.max = max;
+  }
+  submit<T>(task: () => Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      this.queue.push(async () => {
+        try {
+          const res = await task();
+          this.results.push(res);
+          resolve(res);
+        } catch (e) {
+          reject(e);
+        }
+      });
+      this.dispatch();
+    });
+  }
+  private dispatch(): void {
+    if (this.running >= this.max) return;
+    const job = this.queue.shift();
+    if (!job) return;
+    this.running++;
+    job().finally(() => {
+      this.running--;
+      this.dispatch();
+    });
+  }
+  getResults(): any[] {
+    return this.results.slice();
+  }
+}
